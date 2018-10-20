@@ -1,16 +1,17 @@
 # Vulscano
 
 
-[![Docker Automated](https://img.shields.io/docker/automated/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/builds/)
+[![Docker Automated](https://img.shields.io/docker/automated/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/)
 [![Docker Build](https://img.shields.io/docker/build/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/builds/)
+[![Microbadger](https://img.shields.io/microbadger/image-size/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/tags/)
 
-#
+#   
 
 <p align="center">
-<img align="center" src ="logo/vulscano_logo.png?raw=true" />
+<img align="center" src ="https://github.com/lucabrasi83/vulscano/blob/master/logo/vulscano_logo.png?raw=true" />
 </p>
 
----
+#   
 
 Vulscano is a TATA Communications developed application that handles Vulnerability Scanning and Reporting for Cisco IOS/IOS-XE devices.
 
