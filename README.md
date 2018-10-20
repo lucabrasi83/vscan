@@ -1,5 +1,10 @@
 # Vulscano
-<img align="center" src ="https://lh4.googleusercontent.com/BTsWqDRh452Ysf6BS3Wq3djKTloOOpocbac0yPbSygdxq8rQEsCvjt_s4dExXmTwo3HNlFyH_ewEo7hJUAlv=w1640-h1058" />
+
+<p align="center">
+<img align="center" src ="logo/vulscano_logo.png?raw=true" />
+</p>
+
+---
 
 Vulscano is a TATA Communications developed application that handles Vulnerability Scanning and Reporting for Cisco IOS/IOS-XE devices.
 
