@@ -2,39 +2,56 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/lucabrasi83/vulscano/hashgen"
-	"github.com/lucabrasi83/vulscano/inibuilder"
 	"github.com/lucabrasi83/vulscano/openvulnapi"
-	"log"
 	"net/http"
 )
 
-func Ping(c *gin.Context) {
+func GetCiscoVulnBySA(c *gin.Context) {
 
-	devices := map[string]string{
-		"CPE1": "10.1.1.1",
-		"CPE2": "10.2.2.2",
+	var sa CiscoSecurityAdvisory
+	if err := c.ShouldBindJSON(&sa); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-
-	// We Generate a Scan Job ID from HashGen library
-	JobID, errHash := hashgen.GenHash()
-	if errHash != nil {
-		log.Println("Error when generating hash: ", errHash)
-	}
-	if errIniBuilder := inibuilder.BuildIni(JobID, devices); errIniBuilder != nil {
-		log.Println(errIniBuilder)
+	s, err := openvulnapi.GetVulnMetaData(sa.CiscoAdvisoryID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"message": JobID,
+		"vulnmeta": (*s)[0],
 	})
 }
 
-func CiscoPing(c *gin.Context) {
-	s, err := openvulnapi.GetOpenVulnToken()
-	if err != nil {
-		log.Println(err)
+// LaunchAdHocScan handler is the API endpoint to trigger an ad-hoc VA scan on the passed JSON body.
+// The JSON body should be formatted as per below example:
+//	{
+//	"hostname": "CSR1000V_RTR1",
+//	"ip": "192.168.1.70",
+//	"os_type": "IOS-XE"
+//	}
+//
+//
+func LaunchAdHocScan(c *gin.Context) {
+	var ads AdHocScanDevice
+	if err := c.ShouldBindJSON(&ads); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"token": s,
-	})
+	switch ads.OSType {
+	case "IOS-XE":
+		d := newCiscoIOSXEDevice()
+		scanRes, err := d.Scan(&ads)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"results": *scanRes,
+		})
+	}
 }

@@ -7,6 +7,8 @@ RUN go mod tidy \
   && CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o vulscano .
 
 FROM scratch
+ENV VULSCANO_MODE PROD
 ADD ca-certificates.crt /etc/ssl/certs/
+COPY ./certs /opt/vulscano/data/certs
 COPY --from=builder /go/src/app/vulscano /
 CMD ["./vulscano"]

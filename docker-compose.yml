@@ -1,0 +1,29 @@
+---
+version: "3.2"
+
+services:
+    vulscano-app:
+       image: tatacomm/vulscano:latest
+       environment:
+            - VULSCANO_OPENVULN_CLIENT_ID=${VULSCANO_OPENVULN_CLIENT_ID}
+            - VULSCANO_OPENVULN_CLIENT_SECRET=${VULSCANO_OPENVULN_CLIENT_SECRET}
+            - VULSCANO_CISCO_ROUTER_USERNAME=${VULSCANO_CISCO_ROUTER_USERNAME}
+            - VULSCANO_CISCO_ROUTER_PASSWORD=${VULSCANO_CISCO_ROUTER_PASSWORD}
+            - VULSCANO_DOCKER_VOLUME_NAME=${VULSCANO_DOCKER_VOLUME_NAME}
+            - VULSCANO_DOCKER_JOVAL_IMAGE=${VULSCANO_DOCKER_JOVAL_IMAGE}
+            - DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME}
+            - DOCKER_HUB_PASSWORD=${DOCKER_HUB_PASSWORD}
+            - DOCKER_HUB_EMAIL=${DOCKER_HUB_EMAIL}
+       volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+            - ${VULSCANO_DOCKER_VOLUME_NAME}:/opt/vulscano/data
+       ports:
+            - "${VULSCANO_HTTPS_PORT}:8443"
+       networks:
+            - vulscano-net
+networks:
+   vulscano-net:
+       driver: bridge
+volumes:
+  vulscanovol:
+       external: true

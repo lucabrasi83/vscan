@@ -6,6 +6,14 @@ import (
 )
 
 func LoadRoutes(routes *gin.Engine) {
-	routes.GET("/ping", handlers.Ping)
-	routes.GET("/ciscoping", handlers.CiscoPing)
+	// Set up default handler for no routes found
+	routes.NoRoute(func(c *gin.Context) {
+		c.JSON(404, gin.H{"error": "404 - PAGE_NOT_FOUND", "message": "Requested route does not exist"})
+	})
+	// /api/v1 Routes group and associated handlers
+	apiV1 := routes.Group("/api/v1")
+	{
+		apiV1.POST("/ciscosameta", handlers.GetCiscoVulnBySA)
+		apiV1.POST("/adhocscan", handlers.LaunchAdHocScan)
+	}
 }

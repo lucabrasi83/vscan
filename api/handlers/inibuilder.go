@@ -3,12 +3,15 @@
 //  - Target Devices Hostname and IP Address
 //  - Log folder unique per scan job ID
 //  - Reports folder unique per scan job ID
-package inibuilder
+package handlers
 
 import (
 	"fmt"
+	"github.com/lucabrasi83/vulscano/datadiros"
 	"gopkg.in/ini.v1"
+	"log"
 	"os"
+	"path/filepath"
 )
 
 // Skeleton Struct to reflect from config.ini
@@ -27,43 +30,53 @@ type Benchmark struct {
 
 // Logs Section Struct in config.ini
 type Logs struct {
-	ExportDir string 		`ini:"export.dir"`
-	Level	string			`ini:"level"`
-	OutputExtension	string	`ini:"output.extension"`
+	ExportDir       string `ini:"export.dir"`
+	Level           string `ini:"level"`
+	OutputExtension string `ini:"output.extension"`
+}
 
+// init function to check Environment Variables to access Cisco Routers are well set
+func init() {
+	if os.Getenv("VULSCANO_CISCO_ROUTER_USERNAME") == "" {
+		log.Fatalln("VULSCANO_CISCO_ROUTER_USERNAME environment variable is not set!")
+	}
+	if os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") == "" {
+		log.Fatalln("VULSCANO_CISCO_ROUTER_PASSWORD environment variable is not set!")
+	}
 }
 
 // BuildIni generates config.ini file per scan jobs.
 // The config.ini file is placed in tmp/<scan-job-id>/ folder by default
 // It returns any error encountered during the config.ini file generation
-func BuildIni(jobID string, dev map[string]string) (err error) {
-
+func BuildIni(jobID string, dev []map[string]string, jovalSource string) (err error) {
 
 	// Starts with baseline ini file
-	cfg, err := ini.Load([]byte(`[Report: JSON]
-										input.type = xccdf_results
-										output.extension = json 
-										transform.file = ./tools/arf_xccdf_results_to_json_events.xsl
-										[Credential: ssh-cisco]
-										ios_enable_password = cisco
-										password = cisco
-										type = SSH
-										username = cisco`))
+	cfg, err := ini.Load([]byte(
+		`[Report: JSON]
+		input.type = xccdf_results
+		output.extension = json 
+		transform.file =` + filepath.FromSlash(
+			"./tools/"+"arf_xccdf_results_to_json_events.xsl") + `
+		[Credential: ssh-cisco]
+		ios_enable_password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_ENABLE_PASSWORD") + `
+		password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") + `
+		type = SSH
+		username = ` + os.Getenv("VULSCANO_CISCO_ROUTER_USERNAME")))
 	if err != nil {
 		return fmt.Errorf("error while loading default ini content for job ID %v: %v", jobID, err)
 	}
 
-
 	secSkeleton := &Skeleton{
 		Benchmark{
 			Profile:      "xccdf_org.joval_profile_all_rules",
+			Source:       jovalSource,
 			XccdfID:      "xccdf_org.joval_benchmark_generated",
 			XccdfVersion: 0,
 		},
 		Logs{
-			ExportDir:	"./logs/" + jobID,
-			Level:	"warning",
-			OutputExtension:".log",
+			ExportDir:       filepath.FromSlash("./logs/" + jobID),
+			Level:           "warning",
+			OutputExtension: ".log",
 		},
 	}
 
@@ -76,17 +89,17 @@ func BuildIni(jobID string, dev map[string]string) (err error) {
 		return fmt.Errorf("error while generating dynamic parameters for config.ini: %v", err)
 	}
 
-
 	// Assigns directory name per scan job ID
-	dir := "tmp/" + jobID
+	dir := filepath.FromSlash(datadiros.GetDataDir() + "/jobconfig/" + jobID)
 
 	// Check whether the directory to be created already exists. If not, we create it with Unix permission 0755
 	if _, errDirNotExist := os.Stat(dir); os.IsNotExist(errDirNotExist) {
-		if errCreateDir := os.MkdirAll(dir, 0750); errCreateDir!= nil {
+		if errCreateDir := os.MkdirAll(dir, 0750); errCreateDir != nil {
 			return fmt.Errorf("error while creating directory for job ID %v: %v", jobID, errCreateDir)
 		}
 	}
-	iniFile, err := os.Create(dir + "/config.ini")
+
+	iniFile, err := os.Create(filepath.FromSlash(datadiros.GetDataDir() + "/jobconfig/" + jobID + "/config.ini"))
 	if err != nil {
 		return fmt.Errorf("error while saving config.ini for job ID %v: %v", jobID, err)
 	}
@@ -98,25 +111,27 @@ func BuildIni(jobID string, dev map[string]string) (err error) {
 		}
 	}()
 
-	if err := cfg.SaveTo(dir + "/config.ini"); err != nil {
+	// Save the generated config.ini in jobconfig/JobID/ folder
+	if err := cfg.SaveTo(
+		filepath.FromSlash(datadiros.GetDataDir() + "/jobconfig/" + jobID + "/config.ini")); err != nil {
 		return fmt.Errorf("error while saving config.ini for job ID %v: %v", jobID, err)
 	}
 
 	return nil
 }
 
-
 // dynaIniGen generates the remainder of the config.ini file for dynamic sections and key/value pairs
-func dynaIniGen(cfg *ini.File, jobID string, dev map[string]string) error {
+func dynaIniGen(cfg *ini.File, jobID string, dev []map[string]string) error {
 
-	_, err := cfg.Section("Report: JSON").NewKey("export.dir", "./reports/" +jobID)
+	_, err := cfg.Section(
+		"Report: JSON").NewKey("export.dir", filepath.FromSlash("./reports/"+jobID))
 
 	if err != nil {
 		return fmt.Errorf("Error When Setting Reports Directory In Config.ini: %v ", err)
 	}
-
-	for k, v := range dev {
-		devSection, err := cfg.NewSection("Target: " + k )
+	// Loop through devices slice to access the map and build config.ini [Target] section(s)
+	for idx := range dev {
+		devSection, err := cfg.NewSection("Target: " + dev[idx]["hostname"])
 
 		if err != nil {
 			return fmt.Errorf("Error When Setting Device Section In Config.ini: %v ", err)
@@ -126,7 +141,7 @@ func dynaIniGen(cfg *ini.File, jobID string, dev map[string]string) error {
 		if err != nil {
 			return fmt.Errorf("Error When Setting Credential key In Config.ini: %v ", err)
 		}
-		_, err = devSection.NewKey("host", v)
+		_, err = devSection.NewKey("host", dev[idx]["ip"])
 
 		if err != nil {
 			return fmt.Errorf("Error When Setting Host key In Config.ini: %v ", err)
