@@ -14,6 +14,6 @@ func LoadRoutes(routes *gin.Engine) {
 	apiV1 := routes.Group("/api/v1")
 	{
 		apiV1.POST("/ciscosameta", handlers.GetCiscoVulnBySA)
-		apiV1.POST("/adhocscan", handlers.LaunchAdHocScan)
+		apiV1.POST("/ondemandscan", handlers.LaunchAdHocScan)
 	}
 }

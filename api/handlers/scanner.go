@@ -5,8 +5,8 @@ import (
 	"github.com/gin-gonic/gin/json"
 	"github.com/lucabrasi83/vulscano/datadiros"
 	"github.com/lucabrasi83/vulscano/hashgen"
+	"github.com/lucabrasi83/vulscano/logging"
 	"github.com/lucabrasi83/vulscano/openvulnapi"
-	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -76,7 +76,10 @@ func (d *CiscoIOSXEDevice) Scan(dev *AdHocScanDevice) (*ScanResults, error) {
 	// We Generate a Scan Job ID from HashGen library
 	jobID, errHash := hashgen.GenHash()
 	if errHash != nil {
-		log.Println("Error when generating hash: ", errHash)
+		logging.VulscanoLog(
+			"error",
+			"Error when generating hash: ", errHash.Error())
+		return nil, errHash
 	}
 
 	// Set the Scan Job ID in ScanResults struct
@@ -172,8 +175,9 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 							if err == nil {
 								vulnMetaSlice = append(vulnMetaSlice, (*vulnMeta)[0])
 							} else {
-								log.Println("error when fetching vulnerability metadata for:",
-									(*r).RuleIdentifier[0].ResultCiscoSA, ":", err)
+								logging.VulscanoLog("warning",
+									"error when fetching vulnerability metadata for:",
+									(*r).RuleIdentifier[0].ResultCiscoSA, ":", err.Error())
 							}
 
 						}(ruleResult)

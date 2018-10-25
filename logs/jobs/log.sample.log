@@ -1,0 +1,679 @@
+Thu Oct 25 07:54:38 GMT 2018 - INFO - Created plugin for host CSR1000V_RTR1
+Thu Oct 25 07:54:38 GMT 2018 - INFO - Established SSH connection to host 192.168.1.70
+Thu Oct 25 07:54:38 GMT 2018 - INFO - There are 189 rules selected in profile xccdf_org.joval_profile_all_rules
+Thu Oct 25 07:54:38 GMT 2018 - INFO - Starting applicability checks
+Thu Oct 25 07:54:38 GMT 2018 - INFO - Testing applicability platform: cpe:/o:cisco:iosxe
+Thu Oct 25 07:54:38 GMT 2018 - INFO - New OVAL engine
+Thu Oct 25 07:54:38 GMT 2018 - INFO - Scanning objects...
+Thu Oct 25 07:54:38 GMT 2018 - INFO -   oval:org.joval.inventory:obj:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO - Done scanning
+Thu Oct 25 07:54:39 GMT 2018 - INFO - Evaluating definitions...
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.iosxe:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.ios:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.android:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.apple_ios:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.catos:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.vmware_infrastructure:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.asa:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.pixos:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.windows:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.junos:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.undefined:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.macos:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.joval.inventory.unix:def:1
+Thu Oct 25 07:54:39 GMT 2018 - INFO - Done evaluating definitions
+Thu Oct 25 07:54:39 GMT 2018 - INFO - Target host 192.168.1.70 matches platform cpe:/o:cisco:iosxe
+Thu Oct 25 07:54:39 GMT 2018 - INFO - Target matches platform requirements
+Thu Oct 25 07:54:39 GMT 2018 - INFO - Evaluating rules
+Thu Oct 25 07:54:39 GMT 2018 - INFO - Created OVAL engine for href cisco.iosxe.cve.oval.xml
+Thu Oct 25 07:54:39 GMT 2018 - INFO - New OVAL engine
+Thu Oct 25 07:54:39 GMT 2018 - INFO - Scanning objects...
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015642900001
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017385800002
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015785500001
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018046900002
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017385800004
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2013547200001
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018046600001
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014335700001
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:org.cisecurity:obj:1010
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014210600002
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2013116400004
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014326900001
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017122290002
+Thu Oct 25 07:54:39 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018047100002
+Thu Oct 25 07:54:40 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2012462200002
+Thu Oct 25 07:54:40 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017666300001
+Thu Oct 25 07:54:40 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018047500002
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2016145900001
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2013697900002
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015064600003
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:org.cisecurity:obj:1023
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2012462200001
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018047100001
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014326900002
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018048000001
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018047500001
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018153710001
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2013547500001
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018019700001
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015797300001
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015635900003
+Thu Oct 25 07:54:42 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2016135000001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014210800002
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014330900001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017385900002
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017122280001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014335700002
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2013554300002
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018015700001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017385800001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:org.cisecurity:obj:1085
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018046900003
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017123190001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015635900002
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015638300001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:org.cisecurity:obj:1062
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2016134900001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015629400002
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015629400001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017388100002
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2013014900001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2013697900001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018017000001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2016637800002
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017122360001
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018015200002
+Thu Oct 25 07:54:43 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014326900003
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014335900001
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018046700001
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017386000001
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018016500001
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2015068100001
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:org.cisecurity:obj:991
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017385800003
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2013698100001
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018048000003
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2017388100001
+Thu Oct 25 07:54:44 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2016638400001
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2014332700001
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:org.cisecurity:obj:1027
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2013116400003
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018015000001
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:obj:2018048500002
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Done scanning
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Evaluating definitions...
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015068800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015424300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017385600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:org.cisecurity:def:4228
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018046600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015627900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013547500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016638000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018015200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:org.cisecurity:def:4461
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:org.cisecurity:def:4582
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015628200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018019700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013552700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013554300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014340300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015064400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016637800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018153730000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015797600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017385700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014340400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016138400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018046700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015627800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018048100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013114300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016637900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015815800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017661500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018047000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017122370000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015063900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017382400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015064500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015064200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015070800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018017100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013554600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015797800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017666300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015797500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015628000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014210600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016645000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016638100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018016900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015629400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016639200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2012462200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015813900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016641500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016147800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013116400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017385900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015643100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017674100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014627800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015068500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014335900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013670400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015071000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015814000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018047100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018015000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017123190000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015797900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014335400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015797300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014328400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013114800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018015600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015064100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016135000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018017200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018048000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018153690000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013547300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014210800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015179200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018016500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013014900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016134900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017386000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013554500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017666500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:org.cisecurity:def:4355
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017386300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014799000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015179800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016639300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016140900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013697900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015635900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017662700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018153710000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018047700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015319500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017122290000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014336000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014330900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015063500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:org.cisecurity:def:4549
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017386400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016643800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018153720000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013116700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016142800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018015800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014329000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015179300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014718700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017122260000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016145900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018016000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014335600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017382000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017660600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014335700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014718600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016638500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018047500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017122360000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015063600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016638600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016644100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017388100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018153740000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014332700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013669200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016143200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015065000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014326900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015063700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013116500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017677000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018031500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018047600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015020400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016134400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018017400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015636000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015785500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016638400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018017700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015642900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017122300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018046900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017666400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015064000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018153770000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017386100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013547200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018153680000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016638200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017386200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017674200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015813800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017122390000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2016134800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013547800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015429300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013554700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018047200000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014627700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014627100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015068100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013277900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014218300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014335500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018017300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014335800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015797400000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018017000000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013698100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013670600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018015700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014211300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015797700000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017385800000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2017122280000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014340500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2014716900000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2013116600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015064300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018015100000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2018048500000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015638300000
+Thu Oct 25 07:54:45 GMT 2018 - INFO -   oval:com.jovalcm.cisco.iosxe.cve:def:2015064600000
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Done evaluating definitions
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Done evaluating rules
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Computed score for model urn:xccdf:scoring:default: 97.35449735449735
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Computed score for model urn:xccdf:scoring:flat: 184.0
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Computed score for model urn:xccdf:scoring:flat-unweighted: 184.0
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Computed score for model urn:xccdf:scoring:absolute: 0.0
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_0
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_1
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_2
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_3
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_4
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_5
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_6
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_7
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_8
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_9
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_10
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_11
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_12
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_13
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_14
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_15
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_16
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_17
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_18
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_19
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_20
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_21
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_22
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_23
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_24
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_25
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_26
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_27
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_28
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_29
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_30
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_31
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_32
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_33
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_34
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_35
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_36
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_37
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_38
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_39
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_40
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_41
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_42
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_43
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_44
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_45
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_46
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_47
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_48
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_49
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_50
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_51
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_52
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_53
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_54
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_55
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_56
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_57
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_58
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_59
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_60
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_61
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_62
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_63
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_64
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_65
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_66
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_67
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_68
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_69
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_70
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_71
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_72
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_73
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_74
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_75
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_76
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_77
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_78
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_79
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_80
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_81
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_82
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_83
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_84
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_85
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_86
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_87
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_88
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_89
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_90
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_91
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_92
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_93
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_94
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_95
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_96
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_97
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_98
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_99
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_100
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_101
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_102
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_103
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_104
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_105
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_106
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_107
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_108
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_109
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_110
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_111
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_112
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_113
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_114
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_115
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_116
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_117
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_118
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_119
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_120
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_121
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_122
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_123
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_124
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_125
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_126
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_127
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_128
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_129
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_130
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_131
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_132
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_133
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_134
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_135
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_136
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_137
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_138
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_139
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_140
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_141
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_142
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_143
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_144
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_145
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_146
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_147
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_148
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_149
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_150
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_151
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_152
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_153
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_154
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_155
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_156
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_157
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_158
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_159
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_160
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_161
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_162
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_163
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_164
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_165
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_166
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_167
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_168
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_169
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_170
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_171
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_172
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_173
+   Result: FAIL
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_174
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_175
+   Result: FAIL
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_176
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_177
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_178
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_179
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_180
+   Result: FAIL
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_181
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_182
+   Result: FAIL
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_183
+   Result: FAIL
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_184
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_185
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_186
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_187
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - Rule: xccdf_org.joval_rule_cisco.iosxe.cve.oval.xml_188
+   Result: PASS
+Thu Oct 25 07:54:45 GMT 2018 - INFO - SSH disconnecting from host 192.168.1.70

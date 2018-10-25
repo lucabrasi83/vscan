@@ -11,7 +11,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
-	"log"
+	"github.com/lucabrasi83/vulscano/logging"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -29,17 +29,31 @@ func init() {
 	var err error
 	cli, err = client.NewEnvClient()
 	if err != nil {
-		panic("Failed to initialize Docker environment settings")
+		logging.VulscanoLog(
+			"fatal",
+			"Failed to initialize Docker environment settings: ",
+			err.Error())
 	}
 	dockerStatus, err := cli.Ping(ctx)
 	if err != nil {
-		panic("Failed to connect to Docker daemon")
+		logging.VulscanoLog(
+			"fatal",
+			"Failed to connect to Docker daemon: ",
+			err.Error())
+	} else {
+		logging.VulscanoLog(
+			"info",
+			"Detecting Docker Daemon...")
 	}
-	log.Println("Docker API Version:", dockerStatus.APIVersion)
+
+	logging.VulscanoLog("info", "Docker API Version:", dockerStatus.APIVersion)
 
 	// Check for VULSCANO_DOCKER_VOLUME_NAME Environment Variable to ensure we have a valid volume
 	if os.Getenv("VULSCANO_DOCKER_VOLUME_NAME") == "" {
-		log.Fatalln("Environment Variable  VULSCANO_DOCKER_VOLUME_NAME is not set!")
+		logging.VulscanoLog(
+			"fatal",
+			"Environment Variable VULSCANO_DOCKER_VOLUME_NAME is not set!",
+		)
 	}
 
 	// If VULSCANO_DOCKER_JOVAL_IMAGE environment variable not found set it to tatacomm/jovalscan:latest
@@ -54,15 +68,25 @@ func init() {
 	// Since Joval Scan Docker image is private, Docker Hub credentials are required to download the image
 	// The registry authentication payload is encoded as base64
 	if os.Getenv("DOCKER_HUB_USERNAME") == "" {
-		log.Fatalln("Environment Variable DOCKER_HUB_USERNAME is not set!")
+		logging.VulscanoLog(
+			"fatal",
+			"Environment Variable DOCKER_HUB_USERNAME is not set!",
+		)
 	}
 	if os.Getenv("DOCKER_HUB_PASSWORD") == "" {
-		log.Fatalln("Environment Variable DOCKER_HUB_PASSWORD is not set!")
+		logging.VulscanoLog(
+			"fatal",
+			"Environment Variable DOCKER_HUB_PASSWORD is not set!",
+		)
 	}
 	if os.Getenv("DOCKER_HUB_EMAIL") == "" {
-		log.Fatalln("Environment Variable DOCKER_HUB_PASSWORD is not set!")
+		logging.VulscanoLog(
+			"fatal",
+			"Environment Variable DOCKER_HUB_EMAIL is not set!",
+		)
 	}
 
+	// Set Authentication payload encoded to Base64 to login to Docker Hub
 	dockerHubAuthBasePayload := fmt.Sprintf(`{
   								"username": "%v",
 								"password": "%v",
@@ -80,8 +104,12 @@ func init() {
 	// TODO: Add type filter in ImageListOptions to only look for jovalscan image
 	dockerImageList, err := cli.ImageList(ctx, types.ImageListOptions{})
 	if err != nil {
-		panic(err)
+		logging.VulscanoLog(
+			"fatal",
+			"Error while trying to list Docker images in local registry: ",
+			err.Error())
 	}
+
 	var imageFound = false
 	for _, imageTagList := range dockerImageList {
 		for _, imageTag := range imageTagList.RepoTags {
@@ -91,9 +119,15 @@ func init() {
 			}
 		}
 	}
+	// If no tatacomm/jovalscan image found in local Docker registry we're downloading it at startup
 	if !imageFound {
-		log.Println("tatacomm/jovalscan Docker image not found in local Docker image registry.")
-		log.Println("Downloading Docker Joval image:", jovalDockerImage)
+		logging.VulscanoLog(
+			"warning",
+			"tatacomm/jovalscan Docker image not found in local Docker image registry.")
+
+		logging.VulscanoLog(
+			"info",
+			"Downloading tatacomm/jovalscan Docker image: ", jovalDockerImage)
 		now := time.Now()
 		_, err := cli.ImagePull(ctx, jovalDockerImage, types.ImagePullOptions{
 			All:          true,
@@ -101,11 +135,18 @@ func init() {
 		})
 
 		if err != nil {
-			log.Fatalln("Failed to download", jovalDockerImage, err.Error())
+			logging.VulscanoLog(
+				"fatal",
+				"Failed to download tatacomm/jovalscan Docker image: ", jovalDockerImage, err.Error())
 		}
-		log.Println("Successful downloaded", jovalDockerImage, "in", time.Since(now))
-		log.Println("Vulscano is now ready for some work!!!")
+
+		logging.VulscanoLog(
+			"info",
+			"Successful downloaded ", jovalDockerImage, " in ", time.Since(now))
 	}
+	logging.VulscanoLog(
+		"info",
+		"Vulscano is now READY!")
 
 }
 
@@ -114,13 +155,10 @@ func init() {
 // interaction with Docker daemon
 func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
 
-	// This is the default Docker image for jovalscan
-	const imageName string = "tatacomm/jovalscan:0.2"
-
 	// We Create the container upon receiving a scan Job
 	// Set Performance profile struct to allow different CPU/Memory allocations per container
 	resp, errContainerCreate := cli.ContainerCreate(ctx, &container.Config{
-		Image: imageName,
+		Image: os.Getenv("VULSCANO_DOCKER_JOVAL_IMAGE"),
 		Tty:   true,
 		Env:   []string{"INIFILE=" + filepath.FromSlash("./jobconfig/"+jobID+"/config.ini")},
 	}, &container.HostConfig{
@@ -165,13 +203,19 @@ func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
 	}()
 
 	exit, errCh := cli.ContainerWait(ctx, resp.ID)
-	fmt.Println("Scan container exited with code:", exit)
+
 	if errCh != nil {
 		return errCh
 	}
 
 	if exit != 0 {
+		logging.VulscanoLog("warning",
+			"Scan container exited with code:", exit)
+
 		return fmt.Errorf("scan job ID %v failed with error code: %v", jobID, exit)
+	} else {
+		logging.VulscanoLog("info",
+			"Scan container exited with code:", exit)
 	}
 
 	// Use bufferio Scanner to avoid loading entire  container logs content in memory

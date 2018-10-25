@@ -4,6 +4,9 @@ version: "3.2"
 services:
     vulscano-app:
        image: tatacomm/vulscano:latest
+       stdin_open: true
+       tty: true
+       hostname: vulscano-app
        environment:
             - VULSCANO_OPENVULN_CLIENT_ID=${VULSCANO_OPENVULN_CLIENT_ID}
             - VULSCANO_OPENVULN_CLIENT_SECRET=${VULSCANO_OPENVULN_CLIENT_SECRET}

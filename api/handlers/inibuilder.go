@@ -8,8 +8,8 @@ package handlers
 import (
 	"fmt"
 	"github.com/lucabrasi83/vulscano/datadiros"
+	"github.com/lucabrasi83/vulscano/logging"
 	"gopkg.in/ini.v1"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -38,10 +38,12 @@ type Logs struct {
 // init function to check Environment Variables to access Cisco Routers are well set
 func init() {
 	if os.Getenv("VULSCANO_CISCO_ROUTER_USERNAME") == "" {
-		log.Fatalln("VULSCANO_CISCO_ROUTER_USERNAME environment variable is not set!")
+		logging.VulscanoLog("fatal",
+			"VULSCANO_CISCO_ROUTER_USERNAME environment variable is not set!")
 	}
 	if os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") == "" {
-		log.Fatalln("VULSCANO_CISCO_ROUTER_PASSWORD environment variable is not set!")
+		logging.VulscanoLog("fatal",
+			"VULSCANO_CISCO_ROUTER_PASSWORD environment variable is not set!")
 	}
 }
 
@@ -56,7 +58,7 @@ func BuildIni(jobID string, dev []map[string]string, jovalSource string) (err er
 		input.type = xccdf_results
 		output.extension = json 
 		transform.file =` + filepath.FromSlash(
-			"./tools/"+"arf_xccdf_results_to_json_events.xsl") + `
+			"/opt/jovaldata/tools/arf_xccdf_results_to_json_events.xsl") + `
 		[Credential: ssh-cisco]
 		ios_enable_password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_ENABLE_PASSWORD") + `
 		password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") + `
@@ -74,8 +76,8 @@ func BuildIni(jobID string, dev []map[string]string, jovalSource string) (err er
 			XccdfVersion: 0,
 		},
 		Logs{
-			ExportDir:       filepath.FromSlash("./logs/" + jobID),
-			Level:           "warning",
+			ExportDir:       filepath.FromSlash("./logs/jobs/" + jobID),
+			Level:           "info",
 			OutputExtension: ".log",
 		},
 	}

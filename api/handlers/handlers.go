@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/lucabrasi83/vulscano/logging"
 	"github.com/lucabrasi83/vulscano/openvulnapi"
 	"net/http"
 )
@@ -10,11 +11,13 @@ func GetCiscoVulnBySA(c *gin.Context) {
 
 	var sa CiscoSecurityAdvisory
 	if err := c.ShouldBindJSON(&sa); err != nil {
+		logging.VulscanoLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	s, err := openvulnapi.GetVulnMetaData(sa.CiscoAdvisoryID)
 	if err != nil {
+		logging.VulscanoLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
@@ -37,6 +40,7 @@ func GetCiscoVulnBySA(c *gin.Context) {
 func LaunchAdHocScan(c *gin.Context) {
 	var ads AdHocScanDevice
 	if err := c.ShouldBindJSON(&ads); err != nil {
+		logging.VulscanoLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -45,6 +49,7 @@ func LaunchAdHocScan(c *gin.Context) {
 		d := newCiscoIOSXEDevice()
 		scanRes, err := d.Scan(&ads)
 		if err != nil {
+			logging.VulscanoLog("error", err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
