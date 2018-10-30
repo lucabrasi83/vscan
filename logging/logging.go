@@ -14,7 +14,7 @@ var (
 	WarningMessage = color.New(color.FgHiYellow).SprintFunc()
 	InfoMessage    = color.New(color.FgHiGreen).SprintFunc()
 	ErrorMessage   = color.New(color.FgHiRed).SprintFunc()
-	FatalMessage   = color.New(color.BgRed).SprintFunc()
+	FatalMessage   = color.New(color.BgRed, color.FgHiWhite).SprintFunc()
 	UnderlineText  = color.New(color.Underline).SprintFunc()
 )
 var (
@@ -36,9 +36,10 @@ func logToStdOut(level string, fields ...interface{}) {
 	}
 	formatter.SetColorScheme(&prefixed.ColorScheme{
 		TimestampStyle:  "white+u",
-		InfoLevelStyle:  "white:42",
+		InfoLevelStyle:  "white:28",
 		WarnLevelStyle:  "white:208",
 		ErrorLevelStyle: "white:red",
+		FatalLevelStyle: "white:red",
 	})
 
 	log.Formatter = formatter

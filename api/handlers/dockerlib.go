@@ -224,6 +224,13 @@ func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
 	// Loop through each line (this is the default behaviour and it matches how Joval renders logs)
 	for containerLogs.Scan() {
 
+		// Find error message from Joval that no scan was performed
+		RegexpNoScan := regexp.MustCompile(`^WARNING: No scans$`)
+		RegexpNoScanMatch := RegexpNoScan.MatchString(containerLogs.Text())
+		if RegexpNoScanMatch {
+			return fmt.Errorf("no scan performed for job ID %v . Check the job logs for details", jobID)
+		}
+
 		// Find the Device Scan Mean Time
 		RegexpMeanTime := regexp.MustCompile(`Mean target scan duration: (.*)`)
 		RegexpMeanTimeMatch := RegexpMeanTime.FindStringSubmatch(containerLogs.Text())

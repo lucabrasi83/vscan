@@ -22,12 +22,12 @@ type CiscoIOSDevice struct {
 }
 
 type ScanResults struct {
-	ScanJobID                   string                      `json:"scan_job_id"`
-	ScanJobStartTime            string                      `json:"scan_job_start_time"`
-	ScanJobEndTime              string                      `json:"scan_job_end_time"`
-	ScanDeviceMeanTime          string                      `json:"scan_job_device_mean_time"`
-	TotalVulnerabilitiesFound   int                         `json:"total_vulnerabilities_found"`
-	VulnerabilitiesFoundDetails *[]openvulnapi.VulnMetadata `json:"vulnerabilities_found_details"`
+	ScanJobID                   string                      `json:"scanJobID"`
+	ScanJobStartTime            string                      `json:"scanJobStartTime"`
+	ScanJobEndTime              string                      `json:"scanJobEndTime"`
+	ScanDeviceMeanTime          string                      `json:"scanJobDeviceMeanTime"`
+	TotalVulnerabilitiesFound   int                         `json:"totalVulnerabilitiesFound"`
+	VulnerabilitiesFoundDetails *[]openvulnapi.VulnMetadata `json:"vulnerabilitiesFoundDetails"`
 }
 
 // Scan ReportFile represents the JSON report file created for each device by Joval scan
@@ -47,7 +47,7 @@ type ScanReportFileResultIdentifier struct {
 	ResultCiscoSA string `json:"identifier"`
 }
 
-// TODO: Create Scanner interface type to better handle multi-vendor VA Scans
+// TODO: Create Scanner interface type to better abstract multi-vendor VA Scans
 type Scanner interface {
 	Scan()
 }

@@ -58,5 +58,22 @@ func LaunchAdHocScan(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"results": *scanRes,
 		})
+	case "IOS":
+		d := newCiscoIOSDevice()
+		scanRes, err := d.Scan(&ads)
+		if err != nil {
+			logging.VulscanoLog("error", err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"results": *scanRes,
+		})
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Incorrect OS_Type provided. Only IOS or IOS-XE supported",
+		})
 	}
 }

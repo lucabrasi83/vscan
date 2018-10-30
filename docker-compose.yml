@@ -2,11 +2,12 @@
 version: "3.2"
 
 services:
-    vulscano-app:
+    vulscano-core:
        image: tatacomm/vulscano:latest
+       restart: always
        stdin_open: true
        tty: true
-       hostname: vulscano-app
+       hostname: vulscano-core
        environment:
             - VULSCANO_OPENVULN_CLIENT_ID=${VULSCANO_OPENVULN_CLIENT_ID}
             - VULSCANO_OPENVULN_CLIENT_SECRET=${VULSCANO_OPENVULN_CLIENT_SECRET}
@@ -19,7 +20,7 @@ services:
             - DOCKER_HUB_EMAIL=${DOCKER_HUB_EMAIL}
        volumes:
             - /var/run/docker.sock:/var/run/docker.sock
-            - ${VULSCANO_DOCKER_VOLUME_NAME}:/opt/vulscano/data
+            - vulscanovol:/opt/vulscano/data
        ports:
             - "${VULSCANO_HTTPS_PORT}:8443"
        networks:
@@ -30,3 +31,4 @@ networks:
 volumes:
   vulscanovol:
        external: true
+...
