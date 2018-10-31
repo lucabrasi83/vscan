@@ -1,5 +1,6 @@
 FROM golang:1.11.1-alpine as builder
-RUN apk update && apk add build-base && apk add git
+COPY tcl-root-ca.crt /usr/local/share/ca-certificates
+RUN apk add --no-cache build-base git ca-certificates && update-ca-certificates 2>/dev/null || true
 COPY . /go/src/github.com/lucabrasi83/vulscano
 WORKDIR /go/src/github.com/lucabrasi83/vulscano
 ENV GO111MODULE on
@@ -11,7 +12,7 @@ go build -a -ldflags="-X github.com/lucabrasi83/vulscano/initializer.Commit=$(gi
 
 FROM scratch
 ENV VULSCANO_MODE PROD
-ADD ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY ./certs /opt/vulscano/data/certs
 COPY --from=builder /go/src/github.com/lucabrasi83/vulscano/banner.txt /
 COPY --from=builder /go/src/github.com/lucabrasi83/vulscano/vulscano /

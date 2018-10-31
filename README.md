@@ -90,7 +90,7 @@ $ docker volume create --opt device=$(pwd) --opt o=bind vulscanovol
 
     - 200 OK Response body:
 
-```json
+```javascript
   {
     "results": {
        "scanJobID": "V9Vx75w8eOkBWRXug8nWDmY31yazre",
