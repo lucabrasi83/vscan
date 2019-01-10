@@ -1,4 +1,4 @@
-// Package dockerlib handles interaction with Docker daemon to launch Joval Scan containers.
+// File dockerlib handles interaction with Docker daemon to launch Joval Scan containers.
 // It communicates via /var/run/docker.sock file by default and allows compute resource controls per scan job
 package handlers
 
@@ -7,15 +7,16 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"time"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/lucabrasi83/vulscano/logging"
-	"os"
-	"path/filepath"
-	"regexp"
-	"time"
 )
 
 var cli *client.Client
@@ -97,6 +98,7 @@ func init() {
 		os.Getenv("DOCKER_HUB_PASSWORD"),
 		os.Getenv("DOCKER_HUB_EMAIL"))
 
+	// Convert DOCKER_HUB Environment Vars credentials to Base64
 	dockerHubAuthBase64 := base64.StdEncoding.EncodeToString([]byte(dockerHubAuthBasePayload))
 
 	// Check if the Joval Scan Docker exists in local Docker host registry. If not download the image
@@ -144,9 +146,6 @@ func init() {
 			"info",
 			"Successful downloaded ", jovalDockerImage, " in ", time.Since(now))
 	}
-	logging.VulscanoLog(
-		"info",
-		"Vulscano is now READY!")
 
 }
 
@@ -165,7 +164,7 @@ func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
 		AutoRemove: true,
 		Resources: container.Resources{
 			NanoCPUs: 2000000000,
-			Memory:   2000000000,
+			Memory:   1000000000,
 		},
 		Mounts: []mount.Mount{
 			{
@@ -210,13 +209,12 @@ func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
 
 	if exit != 0 {
 		logging.VulscanoLog("warning",
-			"Scan container exited with code:", exit)
+			"Scan container for Job ID "+jobID+" exited with code: ", exit)
 
 		return fmt.Errorf("scan job ID %v failed with error code: %v", jobID, exit)
-	} else {
-		logging.VulscanoLog("info",
-			"Scan container exited with code:", exit)
 	}
+	logging.VulscanoLog("info",
+		"Scan container for Job ID "+jobID+" exited with code: ", exit)
 
 	// Use bufferio Scanner to avoid loading entire  container logs content in memory
 	containerLogs := bufio.NewScanner(outContainerLogs)
@@ -236,20 +234,6 @@ func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
 		RegexpMeanTimeMatch := RegexpMeanTime.FindStringSubmatch(containerLogs.Text())
 		if len(RegexpMeanTimeMatch) >= 2 {
 			(*sr).ScanDeviceMeanTime = RegexpMeanTimeMatch[1]
-		}
-
-		// Find the Scan Job Start Time
-		RegexpStartTime := regexp.MustCompile(`Scan start time: (.*)`)
-		RegexpStartTimeMatch := RegexpStartTime.FindStringSubmatch(containerLogs.Text())
-		if len(RegexpStartTimeMatch) >= 2 {
-			(*sr).ScanJobStartTime = RegexpStartTimeMatch[1]
-		}
-
-		// Find the Scan Job End Time
-		RegexpEndTime := regexp.MustCompile(`Scan end time: (.*)`)
-		RegexpEndTimeMatch := RegexpEndTime.FindStringSubmatch(containerLogs.Text())
-		if len(RegexpEndTimeMatch) >= 2 {
-			(*sr).ScanJobEndTime = RegexpEndTimeMatch[1]
 		}
 
 	}

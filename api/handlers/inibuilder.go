@@ -1,4 +1,4 @@
-// Package inibuilder handles creation of config.ini file for Joval Scan jobs.
+// File inibuilder handles creation of config.ini file for Joval Scan jobs.
 // Based on scan job inputs in REST API request body, it will dynamically generate ini sections for:
 //  - Target Devices Hostname and IP Address
 //  - Log folder unique per scan job ID
@@ -7,11 +7,12 @@ package handlers
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/lucabrasi83/vulscano/datadiros"
 	"github.com/lucabrasi83/vulscano/logging"
 	"gopkg.in/ini.v1"
-	"os"
-	"path/filepath"
 )
 
 // Skeleton Struct to reflect from config.ini

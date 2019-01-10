@@ -1,4 +1,4 @@
-FROM golang:1.11.1-alpine as builder
+FROM golang:1.11.4-alpine as builder
 COPY tcl-root-ca.crt /usr/local/share/ca-certificates
 RUN apk add --no-cache build-base git ca-certificates && update-ca-certificates 2>/dev/null || true
 COPY . /go/src/github.com/lucabrasi83/vulscano
@@ -8,7 +8,7 @@ RUN go mod tidy && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 go build -a -ldflags="-X github.com/lucabrasi83/vulscano/initializer.Commit=$(git rev-parse --short HEAD) \
 -X github.com/lucabrasi83/vulscano/initializer.Version=$(git describe --tags) \
 -X github.com/lucabrasi83/vulscano/initializer.BuiltAt=$(date +%FT%T%z) \
--X github.com/lucabrasi83/vulscano/initializer.BuiltOn=$(hostname)" -installsuffix cgo -o vulscano
+-X github.com/lucabrasi83/vulscano/initializer.BuiltOn=$(hostname)" -o vulscano
 
 FROM scratch
 ENV VULSCANO_MODE PROD

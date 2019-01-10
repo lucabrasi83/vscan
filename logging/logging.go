@@ -2,11 +2,12 @@
 package logging
 
 import (
+	"os"
+	"time"
+
 	"github.com/fatih/color"
 	"github.com/sirupsen/logrus"
 	"github.com/x-cray/logrus-prefixed-formatter"
-	"os"
-	"time"
 )
 
 // Prettify StdOut with colors
@@ -19,7 +20,7 @@ var (
 )
 var (
 	VulscanoLogFile *os.File
-	err             error
+	// err             error
 )
 
 func logToStdOut(level string, fields ...interface{}) {

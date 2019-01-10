@@ -1,9 +1,10 @@
 package hashgen
 
 import (
-	"github.com/speps/go-hashids"
 	"math/rand"
 	"time"
+
+	"github.com/speps/go-hashids"
 )
 
 func GenHash() (string, error) {

@@ -1,10 +1,14 @@
 package handlers
 
 import (
+	"net/http"
+
+	"github.com/appleboy/gin-jwt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vulscano/logging"
 	"github.com/lucabrasi83/vulscano/openvulnapi"
-	"net/http"
+	"github.com/lucabrasi83/vulscano/postgresdb"
 )
 
 func GetCiscoVulnBySA(c *gin.Context) {
@@ -38,7 +42,18 @@ func GetCiscoVulnBySA(c *gin.Context) {
 //
 //
 func LaunchAdHocScan(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	jwtClaim := JwtClaim{
+		Enterprise: jwtMapClaim["enterprise"].(string),
+		UserID:     jwtMapClaim["userID"].(string),
+		Email:      jwtMapClaim["email"].(string),
+		Role:       jwtMapClaim["role"].(string),
+	}
+
 	var ads AdHocScanDevice
+
 	if err := c.ShouldBindJSON(&ads); err != nil {
 		logging.VulscanoLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -47,7 +62,7 @@ func LaunchAdHocScan(c *gin.Context) {
 	switch ads.OSType {
 	case "IOS-XE":
 		d := newCiscoIOSXEDevice()
-		scanRes, err := d.Scan(&ads)
+		scanRes, err := d.Scan(&ads, &jwtClaim)
 		if err != nil {
 			logging.VulscanoLog("error", err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -60,7 +75,7 @@ func LaunchAdHocScan(c *gin.Context) {
 		})
 	case "IOS":
 		d := newCiscoIOSDevice()
-		scanRes, err := d.Scan(&ads)
+		scanRes, err := d.Scan(&ads, &jwtClaim)
 		if err != nil {
 			logging.VulscanoLog("error", err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -76,4 +91,68 @@ func LaunchAdHocScan(c *gin.Context) {
 			"error": "Incorrect OS_Type provided. Only IOS or IOS-XE supported",
 		})
 	}
+}
+
+// UpdateCiscoOpenVulnSAAll will pull all the published Cisco Security Advisories from openVuln API
+// These will then be persisted in the database
+// API Call doesn't require any payload in the body
+func UpdateCiscoOpenVulnSAAll(c *gin.Context) {
+	err := postgresdb.DBInstance.InsertAllCiscoAdvisories()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": "Cisco published security advisories successfully fetched and merged in DB.",
+	})
+}
+
+// LaunchAnutaInventoryScan handler is the API endpoint to trigger an VA scan for a device part of Anuta NCX inventory.
+// The JSON body should be formatted as per below example:
+//	{
+//	"deviceId": "CSR1000V_RTR1",
+//	}
+//
+//
+func LaunchAnutaInventoryScan(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	var invDevice AnutaDeviceScanRequest
+
+	if err := c.ShouldBindJSON(&invDevice); err != nil {
+		logging.VulscanoLog("error", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Control to verify user Enterprise ID corresponds to Device trigram
+	if entID, ok := jwtMapClaim["enterprise"].(string); ok && entID == string(invDevice.DeviceID[:3]) {
+
+		jwtClaim := JwtClaim{
+			Enterprise: jwtMapClaim["enterprise"].(string),
+			UserID:     jwtMapClaim["userID"].(string),
+			Email:      jwtMapClaim["email"].(string),
+			Role:       jwtMapClaim["role"].(string),
+		}
+
+		dev, res, errAnutaAPI := AnutaInventoryScan(&invDevice, &jwtClaim)
+
+		if errAnutaAPI != nil {
+
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errAnutaAPI.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"deviceDetails": *dev, "results": *res})
+		return
+	}
+
+	c.JSON(http.StatusUnauthorized,
+		gin.H{"error": "You're not allowed to run a Vulnerability Assessment on this device."})
+
 }

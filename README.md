@@ -4,6 +4,7 @@
 [![Docker Automated](https://img.shields.io/docker/automated/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/)
 [![Docker Build](https://img.shields.io/docker/build/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/builds/)
 [![Microbadger](https://img.shields.io/microbadger/image-size/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/tags/)
+[![GolangCI](https://golangci.com/badges/github.com/lucabrasi83/vulscano.svg)](https://golangci.com/r/github.com/lucabrasi83/vulscano)
 
 #   
 
@@ -79,13 +80,18 @@ $ docker volume create --opt device=$(pwd) --opt o=bind vulscanovol
     - Negotiate HTTP version:
     
     ```sh
-    $ curl -s -k https://localhost:8443/api/v1/ondemandscan -H "Content-Type: application/json" -X POST -d '{"hostname": "CSR1000V_RTR1", "ip":"192.168.1.70", "os_type":"IOS-XE"}' | jq
+    $ curl -s -k https://localhost:8443/api/v1/ondemandscan \ 
+           -H "Content-Type: application/json" \
+           -X POST -d '{"hostname": "CSR1000V_RTR1", "ip":"192.168.1.70", "os_type":"IOS-XE"}' | jq
     ```
 
     - Force HTTP/2 (if your cURL client was compiled with nghttp2 library. You can verify with `curl --version` ):
 
     ```sh
-    $ curl -s --http2-prior-knowledge -k https://localhost:8443/api/v1/ondemandscan -H "Content-Type: application/json" -X POST -d '{"hostname": "CSR1000V_RTR1", "ip":"192.168.1.70", "os_type":"IOS-XE"}' | jq
+    $ curl -s --http2-prior-knowledge \
+      -k https://localhost:8443/api/v1/ondemandscan \
+      -H "Content-Type: application/json" \
+      -X POST -d '{"hostname": "CSR1000V_RTR1", "ip":"192.168.1.70", "os_type":"IOS-XE"}' | jq
     ```
 
     - 200 OK Response body:
