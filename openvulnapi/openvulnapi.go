@@ -21,10 +21,11 @@ func init() {
 }
 
 const (
-	baseVulnSaURL    = "https://api.cisco.com/security/advisories/advisory/"
-	baseVulnIOSURL   = "https://api.cisco.com/security/advisories/ios.json?version="
-	baseVulnIOSXEURL = "https://api.cisco.com/security/advisories/iosxe.json?version="
-	grantType        = "client_credentials"
+	baseVulnSaURL = "https://api.cisco.com/security/advisories/advisory/"
+	// baseVulnIOSURL   = "https://api.cisco.com/security/advisories/ios.json?version="
+	// baseVulnIOSXEURL = "https://api.cisco.com/security/advisories/iosxe.json?version="
+	baseAllVulnURL = "https://api.cisco.com/security/advisories/all.json"
+	grantType      = "client_credentials"
 )
 
 var clientID = os.Getenv("VULSCANO_OPENVULN_CLIENT_ID")
@@ -100,7 +101,7 @@ func GetVulnMetaData(sa string) (*[]VulnMetadata, error) {
 	token, err := getOpenVulnToken()
 
 	if err != nil {
-		return nil, fmt.Errorf("cannot fetch vulnerability metadata: %v", err)
+		return nil, fmt.Errorf("failed to get Bearer token from Cisco openVulnAPI: %v", err)
 	}
 
 	vulnMetaReq, err := http.NewRequest("GET", url, nil)
@@ -113,6 +114,54 @@ func GetVulnMetaData(sa string) (*[]VulnMetadata, error) {
 	vulnMetaReq.Header.Add("Authorization", "Bearer "+token)
 
 	ctx, cancel := context.WithTimeout(vulnMetaReq.Context(), 5*time.Second)
+	defer cancel()
+
+	vulnMetaReq = vulnMetaReq.WithContext(ctx)
+
+	vulnMetaRes, err := http.DefaultClient.Do(vulnMetaReq)
+
+	// TODO: Current error exposes full URL with credentials. Need to find a way to obfuscate while still displaying
+	// the error returned.
+	if err != nil {
+		return nil, fmt.Errorf("error while contacting Cisco openVuln API: %v", err)
+	}
+	if vulnMetaRes.StatusCode != http.StatusOK || vulnMetaRes.StatusCode > http.StatusAccepted {
+		return nil, errors.New("vulnerability metadata request rejected by Cisco openVuln API")
+	}
+
+	var v VulnMetadataList
+	if err := json.NewDecoder(vulnMetaRes.Body).Decode(&v); err != nil {
+		return nil, fmt.Errorf("error while serializing into JSON vulnerability body into struct: %v", err)
+	}
+
+	defer vulnMetaRes.Body.Close()
+
+	return (&v).Advisories, nil
+
+}
+
+// GetAllVulnMetaData will fetch the all vulnerabilities metadata from Cisco openVuln API published by Cisco
+// It takes the Cisco Advisory ID as parameter and returns VulnMetadata struct or error
+func GetAllVulnMetaData() (*[]VulnMetadata, error) {
+
+	url := baseAllVulnURL
+
+	token, err := getOpenVulnToken()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Bearer token from Cisco openVulnAPI: %v", err)
+	}
+
+	vulnMetaReq, err := http.NewRequest("GET", url, nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("cannot fetch vulnerability metadata: %v", err)
+	}
+
+	vulnMetaReq.Header.Add("Content-Type", "application/json")
+	vulnMetaReq.Header.Add("Authorization", "Bearer "+token)
+
+	ctx, cancel := context.WithTimeout(vulnMetaReq.Context(), 10*time.Minute)
 	defer cancel()
 
 	vulnMetaReq = vulnMetaReq.WithContext(ctx)

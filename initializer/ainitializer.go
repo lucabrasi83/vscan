@@ -4,17 +4,18 @@ package initializer
 
 import (
 	"fmt"
-	"github.com/lucabrasi83/vulscano/logging"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/disk"
-	"github.com/shirou/gopsutil/host"
-	"github.com/shirou/gopsutil/mem"
 	"io"
 	"log"
 	"math"
 	"os"
 	"runtime"
 	"strconv"
+
+	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/mem"
 )
 
 var (
@@ -45,7 +46,10 @@ func printBanner() {
 		logging.VulscanoLog("error", "Not able to load banner: ", err.Error())
 	}
 	defer banner.Close()
-	io.Copy(os.Stdout, banner)
+	_, err = io.Copy(os.Stdout, banner)
+	if err != nil {
+		logging.VulscanoLog("error", "Not able to load banner: ", err.Error())
+	}
 	fmt.Printf("\n\n")
 }
 

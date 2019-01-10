@@ -4,9 +4,9 @@
 package datadiros
 
 import (
-	_ "github.com/lucabrasi83/vulscano/initializer"
-	"github.com/lucabrasi83/vulscano/logging"
 	"os"
+
+	"github.com/lucabrasi83/vulscano/logging"
 )
 
 func init() {

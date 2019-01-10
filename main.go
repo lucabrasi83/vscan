@@ -1,17 +1,22 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/lucabrasi83/vulscano/api/routes"
-	"github.com/lucabrasi83/vulscano/datadiros"
-	"github.com/lucabrasi83/vulscano/logging"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+
+	"github.com/gin-gonic/gin"
+	"github.com/lucabrasi83/vulscano/api/routes"
+	"github.com/lucabrasi83/vulscano/datadiros"
+	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/lucabrasi83/vulscano/postgresdb"
 )
 
 func main() {
+
+	// Release Postgres Connection Pool
+	defer postgresdb.ConnPool.Close()
 
 	// Set Gin Logging to file and StdOut.
 	ginLogFile, err := os.OpenFile(
@@ -36,6 +41,14 @@ func main() {
 	// Load HTTP Routes from api/routes package
 	// Handlers are subsequently registered from api/handlers package
 	routes.LoadRoutes(r)
+
+	// At this stage, we know all init() functions did not return any error
+	// and we were able to load Gin settings.
+	logging.VulscanoLog(
+		"info",
+		"All pre-checks passed. Vulscano is now READY to start!")
+
+	// Start Web API service
 	if err := r.RunTLS(
 		":8443",
 		filepath.FromSlash(datadiros.GetDataDir()+"/certs/vulscano.pem"),

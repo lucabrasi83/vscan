@@ -2,12 +2,15 @@
 version: "3.2"
 
 services:
+    # Vulscano API Core
     vulscano-core:
        image: tatacomm/vulscano:latest
        restart: always
        stdin_open: true
        tty: true
        hostname: vulscano-core
+       depends_on:
+            - vulscano-db
        environment:
             - VULSCANO_OPENVULN_CLIENT_ID=${VULSCANO_OPENVULN_CLIENT_ID}
             - VULSCANO_OPENVULN_CLIENT_SECRET=${VULSCANO_OPENVULN_CLIENT_SECRET}
@@ -25,10 +28,28 @@ services:
             - "${VULSCANO_HTTPS_PORT}:8443"
        networks:
             - vulscano-net
+
+    # Vulscano Postgres DB
+    vulscano-db:
+       image: postgres:11-alpine
+       restart: always
+       hostname: vulscano-db
+       environment:
+            - POSTGRES_DB=vulscanodb
+            - POSTGRES_USER=${VULSCANODB_USERNAME}
+            - POSTGRES_PASSWORD=${VULSCANODB_PASSWORD}
+       ports:
+            - "5432:5432"
+       networks:
+            - vulscano-net
+       volumes:
+            - postgresdbvol:/var/lib/postgres/data
 networks:
    vulscano-net:
        driver: bridge
 volumes:
   vulscanovol:
+       external: true
+  postgresdbvol:
        external: true
 ...
