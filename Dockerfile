@@ -11,6 +11,7 @@ go build -a -ldflags="-X github.com/lucabrasi83/vulscano/initializer.Commit=$(gi
 -X github.com/lucabrasi83/vulscano/initializer.BuiltOn=$(hostname)" -o vulscano
 
 FROM scratch
+LABEL maintainer="sebastien.pouplin@tatacommunications.com"
 ENV VULSCANO_MODE PROD
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY ./certs /opt/vulscano/data/certs

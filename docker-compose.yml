@@ -21,6 +21,10 @@ services:
             - DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME}
             - DOCKER_HUB_PASSWORD=${DOCKER_HUB_PASSWORD}
             - DOCKER_HUB_EMAIL=${DOCKER_HUB_EMAIL}
+            - VULSCANO_DB_USERNAME=${VULSCANO_DB_USERNAME}
+            - VULSCANO_DB_PASSWORD=${VULSCANO_DB_PASSWORD}
+            - ANUTA_NCX_HOST=${ANUTA_NCX_HOST}
+            - ANUTA_NCX_BASE64_AUTH=${ANUTA_NCX_BASE64_AUTH}
        volumes:
             - /var/run/docker.sock:/var/run/docker.sock
             - vulscanovol:/opt/vulscano/data
@@ -31,25 +35,51 @@ services:
 
     # Vulscano Postgres DB
     vulscano-db:
-       image: postgres:11-alpine
+       image: tatacomm/vulscanodb:beta
        restart: always
        hostname: vulscano-db
+       stdin_open: true
+       tty: true
        environment:
             - POSTGRES_DB=vulscanodb
-            - POSTGRES_USER=${VULSCANODB_USERNAME}
-            - POSTGRES_PASSWORD=${VULSCANODB_PASSWORD}
+            - POSTGRES_USER=${VULSCANO_DB_USERNAME}
+            - POSTGRES_PASSWORD=${VULSCANO_DB_PASSWORD}
+            - PGDATA=/var/lib/postgresql/data/vulscanodata
        ports:
             - "5432:5432"
        networks:
             - vulscano-net
        volumes:
-            - postgresdbvol:/var/lib/postgres/data
+            - postgres_db_data_vol:/var/lib/postgresql/data/vulscanodata
+            - postgres_db_conf_vol:/etc/postgresql/conf
+           
+     # Vulscano PgAdmin
+    vulscano-db-admin:
+       image: dpage/pgadmin4
+       restart: always
+       hostname: vulscano-db-admin
+       depends_on:
+            - vulscano-db
+       environment:
+            - PGADMIN_DEFAULT_EMAIL=root@vulscano.com
+            - PGADMIN_DEFAULT_PASSWORD=vulscano
+            - PGADMIN_ENABLE_TLS=True
+       ports:
+            - "9443:443"
+       networks:
+            - vulscano-net
+       volumes:
+            - "${VULSCANO_BASE_PATH}/pgadmin/vulscano-dbadmin.cer:/certs/server.cert"
+            - "${VULSCANO_BASE_PATH}/pgadmin/vulscano-dbadmin.key:/certs/server.key"
+
 networks:
    vulscano-net:
        driver: bridge
 volumes:
   vulscanovol:
        external: true
-  postgresdbvol:
+  postgres_db_data_vol:
+       external: true
+  postgres_db_conf_vol:
        external: true
 ...

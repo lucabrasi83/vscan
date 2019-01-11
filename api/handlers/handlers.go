@@ -129,7 +129,8 @@ func LaunchAnutaInventoryScan(c *gin.Context) {
 	}
 
 	// Control to verify user Enterprise ID corresponds to Device trigram
-	if entID, ok := jwtMapClaim["enterprise"].(string); ok && entID == string(invDevice.DeviceID[:3]) {
+	if entID, ok := jwtMapClaim["enterprise"].(string); ok && (entID == string(invDevice.
+		DeviceID[:3]) || isUserVulscanoRoot(jwtMapClaim)) {
 
 		jwtClaim := JwtClaim{
 			Enterprise: jwtMapClaim["enterprise"].(string),
@@ -155,4 +156,11 @@ func LaunchAnutaInventoryScan(c *gin.Context) {
 	c.JSON(http.StatusUnauthorized,
 		gin.H{"error": "You're not allowed to run a Vulnerability Assessment on this device."})
 
+}
+
+func isUserVulscanoRoot(jwtMapClaim map[string]interface{}) bool {
+	if role, ok := jwtMapClaim["role"].(string); ok && role == "vulscanoroot" {
+		return true
+	}
+	return false
 }
