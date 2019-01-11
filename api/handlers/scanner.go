@@ -37,6 +37,7 @@ type ScanResults struct {
 	ScanJobEndTime              time.Time                   `json:"scanJobEndTime"`
 	ScanDeviceMeanTime          string                      `json:"scanJobDeviceMeanTime"`
 	TotalVulnerabilitiesFound   int                         `json:"totalVulnerabilitiesFound"`
+	TotalVulnerabilitiesScanned int                         `json:"totalVulnerabilitiesScanned"`
 	VulnerabilitiesFoundDetails *[]openvulnapi.VulnMetadata `json:"vulnerabilitiesFoundDetails"`
 }
 
@@ -436,6 +437,9 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				// vulnCount determines the number of vulnerabilities found in the report
 				var vulnCount int
 
+				// vulnTotal determines the number of total vulnerabilities scanned
+				vulnTotal := len(scanReport.RuleResults)
+
 				// duplicateSAMap tracks duplicates SA found in Joval Scan Report
 				duplicateSAMap := map[string]bool{}
 
@@ -451,6 +455,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				// Count number of found vulnerabilities in report to determine Wait Group length
 				// Update duplicateSAMap to find duplicated Cisco SA in Joval Report
 				for _, ruleResult := range scanReport.RuleResults {
+
 					if ruleResult.RuleResult == "fail" && !duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
 						duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
 						vulnCount++
@@ -491,6 +496,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				// Start mapping Report File into ScanResults struct
 				(*res).VulnerabilitiesFoundDetails = &vulnMetaSlice
 				(*res).TotalVulnerabilitiesFound = vulnCount
+				(*res).TotalVulnerabilitiesScanned = vulnTotal
 
 			}
 
@@ -615,20 +621,19 @@ func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults, j *JwtClaim) erro
 	}
 
 	errDB := postgresdb.DBInstance.PersistDeviceVAJobReport(
-		(*d).DeviceName,     // Column device_id
-		(*d).MgmtIPAddress,  // Column mgmt_ip_address
-		(*r).ScanJobEndTime, // Column last_successful_scan
-		vulnFound,           // Column vulnerabilities_found
-		(*j).Enterprise,     // Column enterprise_id
-		deviceScanMeanTime,  // Column scan_mean_time
-		(*d).OSType,         // Column os_type
-		(*d).OSVersion,      // Column os_version,
-		(*d).CiscoModel,     // Column device_model
+		(*d).DeviceName,                  // Column device_id
+		(*d).MgmtIPAddress,               // Column mgmt_ip_address
+		(*r).ScanJobEndTime,              // Column last_successful_scan
+		vulnFound,                        // Column vulnerabilities_found
+		(*r).TotalVulnerabilitiesScanned, // Column total_vulnerabilities_scanned
+		(*j).Enterprise,                  // Column enterprise_id
+		deviceScanMeanTime,               // Column scan_mean_time
+		(*d).OSType,                      // Column os_type
+		(*d).OSVersion,                   // Column os_version,
+		(*d).CiscoModel,                  // Column device_model
 	)
 
 	if errDB != nil {
-		logging.VulscanoLog("error",
-			"Failed to insert Device VA Results in DB: ", errDB.Error())
 		return errDB
 	}
 	return nil

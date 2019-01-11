@@ -2,7 +2,6 @@ package main
 
 import (
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -54,7 +53,7 @@ func main() {
 		filepath.FromSlash(datadiros.GetDataDir()+"/certs/vulscano.pem"),
 		filepath.FromSlash(datadiros.GetDataDir()+"/certs/vulscano.key")); err != nil {
 
-		log.Fatalln("Error when starting application:", err)
+		logging.VulscanoLog("fatal", "Error when starting application:", err)
 	}
 	// TODO: Use Let's Encrypt issued certificate and auto-renewal
 	//log.Fatal(autotls.Run(r, "vulscano.asdlab.net"))

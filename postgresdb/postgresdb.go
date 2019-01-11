@@ -36,10 +36,10 @@ type VulscanoDBUser struct {
 func init() {
 
 	// Check Environment Variables for Postgres DB Credentials
-	if os.Getenv("VULSCANODB_USERNAME") == "" || os.Getenv("VULSCANODB_PASSWORD") == "" {
+	if os.Getenv("VULSCANO_DB_USERNAME") == "" || os.Getenv("VULSCANO_DB_PASSWORD") == "" {
 		logging.VulscanoLog("fatal",
 			"Missing Environment Variable(s) for PostgresDB Connection not set ",
-			"(VULSCANODB_USERNAME / VULSCANODB_PASSWORD)")
+			"(VULSCANO_DB_USERNAME / VULSCANO_DB_PASSWORD)")
 	}
 
 	var err error
@@ -50,8 +50,8 @@ func init() {
 			TLSConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
-			User:     os.Getenv("VULSCANODB_USERNAME"), // To be moved to Environment Variable
-			Password: os.Getenv("VULSCANODB_PASSWORD"), // To be moved to Environment Variable
+			User:     os.Getenv("VULSCANO_DB_USERNAME"), // To be moved to Environment Variable
+			Password: os.Getenv("VULSCANO_DB_PASSWORD"), // To be moved to Environment Variable
 			Database: "vulscanodb",
 		},
 		MaxConnections: 20,
@@ -344,14 +344,16 @@ func (p *vulscanoDB) PersistDeviceVAJobReport(args ...interface{}) error {
 
 	// SQL Query to insert VA Scan Result per device
 	const sqlQueryDeviceReport = `INSERT INTO device_va_results
-  								  (device_id, mgmt_ip_address, last_successful_scan, vulnerabilities_found,
+  								  (device_id, mgmt_ip_address, last_successful_scan, 
+                                  vulnerabilities_found, total_vulnerabilities_scanned,
 							      enterprise_id, scan_mean_time, os_type, os_version, device_model)
-								  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+								  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 								  ON CONFLICT (device_id)
 								  DO UPDATE SET
 								  mgmt_ip_address = EXCLUDED.mgmt_ip_address,
 								  last_successful_scan = EXCLUDED.last_successful_scan,
 								  vulnerabilities_found = EXCLUDED.vulnerabilities_found,
+							      total_vulnerabilities_scanned = EXCLUDED.total_vulnerabilities_scanned,
 								  enterprise_id = EXCLUDED.enterprise_id,
 								  scan_mean_time = EXCLUDED.scan_mean_time,
 							      os_type = EXCLUDED.os_type,
