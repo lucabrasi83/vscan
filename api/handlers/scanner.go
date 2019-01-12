@@ -560,7 +560,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 			return nil, nil, err
 		}
 
-		err = deviceVAReportDB(&anutaScannedDev, scanRes, j)
+		err = deviceVAReportDB(&anutaScannedDev, scanRes)
 
 		if err != nil {
 			logging.VulscanoLog("error",
@@ -578,7 +578,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 			return nil, nil, err
 		}
 
-		err = deviceVAReportDB(&anutaScannedDev, scanRes, j)
+		err = deviceVAReportDB(&anutaScannedDev, scanRes)
 
 		if err != nil {
 			logging.VulscanoLog("error",
@@ -605,7 +605,7 @@ func scanJobReportDB(j string, st time.Time, et time.Time, dn []string, di []net
 }
 
 // deviceVAReportDB handles DB interaction to persist VA Results when scanned is requested from an inventory source
-func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults, j *JwtClaim) error {
+func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults) error {
 
 	var vulnFound []string
 
@@ -629,7 +629,7 @@ func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults, j *JwtClaim) erro
 		(*r).ScanJobEndTime,              // Column last_successful_scan
 		vulnFound,                        // Column vulnerabilities_found
 		(*r).TotalVulnerabilitiesScanned, // Column total_vulnerabilities_scanned
-		(*j).Enterprise,                  // Column enterprise_id
+		(*d).EnterpriseID,                // Column enterprise_id
 		deviceScanMeanTime,               // Column scan_mean_time
 		(*d).OSType,                      // Column os_type
 		(*d).OSVersion,                   // Column os_version,
