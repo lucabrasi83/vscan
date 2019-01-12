@@ -76,9 +76,6 @@ func GetAnutaDevice(dev string) (*AnutaAPIDeviceDetails, error) {
 
 	anutaDeviceReq = anutaDeviceReq.WithContext(ctx)
 
-	fmt.Println(anutaHTTPClient)
-	fmt.Println(*anutaDeviceReq)
-
 	anutaDeviceRes, err := anutaHTTPClient.Do(anutaDeviceReq)
 
 	if err != nil {

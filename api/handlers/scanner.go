@@ -298,6 +298,9 @@ func (d *CiscoIOSDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, 
 	// Set the Scan Job ID in ScanResults struct
 	sr.ScanJobID = jobID
 
+	// Set the Scan Job Start Time
+	sr.ScanJobStartTime = reportScanJobStartTime
+
 	var devList []map[string]string
 
 	device := map[string]string{
