@@ -2,6 +2,7 @@ package inventoryanuta
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -31,7 +32,7 @@ type AnutaAPIDeviceParent struct {
 // TODO: Replace with Environment Variables
 const (
 	anutaDeviceFilters = "?fields=id;mgmt-ip-address;status;os-version;" +
-		"				  iosxeversion:iosxe-version/version;ostype-string;device-type"
+		"iosxeversion:iosxe-version/version;ostype-string;device-type"
 )
 
 var (
@@ -51,6 +52,16 @@ func GetAnutaDevice(dev string) (*AnutaAPIDeviceDetails, error) {
 		anutaDeviceFilters,
 	}, "")
 
+	// Disable HTTP/2 to connect to Anuta NCX API
+	tr := &http.Transport{
+		TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	anutaHTTPClient := http.Client{Transport: tr}
+
+	// Construct HTTP Request parameters
 	anutaDeviceReq, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
@@ -65,13 +76,19 @@ func GetAnutaDevice(dev string) (*AnutaAPIDeviceDetails, error) {
 
 	anutaDeviceReq = anutaDeviceReq.WithContext(ctx)
 
-	anutaDeviceRes, err := http.DefaultClient.Do(anutaDeviceReq)
+	fmt.Println(anutaHTTPClient)
+	fmt.Println(*anutaDeviceReq)
+
+	anutaDeviceRes, err := anutaHTTPClient.Do(anutaDeviceReq)
 
 	if err != nil {
 		return nil, fmt.Errorf("error while contacting Anuta NCX API: %v", err)
 	}
 	if anutaDeviceRes.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("device %v not found in Anuta NCX Inventory", dev)
+		return nil, fmt.Errorf(
+			"cannot get device %v details from Anuta NCX API. HTTP Error Code %v",
+			dev,
+			anutaDeviceRes.Status)
 	}
 
 	var v AnutaAPIDeviceParent
