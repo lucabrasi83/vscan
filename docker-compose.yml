@@ -40,6 +40,7 @@ services:
        hostname: vulscano-db
        stdin_open: true
        tty: true
+       privileged: true
        environment:
             - POSTGRES_DB=vulscanodb
             - POSTGRES_USER=${VULSCANO_DB_USERNAME}
@@ -58,8 +59,6 @@ services:
        image: dpage/pgadmin4
        restart: always
        hostname: vulscano-db-admin
-       depends_on:
-            - vulscano-db
        environment:
             - PGADMIN_DEFAULT_EMAIL=root@vulscano.com
             - PGADMIN_DEFAULT_PASSWORD=vulscano
