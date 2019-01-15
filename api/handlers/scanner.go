@@ -541,7 +541,11 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 	// Look for real IOS-XE Version from Anuta. This will help to query recommended IOSXE Versions
 	// for vulnerability remediation
 	if (*anutaDev).OSType == "IOSXE" && (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer != "" {
-		anutaScannedDev.OSVersion = (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer
+
+		// Put original IOSd version if noSuchInstance reported from CPE during Anuta SNMP collection
+		if (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer != "noSuchInstance" {
+			anutaScannedDev.OSVersion = (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer
+		}
 		anutaScannedDev.OSType = "IOS-XE"
 	}
 
