@@ -26,6 +26,7 @@ func LoadRoutes(routes *gin.Engine) {
 		apiV1.POST("/update-all-cisco-sa", authWare(), handlers.UpdateCiscoOpenVulnSAAll)
 		apiV1.POST("/anuta-inventory-device-scan", authWare(), handlers.LaunchAnutaInventoryScan)
 		apiV1.POST("/login", jwtMiddleware.LoginHandler)
+		apiV1.GET("/ping", handlers.Ping)
 	}
 
 }

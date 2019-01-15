@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"github.com/lucabrasi83/vulscano/initializer"
 	"net/http"
+	"runtime"
 
 	"github.com/appleboy/gin-jwt"
 
@@ -163,4 +165,13 @@ func isUserVulscanoRoot(jwtMapClaim map[string]interface{}) bool {
 		return true
 	}
 	return false
+}
+
+// PingVulscano is a health check status handler of the Vulscano API
+func Ping(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"pong":          "I'm alive!",
+		"version":       initializer.Version,
+		"golangRuntime": runtime.Version(),
+	})
 }

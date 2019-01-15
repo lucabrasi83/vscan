@@ -9,8 +9,7 @@ import (
 func TestGenHash(t *testing.T) {
 	hash, err := GenHash()
 	if err != nil {
-		assert.True(t, hash == "")
-		assert.Error(t, err, "not able to generate hash")
+		assert.Error(t, err, "Not able to generate Hash")
 
 	}
 	assert.Nil(t, err)
