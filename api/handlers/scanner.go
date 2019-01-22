@@ -21,14 +21,13 @@ import (
 	"github.com/lucabrasi83/vulscano/openvulnapi"
 )
 
+// scannedDevices slice stores devices currently undergoing a Vulnerability Assessment
+// in order to avoid repeated VA request for the same device
 var scannedDevices []string
 
-type CiscoIOSXEDevice struct {
-	jovalURL string
-}
-
-type CiscoIOSDevice struct {
-	jovalURL string
+type CiscoScanDevice struct {
+	jovalURL    string
+	openVulnURL string
 }
 
 type ScanResults struct {
@@ -58,34 +57,64 @@ type ScanReportFileResultIdentifier struct {
 	ResultCiscoSA string `json:"identifier"`
 }
 
-// TODO: Create Scanner interface type to better abstract multi-vendor VA Scans
-type Scanner interface {
-	Scan()
+// DeviceScanner interface provides abstraction for multi-vendor scan.
+// Implementation is for single device scan request
+type DeviceScanner interface {
+	Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error)
 }
 
-func newCiscoIOSXEDevice() *CiscoIOSXEDevice {
-	d := CiscoIOSXEDevice{
-		jovalURL: "http://download.jovalcm.com/content/cisco.iosxe.cve.oval.xml",
+//func newCiscoIOSXEDevice() *CiscoIOSXEDevice {
+//	d := CiscoIOSXEDevice{
+//		jovalURL:    "http://download.jovalcm.com/content/cisco.iosxe.cve.oval.xml",
+//		openVulnURL: "https://api.cisco.com/security/advisories/iosxe.json?version=",
+//	}
+//	return &d
+//}
+//func newCiscoIOSDevice() *CiscoIOSDevice {
+//	d := CiscoIOSDevice{
+//		jovalURL:    "http://download.jovalcm.com/content/cisco.ios.cve.oval.xml",
+//		openVulnURL: "https://api.cisco.com/security/advisories/ios.json?version=",
+//	}
+//	return &d
+//}
+
+// NewCiscoScanDevice will instantiate a new Scan device instance struct based on the OS type
+func NewCiscoScanDevice(os string) *CiscoScanDevice {
+	switch os {
+	case "IOS":
+		return &CiscoScanDevice{
+			jovalURL:    "http://download.jovalcm.com/content/cisco.ios.cve.oval.xml",
+			openVulnURL: "https://api.cisco.com/security/advisories/ios.json?version=",
+		}
+	case "IOS-XE":
+		return &CiscoScanDevice{
+			jovalURL:    "http://download.jovalcm.com/content/cisco.iosxe.cve.oval.xml",
+			openVulnURL: "https://api.cisco.com/security/advisories/iosxe.json?version=",
+		}
 	}
-	return &d
-}
-func newCiscoIOSDevice() *CiscoIOSDevice {
-	d := CiscoIOSDevice{
-		jovalURL: "http://download.jovalcm.com/content/cisco.ios.cve.oval.xml",
-	}
-	return &d
+	return nil
 }
 
-// Scan method will launch a specific adhoc device scan for Cisco IOS-XE Device
+// LaunchAbstractVendorScan will launch vendor agnostic scan. abs type must satisfy DeviceScanner interface
+func LaunchAbstractVendorScan(abs DeviceScanner, dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error) {
+	scanRes, err := abs.Scan(dev, j)
+	if err != nil {
+		return nil, err
+	}
+	return scanRes, nil
+}
+
+// Scan method will launch a vulnerability scan for a single Cisco Device
 // This is one of the most important of Vulscano as it is responsible to launch a scan job on the Docker daemon and
 // provide results for vulnerabilities found
 // It takes an AdHocScanDevice struct as parameter and return the Scan Results or an error
-func (d *CiscoIOSXEDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error) {
+func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error) {
 
 	// Set Initial Job Start/End time type
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	var reportScanJobEndTime time.Time
+	var scanJobStatus string
 
 	// We Generate a Scan Job ID from HashGen library
 	jobID, errHash := hashgen.GenHash()
@@ -100,6 +129,23 @@ func (d *CiscoIOSXEDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults
 	// Mutex for scannedDevices slice to prevent race condition
 	var muScannedDevice sync.Mutex
 
+	defer func() {
+		errJobInsertDB := scanJobReportDB(
+			jobID,
+			reportScanJobStartTime,
+			reportScanJobEndTime,
+			[]string{dev.Hostname},
+			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+			scanJobStatus,
+			j)
+
+		if errJobInsertDB != nil {
+			logging.VulscanoLog(
+				"error",
+				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+		}
+	}()
+
 	// Check if ongoing VA for requested device. This is to avoid repeated VA for the same device
 	if deviceBeingScanned := isDeviceBeingScanned(dev.IPAddress); !deviceBeingScanned {
 
@@ -110,24 +156,16 @@ func (d *CiscoIOSXEDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		errJobInsertDB := scanJobReportDB(
-			jobID,
-			reportScanJobStartTime,
-			reportScanJobEndTime,
-			[]string{dev.Hostname},
-			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-			"FAILED",
-			j)
-
-		if errJobInsertDB != nil {
-			logging.VulscanoLog(
-				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		}
+		scanJobStatus = "FAILED"
 
 		return nil, fmt.Errorf("there is already an ongoing VA for device %v with IP: %v",
 			dev.Hostname, dev.IPAddress)
 	}
+
+	// Remove device from ongoing scan slice in defer function
+	defer func() {
+		removeDevicefromScannedDeviceSlice(dev.IPAddress)
+	}()
 
 	var sr ScanResults
 
@@ -147,264 +185,479 @@ func (d *CiscoIOSXEDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults
 
 	if errIniBuilder := BuildIni(jobID, devList, d.jovalURL); errIniBuilder != nil {
 
-		removeDevicefromScannedDeviceSlice(dev.IPAddress)
-
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		errJobInsertDB := scanJobReportDB(
-			jobID,
-			reportScanJobStartTime,
-			reportScanJobEndTime,
-			[]string{dev.Hostname},
-			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-			"FAILED",
-			j)
+		scanJobStatus = "FAILED"
 
-		if errJobInsertDB != nil {
-			logging.VulscanoLog(
-				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		}
 		return nil, errIniBuilder
 	}
+
 	err := LaunchJovalDocker(&sr, jobID)
 
 	if err != nil {
-		removeDevicefromScannedDeviceSlice(dev.IPAddress)
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		errJobInsertDB := scanJobReportDB(
-			jobID,
-			reportScanJobStartTime,
-			reportScanJobEndTime,
-			[]string{dev.Hostname},
-			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-			"FAILED",
-			j)
+		scanJobStatus = "FAILED"
 
-		if errJobInsertDB != nil {
-			logging.VulscanoLog(
-				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		}
 		return nil, err
 	}
 
 	err = parseScanReport(&sr, jobID)
 	if err != nil {
 
-		removeDevicefromScannedDeviceSlice(dev.IPAddress)
-
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		errJobInsertDB := scanJobReportDB(
-			jobID,
-			reportScanJobStartTime,
-			reportScanJobEndTime,
-			[]string{dev.Hostname},
-			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-			"FAILED",
-			j)
+		scanJobStatus = "FAILED"
 
-		if errJobInsertDB != nil {
-			logging.VulscanoLog(
-				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		}
 		return nil, err
 	}
 
-	removeDevicefromScannedDeviceSlice(dev.IPAddress)
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Fetch Vulnerabilities fixed versions in separate Goroutine
+	go func() {
+		defer wg.Done()
+
+		vulnFixed, err := openvulnapi.GetVulnFixedVersions(
+			d.openVulnURL,
+			dev.OSVersion,
+		)
+
+		if err != nil {
+			logging.VulscanoLog(
+				"error",
+				"Failed to fetch vulnerability fixed versions from openVulnAPI for Version: ",
+				dev.OSVersion,
+				" Error: ",
+				err.Error(),
+			)
+			return
+		}
+
+		for _, vFixed := range *vulnFixed {
+			for idx, vFound := range *sr.VulnerabilitiesFoundDetails {
+				if vFixed.AdvisoryID == vFound.AdvisoryID {
+					(*sr.VulnerabilitiesFoundDetails)[idx].FixedVersions = vFixed.FixedVersions
+				}
+			}
+		}
+
+	}()
 
 	// Set Scan Job End Time
 	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	sr.ScanJobEndTime = reportScanJobEndTime
 
-	errJobInsertDB := scanJobReportDB(
-		jobID,
-		reportScanJobStartTime,
-		reportScanJobEndTime,
-		[]string{dev.Hostname},
-		[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-		"SUCCESS",
-		j)
+	scanJobStatus = "SUCCESS"
 
-	if errJobInsertDB != nil {
-		logging.VulscanoLog(
-			"error",
-			"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		return nil, errJobInsertDB
-	}
+	wg.Wait()
 
 	return &sr, nil
 }
 
-// Scan method will launch a specific adhoc device scan for Cisco IOS Device
+// Scan method will launch a vulnerability scan for a single Cisco IOS-XE Device
 // This is one of the most important of Vulscano as it is responsible to launch a scan job on the Docker daemon and
 // provide results for vulnerabilities found
 // It takes an AdHocScanDevice struct as parameter and return the Scan Results or an error
-func (d *CiscoIOSDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error) {
+//func (d *CiscoIOSXEDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error) {
+//
+//	// Set Initial Job Start/End time type
+//	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//	var reportScanJobEndTime time.Time
+//
+//	// We Generate a Scan Job ID from HashGen library
+//	jobID, errHash := hashgen.GenHash()
+//	if errHash != nil {
+//		logging.VulscanoLog(
+//			"error",
+//			"Error when generating hash: ", errHash.Error())
+//
+//		return nil, errHash
+//	}
+//
+//	// Mutex for scannedDevices slice to prevent race condition
+//	var muScannedDevice sync.Mutex
+//
+//	// Check if ongoing VA for requested device. This is to avoid repeated VA for the same device
+//	if deviceBeingScanned := isDeviceBeingScanned(dev.IPAddress); !deviceBeingScanned {
+//
+//		muScannedDevice.Lock()
+//		scannedDevices = append(scannedDevices, dev.IPAddress)
+//		muScannedDevice.Unlock()
+//	} else {
+//
+//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//		errJobInsertDB := scanJobReportDB(
+//			jobID,
+//			reportScanJobStartTime,
+//			reportScanJobEndTime,
+//			[]string{dev.Hostname},
+//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//			"FAILED",
+//			j)
+//
+//		if errJobInsertDB != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		}
+//
+//		return nil, fmt.Errorf("there is already an ongoing VA for device %v with IP: %v",
+//			dev.Hostname, dev.IPAddress)
+//	}
+//
+//	// Remove device from ongoing scan slice in defer function
+//	defer func() {
+//		removeDevicefromScannedDeviceSlice(dev.IPAddress)
+//	}()
+//
+//	var sr ScanResults
+//
+//	// Set the Scan Job ID in ScanResults struct
+//	sr.ScanJobID = jobID
+//
+//	// Set the Scan Job Start Time
+//	sr.ScanJobStartTime = reportScanJobStartTime
+//
+//	var devList []map[string]string
+//
+//	device := map[string]string{
+//		"hostname": dev.Hostname,
+//		"ip":       dev.IPAddress,
+//	}
+//	devList = append(devList, device)
+//
+//	if errIniBuilder := BuildIni(jobID, devList, d.jovalURL); errIniBuilder != nil {
+//
+//		//removeDevicefromScannedDeviceSlice(dev.IPAddress)
+//
+//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//		errJobInsertDB := scanJobReportDB(
+//			jobID,
+//			reportScanJobStartTime,
+//			reportScanJobEndTime,
+//			[]string{dev.Hostname},
+//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//			"FAILED",
+//			j)
+//
+//		if errJobInsertDB != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		}
+//		return nil, errIniBuilder
+//	}
+//	err := LaunchJovalDocker(&sr, jobID)
+//
+//	if err != nil {
+//		//removeDevicefromScannedDeviceSlice(dev.IPAddress)
+//
+//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//		errJobInsertDB := scanJobReportDB(
+//			jobID,
+//			reportScanJobStartTime,
+//			reportScanJobEndTime,
+//			[]string{dev.Hostname},
+//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//			"FAILED",
+//			j)
+//
+//		if errJobInsertDB != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		}
+//		return nil, err
+//	}
+//
+//	err = parseScanReport(&sr, jobID)
+//	if err != nil {
+//
+//		//removeDevicefromScannedDeviceSlice(dev.IPAddress)
+//
+//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//		errJobInsertDB := scanJobReportDB(
+//			jobID,
+//			reportScanJobStartTime,
+//			reportScanJobEndTime,
+//			[]string{dev.Hostname},
+//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//			"FAILED",
+//			j)
+//
+//		if errJobInsertDB != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		}
+//		return nil, err
+//	}
+//
+//	var wg sync.WaitGroup
+//	wg.Add(1)
+//
+//	// Fetch Vulnerabilities fixed versions in separate Goroutine
+//	go func() {
+//		defer wg.Done()
+//
+//		vulnFixed, err := openvulnapi.GetVulnFixedVersions(
+//			d.openVulnURL,
+//			dev.OSVersion,
+//		)
+//
+//		if err != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to fetch vulnerability fixed versions from openVulnAPI for Version: ",
+//				dev.OSVersion,
+//				" Error: ",
+//				err.Error(),
+//			)
+//			return
+//		}
+//
+//		for _, vFixed := range *vulnFixed {
+//			for idx, vFound := range *sr.VulnerabilitiesFoundDetails {
+//				if vFixed.AdvisoryID == vFound.AdvisoryID {
+//					(*sr.VulnerabilitiesFoundDetails)[idx].FixedVersions = vFixed.FixedVersions
+//				}
+//			}
+//		}
+//
+//	}()
+//
+//	// Set Scan Job End Time
+//	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//	sr.ScanJobEndTime = reportScanJobEndTime
+//
+//	errJobInsertDB := scanJobReportDB(
+//		jobID,
+//		reportScanJobStartTime,
+//		reportScanJobEndTime,
+//		[]string{dev.Hostname},
+//		[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//		"SUCCESS",
+//		j)
+//
+//	if errJobInsertDB != nil {
+//		logging.VulscanoLog(
+//			"error",
+//			"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		return nil, errJobInsertDB
+//	}
+//
+//	wg.Wait()
+//
+//	return &sr, nil
+//}
 
-	// Set Initial Job Start/End time type
-	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-
-	var reportScanJobEndTime time.Time
-
-	// We Generate a Scan Job ID from HashGen library
-	jobID, errHash := hashgen.GenHash()
-	if errHash != nil {
-		logging.VulscanoLog(
-			"error",
-			"Error when generating hash: ", errHash.Error())
-
-		return nil, errHash
-	}
-
-	// Mutex for scannedDevices slice to prevent race condition
-	var muScannedDevice sync.Mutex
-
-	// Check if ongoing VA for requested device. This is to avoid repeated VA for the same device
-	if deviceBeingScanned := isDeviceBeingScanned(dev.IPAddress); !deviceBeingScanned {
-
-		muScannedDevice.Lock()
-		scannedDevices = append(scannedDevices, dev.IPAddress)
-		muScannedDevice.Unlock()
-	} else {
-
-		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-
-		errJobInsertDB := scanJobReportDB(
-			jobID,
-			reportScanJobStartTime,
-			reportScanJobEndTime,
-			[]string{dev.Hostname},
-			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-			"FAILED",
-			j)
-
-		if errJobInsertDB != nil {
-			logging.VulscanoLog(
-				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		}
-
-		return nil, fmt.Errorf("there is already an ongoing VA for device %v with IP: %v",
-			dev.Hostname, dev.IPAddress)
-	}
-
-	var sr ScanResults
-
-	// Set the Scan Job ID in ScanResults struct
-	sr.ScanJobID = jobID
-
-	// Set the Scan Job Start Time
-	sr.ScanJobStartTime = reportScanJobStartTime
-
-	var devList []map[string]string
-
-	device := map[string]string{
-		"hostname": dev.Hostname,
-		"ip":       dev.IPAddress,
-	}
-
-	// devList is used to build the Joval INI file in case multiple devices to be scanned in same container
-	devList = append(devList, device)
-
-	if errIniBuilder := BuildIni(jobID, devList, d.jovalURL); errIniBuilder != nil {
-
-		removeDevicefromScannedDeviceSlice(dev.IPAddress)
-
-		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-
-		errJobInsertDB := scanJobReportDB(
-			jobID,
-			reportScanJobStartTime,
-			reportScanJobEndTime,
-			[]string{dev.Hostname},
-			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-			"FAILED",
-			j)
-
-		if errJobInsertDB != nil {
-			logging.VulscanoLog(
-				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		}
-		return nil, errIniBuilder
-	}
-	err := LaunchJovalDocker(&sr, jobID)
-
-	if err != nil {
-
-		removeDevicefromScannedDeviceSlice(dev.IPAddress)
-
-		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-
-		errJobInsertDB := scanJobReportDB(
-			jobID,
-			reportScanJobStartTime,
-			reportScanJobEndTime,
-			[]string{dev.Hostname},
-			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-			"FAILED",
-			j)
-
-		if errJobInsertDB != nil {
-			logging.VulscanoLog(
-				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		}
-
-		return nil, err
-	}
-
-	err = parseScanReport(&sr, jobID)
-	if err != nil {
-		removeDevicefromScannedDeviceSlice(dev.IPAddress)
-
-		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-
-		errJobInsertDB := scanJobReportDB(
-			jobID,
-			reportScanJobStartTime,
-			reportScanJobEndTime,
-			[]string{dev.Hostname},
-			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-			"FAILED",
-			j)
-
-		if errJobInsertDB != nil {
-			logging.VulscanoLog(
-				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		}
-		return nil, err
-	}
-	removeDevicefromScannedDeviceSlice(dev.IPAddress)
-
-	// Set Scan Job End Time
-	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	sr.ScanJobEndTime = reportScanJobEndTime
-
-	errJobInsertDB := scanJobReportDB(
-		jobID,
-		reportScanJobStartTime,
-		reportScanJobEndTime,
-		[]string{dev.Hostname},
-		[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-		"SUCCESS",
-		j)
-
-	if errJobInsertDB != nil {
-		logging.VulscanoLog(
-			"error",
-			"Failed to insert Scan Job report in DB for Job ID: ", jobID, errJobInsertDB.Error())
-		return nil, errJobInsertDB
-	}
-
-	return &sr, nil
-}
+// Scan method will launch a vulnerability scan for a single Cisco IOS Device
+// This is one of the most important of Vulscano as it is responsible to launch a scan job on the Docker daemon and
+// provide results for vulnerabilities found
+// It takes an AdHocScanDevice struct as parameter and return the Scan Results or an error
+//func (d *CiscoIOSDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error) {
+//
+//	// Set Initial Job Start/End time type
+//	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//	var reportScanJobEndTime time.Time
+//
+//	// We Generate a Scan Job ID from HashGen library
+//	jobID, errHash := hashgen.GenHash()
+//	if errHash != nil {
+//		logging.VulscanoLog(
+//			"error",
+//			"Error when generating hash: ", errHash.Error())
+//
+//		return nil, errHash
+//	}
+//
+//	// Mutex for scannedDevices slice to prevent race condition
+//	var muScannedDevice sync.Mutex
+//
+//	// Check if ongoing VA for requested device. This is to avoid repeated VA for the same device
+//	if deviceBeingScanned := isDeviceBeingScanned(dev.IPAddress); !deviceBeingScanned {
+//
+//		muScannedDevice.Lock()
+//		scannedDevices = append(scannedDevices, dev.IPAddress)
+//		muScannedDevice.Unlock()
+//	} else {
+//
+//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//		errJobInsertDB := scanJobReportDB(
+//			jobID,
+//			reportScanJobStartTime,
+//			reportScanJobEndTime,
+//			[]string{dev.Hostname},
+//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//			"FAILED",
+//			j)
+//
+//		if errJobInsertDB != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		}
+//
+//		return nil, fmt.Errorf("there is already an ongoing VA for device %v with IP: %v",
+//			dev.Hostname, dev.IPAddress)
+//	}
+//
+//	// Remove device from ongoing scan slice in defer function
+//	defer func() {
+//		removeDevicefromScannedDeviceSlice(dev.IPAddress)
+//	}()
+//
+//	var sr ScanResults
+//
+//	// Set the Scan Job ID in ScanResults struct
+//	sr.ScanJobID = jobID
+//
+//	// Set the Scan Job Start Time
+//	sr.ScanJobStartTime = reportScanJobStartTime
+//
+//	var devList []map[string]string
+//
+//	device := map[string]string{
+//		"hostname": dev.Hostname,
+//		"ip":       dev.IPAddress,
+//	}
+//
+//	// devList is used to build the Joval INI file in case multiple devices to be scanned in same container
+//	devList = append(devList, device)
+//
+//	if errIniBuilder := BuildIni(jobID, devList, d.jovalURL); errIniBuilder != nil {
+//
+//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//		errJobInsertDB := scanJobReportDB(
+//			jobID,
+//			reportScanJobStartTime,
+//			reportScanJobEndTime,
+//			[]string{dev.Hostname},
+//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//			"FAILED",
+//			j)
+//
+//		if errJobInsertDB != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		}
+//		return nil, errIniBuilder
+//	}
+//	err := LaunchJovalDocker(&sr, jobID)
+//
+//	if err != nil {
+//
+//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//		errJobInsertDB := scanJobReportDB(
+//			jobID,
+//			reportScanJobStartTime,
+//			reportScanJobEndTime,
+//			[]string{dev.Hostname},
+//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//			"FAILED",
+//			j)
+//
+//		if errJobInsertDB != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		}
+//
+//		return nil, err
+//	}
+//
+//	err = parseScanReport(&sr, jobID)
+//	if err != nil {
+//
+//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//
+//		errJobInsertDB := scanJobReportDB(
+//			jobID,
+//			reportScanJobStartTime,
+//			reportScanJobEndTime,
+//			[]string{dev.Hostname},
+//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//			"FAILED",
+//			j)
+//
+//		if errJobInsertDB != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		}
+//		return nil, err
+//	}
+//
+//	var wg sync.WaitGroup
+//	wg.Add(1)
+//
+//	// Fetch Vulnerabilities fixed versions in separate Goroutine
+//	go func() {
+//		defer wg.Done()
+//
+//		vulnFixed, err := openvulnapi.GetVulnFixedVersions(
+//			d.openVulnURL,
+//			dev.OSVersion,
+//		)
+//
+//		if err != nil {
+//			logging.VulscanoLog(
+//				"error",
+//				"Failed to fetch vulnerability fixed versions from openVulnAPI for Version: ",
+//				dev.OSVersion,
+//				" Error: ",
+//				err.Error(),
+//			)
+//			return
+//		}
+//
+//		for _, vFixed := range *vulnFixed {
+//			for idx, vFound := range *sr.VulnerabilitiesFoundDetails {
+//				if vFixed.AdvisoryID == vFound.AdvisoryID {
+//					(*sr.VulnerabilitiesFoundDetails)[idx].FixedVersions = vFixed.FixedVersions
+//				}
+//			}
+//		}
+//
+//	}()
+//
+//	// Set Scan Job End Time
+//	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+//	sr.ScanJobEndTime = reportScanJobEndTime
+//
+//	errJobInsertDB := scanJobReportDB(
+//		jobID,
+//		reportScanJobStartTime,
+//		reportScanJobEndTime,
+//		[]string{dev.Hostname},
+//		[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+//		"SUCCESS",
+//		j)
+//
+//	if errJobInsertDB != nil {
+//		logging.VulscanoLog(
+//			"error",
+//			"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+//		return nil, errJobInsertDB
+//	}
+//
+//	wg.Wait()
+//
+//	return &sr, nil
+//}
 
 // parseScanReport handles parsing reports/JobID folder after a VA scan is done.
 // It will look for .json files and parse the content for each to report found vulnerabilities
@@ -416,6 +669,9 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 
 		err = filepath.Walk(reportDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
+				logging.VulscanoLog("error",
+					"unable to access Joval reports directory: ", path, "error: ", err,
+				)
 				fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
 				return err
 			}
@@ -553,48 +809,39 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 		Hostname:  anutaScannedDev.DeviceName,
 		IPAddress: anutaScannedDev.MgmtIPAddress.String(),
 		OSType:    anutaScannedDev.OSType,
+		OSVersion: anutaScannedDev.OSVersion,
 	}
+
+	// devScanner represents DeviceScanner interface. Depending on the OS Type given, we instantiate
+	// with proper device vendor parameters
+	var devScanner DeviceScanner
 
 	switch ads.OSType {
-	case "IOS-XE":
-		d := newCiscoIOSXEDevice()
-		scanRes, err := d.Scan(&ads, j)
-		if err != nil {
-
-			return nil, nil, err
+	case "IOS-XE", "IOS":
+		devScanner = NewCiscoScanDevice(ads.OSType)
+		if devScanner == nil {
+			return nil, nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", ads.OSType)
 		}
-
-		err = deviceVAReportDB(&anutaScannedDev, scanRes)
-
-		if err != nil {
-			logging.VulscanoLog("error",
-				"Error while inserting Device VA Report into DB: ", err.Error())
-			return nil, nil, err
-		}
-
-		return &anutaScannedDev, scanRes, nil
-
-	case "IOS":
-		d := newCiscoIOSDevice()
-		scanRes, err := d.Scan(&ads, j)
-		if err != nil {
-
-			return nil, nil, err
-		}
-
-		err = deviceVAReportDB(&anutaScannedDev, scanRes)
-
-		if err != nil {
-			logging.VulscanoLog("error",
-				"Error while inserting Device VA Report into DB: ", err.Error())
-			return nil, nil, err
-		}
-
-		return &anutaScannedDev, scanRes, nil
+	default:
+		return nil, nil, fmt.Errorf("OS Type %v not supported for device %v",
+			anutaScannedDev.OSType, anutaScannedDev.DeviceName)
 	}
 
-	return nil, nil, fmt.Errorf("OS Type %v not supported for device %v",
-		anutaScannedDev.OSType, anutaScannedDev.DeviceName)
+	scanRes, err := LaunchAbstractVendorScan(devScanner, &ads, j)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = deviceVAReportDB(&anutaScannedDev, scanRes)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"Error while inserting Device VA Report into DB: ", err.Error())
+		return nil, nil, err
+	}
+
+	return &anutaScannedDev, scanRes, nil
 
 }
 
