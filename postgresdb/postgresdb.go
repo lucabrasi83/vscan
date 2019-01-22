@@ -5,6 +5,8 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/jackc/pgx/pgtype"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -30,6 +32,18 @@ type VulscanoDBUser struct {
 	Email        string
 	Role         string
 	EnterpriseID string
+}
+
+type DeviceVADB struct {
+	DeviceID         string
+	MgmtIPAddress    net.IP
+	LastScan         time.Time
+	EnterpriseID     string
+	ScanMeanTime     int
+	OSType           string
+	OSVersion        string
+	DeviceModel      string
+	TotalVulnScanned int
 }
 
 // init() function will establish DB connection pool while package is being loaded.
@@ -419,6 +433,355 @@ func (p *vulscanoDB) AuthenticateUser(user string, pass string) (*VulscanoDBUser
 		return nil, fmt.Errorf("authentication failed for user %v", user)
 	}
 
+}
+func (p *vulscanoDB) FetchAllUsers() (*[]VulscanoDBUser, error) {
+
+	var vulscanoUsers []VulscanoDBUser
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `SELECT user_id, email, enterprise_id, role FROM vulscano_users`
+
+	defer cancelQuery()
+
+	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"cannot fetch Users from DB: ", err.Error(),
+		)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		user := VulscanoDBUser{}
+		err = rows.Scan(&user.UserID, &user.Email, &user.EnterpriseID, &user.Role)
+
+		if err != nil {
+			logging.VulscanoLog("error",
+				"error while scanning vulscano_users table rows: ", err.Error())
+			return nil, err
+		}
+		vulscanoUsers = append(vulscanoUsers, user)
+	}
+	err = rows.Err()
+	if err != nil {
+		logging.VulscanoLog("error",
+			"error returned while iterating through vulscano_users table: ", err.Error())
+		return nil, err
+	}
+
+	return &vulscanoUsers, nil
+
+}
+
+func (p *vulscanoDB) FetchUser(u string) (*VulscanoDBUser, error) {
+
+	var user VulscanoDBUser
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `SELECT user_id, email, enterprise_id, role
+				      FROM vulscano_users WHERE 
+                      email = $1
+					 `
+
+	defer cancelQuery()
+
+	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, u)
+
+	err := row.Scan(&user.UserID, &user.Email, &user.EnterpriseID, &user.Role)
+
+	switch err {
+	case pgx.ErrNoRows:
+		logging.VulscanoLog("error", "not able to find user requested in DB: ", u)
+		return nil, fmt.Errorf("not able to find user %v requested in DB", u)
+
+	case nil:
+		return &user, nil
+
+	default:
+		logging.VulscanoLog("error", "error while trying to retrieve user from DB: ", err.Error())
+		return nil, err
+	}
+}
+
+func (p *vulscanoDB) InsertNewUser(email string, pass string, ent string, role string) error {
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `INSERT INTO vulscano_users
+					  (email, password, enterprise_id, role)
+					  VALUES ($1, crypt($2, gen_salt('bf',8)), $3, $4)
+					 `
+
+	defer cancelQuery()
+
+	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, email, pass, ent, role)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"failed to insert user: ", email, " ", err.Error())
+
+		if strings.Contains(err.Error(), "23505") {
+			return fmt.Errorf("user with email %v already exists", email)
+		}
+		if strings.Contains(err.Error(), "23503") {
+			return fmt.Errorf("enterprise ID %v does not exist", ent)
+		}
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+
+		logging.VulscanoLog("error",
+			"failed to insert user: ", email)
+		return fmt.Errorf("failed to insert user %v", email)
+	}
+
+	return nil
+}
+func (p *vulscanoDB) DeleteUser(email string) error {
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `DELETE FROM vulscano_users
+					  WHERE email = $1
+					 `
+
+	defer cancelQuery()
+
+	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, email)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"failed to delete user: ", email, " ", err.Error())
+
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+
+		logging.VulscanoLog("error",
+			"failed to delete user: ", email)
+		return fmt.Errorf("failed to delete user %v", email)
+	}
+
+	return nil
+}
+func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent string) error {
+
+	pRole := &role
+	pEnterprise := &ent
+	pPassword := &pass
+
+	// Set parameters values to NULL if empty
+	if role == "" {
+		errNullAssign := pgtype.NullAssignTo(&pRole)
+		if errNullAssign != nil {
+			logging.VulscanoLog("error",
+				"failed to assigned NULL to role field ", errNullAssign.Error())
+			return fmt.Errorf("error while processing role %v update", role)
+		}
+	}
+
+	if ent == "" {
+		errNullAssign := pgtype.NullAssignTo(&pEnterprise)
+		if errNullAssign != nil {
+			logging.VulscanoLog("error",
+				"failed to assigned NULL to enterprise field ", errNullAssign.Error())
+			return fmt.Errorf("error while processing enterprise %v update", ent)
+		}
+	}
+
+	if pass == "" {
+		errNullAssign := pgtype.NullAssignTo(&pPassword)
+		if errNullAssign != nil {
+			logging.VulscanoLog("error",
+				"failed to assigned NULL to password field ", errNullAssign.Error())
+			return fmt.Errorf("error while processing enterprise %v update", pass)
+		}
+	}
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `UPDATE vulscano_users SET
+			          password = COALESCE(crypt($1, gen_salt('bf', 8)), password),
+				      enterprise_id = COALESCE($2, enterprise_id),
+					  role = COALESCE($3, role)
+					  WHERE email = $4
+					 `
+
+	defer cancelQuery()
+
+	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil,
+		pPassword,
+		pEnterprise,
+		pRole,
+		email)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"failed to update user: ", email, " ", err.Error())
+
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+		logging.VulscanoLog("error",
+			"failed to update user: ", email)
+		return fmt.Errorf("failed to update user %v", email)
+	}
+
+	return nil
+}
+
+func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) (*[]DeviceVADB, error) {
+
+	var devSlice []DeviceVADB
+
+	pEnt := &ent
+	// Set parameters values to NULL if empty
+	if ent == "" {
+		errNullAssign := pgtype.NullAssignTo(&pEnt)
+		if errNullAssign != nil {
+			logging.VulscanoLog("error",
+				"failed to assigned NULL to enterprise field ", errNullAssign.Error())
+			return nil, fmt.Errorf("error while processing enterprise %v update", ent)
+		}
+	}
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `SELECT device_id, mgmt_ip_address, last_successful_scan, enterprise_id,
+					  scan_mean_time, os_type, os_version, device_model, total_vulnerabilities_scanned
+					  FROM device_va_results 
+					  WHERE $1 = ANY(vulnerabilities_found)
+					  AND (enterprise_id = $2 OR $2 IS NULL)
+				     `
+
+	defer cancelQuery()
+
+	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, vuln, pEnt)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"cannot fetch Vulnerabilities affecting device from DB: ", err.Error(),
+		)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		dev := DeviceVADB{}
+
+		err = rows.Scan(
+			&dev.DeviceID,
+			&dev.MgmtIPAddress,
+			&dev.LastScan,
+			&dev.EnterpriseID,
+			&dev.ScanMeanTime,
+			&dev.OSType,
+			&dev.OSVersion,
+			&dev.DeviceModel,
+			&dev.TotalVulnScanned,
+		)
+
+		if err != nil {
+			logging.VulscanoLog("error",
+				"error while scanning device_va_results table rows: ", err.Error())
+			return nil, err
+		}
+		devSlice = append(devSlice, dev)
+	}
+	err = rows.Err()
+	if err != nil {
+		logging.VulscanoLog("error",
+			"error returned while fetching vulnerabilities affecting device: ", err.Error())
+		return nil, err
+	}
+
+	return &devSlice, nil
+}
+func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) (*[]DeviceVADB, error) {
+
+	var devSlice []DeviceVADB
+
+	pEnt := &ent
+	// Set parameters values to NULL if empty
+	if ent == "" {
+		errNullAssign := pgtype.NullAssignTo(&pEnt)
+		if errNullAssign != nil {
+			logging.VulscanoLog("error",
+				"failed to assigned NULL to enterprise field ", errNullAssign.Error())
+			return nil, fmt.Errorf("error while processing enterprise %v update", ent)
+		}
+	}
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `SELECT device_id, mgmt_ip_address, last_successful_scan, enterprise_id,
+					  scan_mean_time, os_type, os_version, device_model, total_vulnerabilities_scanned
+					  FROM device_va_results 
+					  WHERE (
+							SELECT advisory_id FROM cisco_advisories WHERE $1 = ANY(cve_id)
+						    ) = ANY(vulnerabilities_found)
+				      AND (enterprise_id = $2 OR $2 IS NULL)
+				     `
+
+	defer cancelQuery()
+
+	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, cve, pEnt)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"cannot fetch Vulnerabilities affecting device from DB: ", err.Error(),
+		)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		dev := DeviceVADB{}
+
+		err = rows.Scan(
+			&dev.DeviceID,
+			&dev.MgmtIPAddress,
+			&dev.LastScan,
+			&dev.EnterpriseID,
+			&dev.ScanMeanTime,
+			&dev.OSType,
+			&dev.OSVersion,
+			&dev.DeviceModel,
+			&dev.TotalVulnScanned,
+		)
+
+		if err != nil {
+			logging.VulscanoLog("error",
+				"error while scanning device_va_results table rows: ", err.Error())
+			return nil, err
+		}
+		devSlice = append(devSlice, dev)
+	}
+	err = rows.Err()
+	if err != nil {
+		logging.VulscanoLog("error",
+			"error returned while fetching vulnerabilities affecting device: ", err.Error())
+		return nil, err
+	}
+
+	return &devSlice, nil
 }
 
 func (p *vulscanoDB) AssertUserExists(id interface{}) bool {

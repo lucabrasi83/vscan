@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/appleboy/gin-jwt"
@@ -16,10 +17,7 @@ const (
 )
 
 var (
-	rootURL = map[string]bool{
-		"/api/v1/on-demand-scan":      true,
-		"/api/v1/update-all-cisco-sa": true,
-	}
+	rootURL  = "/api/v1/admin"
 	rootRole = "vulscanoroot"
 )
 
@@ -83,17 +81,20 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 				return false
 			}
 
-			switch rootURL[(*c).Request.URL.Path] {
+			if strings.Contains((*c).Request.URL.Path, rootURL) {
 
-			case true:
 				if v, ok := data.(string); ok && v == rootRole {
 					return true
 				}
-			default:
-				if v, ok := data.(string); ok && v != "" {
-					return true
-				}
+
+				return false
+
 			}
+
+			if v, ok := data.(string); ok && v != "" {
+				return true
+			}
+
 			return false
 		},
 
