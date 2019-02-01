@@ -77,7 +77,7 @@ func main() {
 
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 1 minute.
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	logging.VulscanoLog("info",

@@ -396,7 +396,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 			if osType != (*d).OSType {
 				logging.VulscanoLog("warning",
 					"Skipping Anuta device "+(*anutaDev).DeviceName+" Scan Request as OSType requested "+(*d).
-						OSType+" does not match with device "+dev.DeviceID)
+						OSType+" does not match with device "+dv)
 
 				skippedScannedDevices = append(skippedScannedDevices, (*anutaDev).DeviceName)
 

@@ -1,9 +1,10 @@
 package handlers
 
 import (
-	"github.com/lucabrasi83/vulscano/openvulnapi"
 	"net"
 	"time"
+
+	"github.com/lucabrasi83/vulscano/openvulnapi"
 )
 
 // Login represents the JSON payload to be sent to POST /api/v1/login
