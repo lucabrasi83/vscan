@@ -15,6 +15,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 // indirect
 	github.com/gin-gonic/gin v1.3.0
+	github.com/go-ini/ini v1.41.0
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
@@ -58,6 +59,6 @@ require (
 	gopkg.in/gin-gonic/gin.v1 v1.3.0 // indirect
 	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/go-playground/validator.v8 v8.18.2 // indirect
-	gopkg.in/ini.v1 v1.39.0
+	gopkg.in/ini.v1 v1.41.0 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )

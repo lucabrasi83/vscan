@@ -9,6 +9,10 @@ import (
 )
 
 func LoadRoutes(routes *gin.Engine) {
+
+	// Set Default Middleware
+	routes.Use(middleware.RequestSizeLimiter(4096), middleware.RequestsLogger())
+
 	// Set up default handler for no routes found
 	routes.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "404 - PAGE_NOT_FOUND", "message": "Requested route does not exist"})
@@ -24,16 +28,14 @@ func LoadRoutes(routes *gin.Engine) {
 
 	apiV1 := routes.Group("/api/v1")
 	{
-		// Set Limit 2KB maximum for Request Size
-		apiV1.Use(middleware.RequestSizeLimiter(2048))
-
 		apiV1.POST("/login", jwtMiddleware.LoginHandler)
+		apiV1.GET("/refresh-token", jwtMiddleware.RefreshHandler)
 		apiV1.GET("/ping", handlers.Ping)
 
 		admin := apiV1.Group("/admin").Use(authWare())
 		{
 			admin.POST("/on-demand-scan", handlers.LaunchAdHocScan)
-			admin.POST("/bulk-on-demand-scan", handlers.LaunchAdHocScan)
+			admin.POST("/bulk-on-demand-scan", handlers.LaunchBulkAdHocScan)
 			admin.POST("/update-all-cisco-sa", handlers.UpdateCiscoOpenVulnSAAll)
 			admin.GET("/user/:user-id", handlers.GetUser)
 			admin.GET("/all-users", handlers.GetAllUsers)
@@ -45,6 +47,8 @@ func LoadRoutes(routes *gin.Engine) {
 			admin.POST("/enterprise", tempHandler)
 			admin.PATCH("/enterprise/:enterprise-id", tempHandler)
 			admin.DELETE("/enterprise/:enterprise-id", tempHandler)
+			admin.POST("/cisco-sw-suggested", handlers.AdminGetAnutaDeviceSuggestedSW)
+			admin.GET("/ongoing-scanned-devices", handlers.GetCurrentlyScannedDevices)
 		}
 
 		vulnAdmin := apiV1.Group("/admin/vulnerabilities").Use(authWare())
@@ -57,7 +61,7 @@ func LoadRoutes(routes *gin.Engine) {
 		scan := apiV1.Group("/scan").Use(authWare())
 		{
 			scan.POST("/anuta-inventory-device", authWare(), handlers.LaunchAnutaInventoryScan)
-			scan.POST("/bulk-anuta-inventory", authWare(), handlers.LaunchAnutaInventoryScan)
+			scan.POST("/bulk-anuta-inventory", authWare(), handlers.LaunchAnutaInventoryBulkScan)
 		}
 		vuln := apiV1.Group("/vulnerabilities").Use(authWare())
 		{

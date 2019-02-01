@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/jackc/pgx/pgtype"
 	"net"
 	"os"
 	"strconv"
@@ -23,6 +22,8 @@ import (
 var ConnPool *pgx.ConnPool
 var DBInstance *vulscanoDB
 
+const pgpSymEncryptKey = `2?wmrdF#V+&"<D3T`
+
 type vulscanoDB struct {
 	db *pgx.ConnPool
 }
@@ -35,15 +36,35 @@ type VulscanoDBUser struct {
 }
 
 type DeviceVADB struct {
-	DeviceID         string
-	MgmtIPAddress    net.IP
-	LastScan         time.Time
-	EnterpriseID     string
-	ScanMeanTime     int
-	OSType           string
-	OSVersion        string
-	DeviceModel      string
-	TotalVulnScanned int
+	DeviceID         string    `json:"deviceID"`
+	MgmtIPAddress    net.IP    `json:"mgmtIP"`
+	LastScan         time.Time `json:"lastScan"`
+	EnterpriseID     string    `json:"enterpriseID"`
+	ScanMeanTime     int       `json:"scanMeanTimeMilliseconds"`
+	OSType           string    `json:"osType"`
+	OSVersion        string    `json:"osVersion"`
+	DeviceModel      string    `json:"deviceModel"`
+	SerialNumber     string    `json:"serialNumber"`
+	TotalVulnScanned int       `json:"totalVulnScanned"`
+}
+
+type SSHGatewayDB struct {
+	GatewayName       string
+	GatewayIP         net.IP
+	GatewayUsername   string
+	GatewayPassword   string
+	GatewayPrivateKey string
+	EnterpriseID      string
+}
+
+// UserDeviceCredentials struct represents the Device Credentials to connect to a scanned device
+type DeviceCredentialsDB struct {
+	CredentialsName         string
+	CredentialsDeviceVendor string
+	Username                string
+	Password                string
+	IOSEnablePassword       string
+	PrivateKey              string
 }
 
 // init() function will establish DB connection pool while package is being loaded.
@@ -89,36 +110,6 @@ func init() {
 
 	logging.VulscanoLog("info", "Postgres SQL Version: ", postgresVersion)
 
-	//rows, err := b.QueryResults()
-	//
-	//if err != nil {
-	//	logging.VulscanoLog(
-	//		"error",
-	//		"Failed to execute SQL query: ",
-	//		err.Error())
-	//}
-	//defer rows.Close()
-	//
-	//for rows.Next() {
-	//	var user string
-	//	err = rows.Scan(&user)
-	//	if err != nil {
-	//		logging.VulscanoLog(
-	//			"error",
-	//			"Failed to parse SQL query: ",
-	//			err.Error())
-	//	}
-	//	fmt.Println(user)
-	//}
-	//
-	//err = rows.Err()
-	//
-	//if err != nil {
-	//	logging.VulscanoLog(
-	//		"error",
-	//		"Iterating through SQL query returned error: ",
-	//		err.Error())
-	//}
 }
 
 func newDBPool(pool *pgx.ConnPool) *vulscanoDB {
@@ -234,7 +225,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 
 		b.Queue("insert_all_cisco_advisories",
 			[]interface{}{
-				adv.AdvisoryID,
+				strings.TrimSpace(adv.AdvisoryID),
 				adv.AdvisoryTitle,
 				timeStamps,
 				adv.BugID,
@@ -360,8 +351,9 @@ func (p *vulscanoDB) PersistDeviceVAJobReport(args ...interface{}) error {
 	const sqlQueryDeviceReport = `INSERT INTO device_va_results
   								  (device_id, mgmt_ip_address, last_successful_scan, 
                                   vulnerabilities_found, total_vulnerabilities_scanned,
-							      enterprise_id, scan_mean_time, os_type, os_version, device_model)
-								  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+							      enterprise_id, scan_mean_time, os_type, os_version, 
+								  device_model, serial_number, device_hostname)
+								  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 								  ON CONFLICT (device_id)
 								  DO UPDATE SET
 								  mgmt_ip_address = EXCLUDED.mgmt_ip_address,
@@ -372,12 +364,39 @@ func (p *vulscanoDB) PersistDeviceVAJobReport(args ...interface{}) error {
 								  scan_mean_time = EXCLUDED.scan_mean_time,
 							      os_type = EXCLUDED.os_type,
 								  os_version = EXCLUDED.os_version,
-								  device_model = EXCLUDED.device_model
+								  device_model = EXCLUDED.device_model,
+								  serial_number = EXCLUDED.serial_number,
+						          device_hostname = EXCLUDED.device_hostname
 								 `
 
 	defer cancelQuery()
 
 	cTag, err := p.db.ExecEx(ctxTimeout, sqlQueryDeviceReport, nil, args...)
+
+	if err != nil {
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+		return fmt.Errorf("failed to insert Device VA results in DB")
+	}
+
+	return nil
+}
+func (p *vulscanoDB) PersistDeviceVAHistory(args ...interface{}) error {
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	// SQL Query to insert VA Scan Result per device
+	const sqlQueryDeviceHistory = `INSERT INTO device_va_history
+  								  (device_id, vuln_found, timestamp)
+								  VALUES ($1, $2, $3)
+								 `
+
+	defer cancelQuery()
+
+	cTag, err := p.db.ExecEx(ctxTimeout, sqlQueryDeviceHistory, nil, args...)
 
 	if err != nil {
 		return err
@@ -475,6 +494,49 @@ func (p *vulscanoDB) FetchAllUsers() (*[]VulscanoDBUser, error) {
 	}
 
 	return &vulscanoUsers, nil
+
+}
+func (p *vulscanoDB) FetchAllDevices() ([]*DeviceVADB, error) {
+
+	var vulscanoDevices []*DeviceVADB
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `SELECT device_id, serial_number FROM device_va_results`
+
+	defer cancelQuery()
+
+	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"cannot fetch Devices from DB: ", err.Error(),
+		)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		dev := DeviceVADB{}
+		err = rows.Scan(&dev.DeviceID, &dev.SerialNumber)
+
+		if err != nil {
+			logging.VulscanoLog("error",
+				"error while scanning device_va_results table rows: ", err.Error())
+			return nil, err
+		}
+		vulscanoDevices = append(vulscanoDevices, &dev)
+	}
+	err = rows.Err()
+	if err != nil {
+		logging.VulscanoLog("error",
+			"error returned while iterating through device_va_results table: ", err.Error())
+		return nil, err
+	}
+
+	return vulscanoDevices, nil
 
 }
 
@@ -577,37 +639,10 @@ func (p *vulscanoDB) DeleteUser(email string) error {
 }
 func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent string) error {
 
-	pRole := &role
-	pEnterprise := &ent
-	pPassword := &pass
-
 	// Set parameters values to NULL if empty
-	if role == "" {
-		errNullAssign := pgtype.NullAssignTo(&pRole)
-		if errNullAssign != nil {
-			logging.VulscanoLog("error",
-				"failed to assigned NULL to role field ", errNullAssign.Error())
-			return fmt.Errorf("error while processing role %v update", role)
-		}
-	}
-
-	if ent == "" {
-		errNullAssign := pgtype.NullAssignTo(&pEnterprise)
-		if errNullAssign != nil {
-			logging.VulscanoLog("error",
-				"failed to assigned NULL to enterprise field ", errNullAssign.Error())
-			return fmt.Errorf("error while processing enterprise %v update", ent)
-		}
-	}
-
-	if pass == "" {
-		errNullAssign := pgtype.NullAssignTo(&pPassword)
-		if errNullAssign != nil {
-			logging.VulscanoLog("error",
-				"failed to assigned NULL to password field ", errNullAssign.Error())
-			return fmt.Errorf("error while processing enterprise %v update", pass)
-		}
-	}
+	pRole := normalizeString(role)
+	pEnterprise := normalizeString(ent)
+	pPassword := normalizeString(pass)
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -647,22 +682,14 @@ func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) (*[]Devic
 
 	var devSlice []DeviceVADB
 
-	pEnt := &ent
-	// Set parameters values to NULL if empty
-	if ent == "" {
-		errNullAssign := pgtype.NullAssignTo(&pEnt)
-		if errNullAssign != nil {
-			logging.VulscanoLog("error",
-				"failed to assigned NULL to enterprise field ", errNullAssign.Error())
-			return nil, fmt.Errorf("error while processing enterprise %v update", ent)
-		}
-	}
+	pEnt := normalizeString(ent)
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
 
 	const sqlQuery = `SELECT device_id, mgmt_ip_address, last_successful_scan, enterprise_id,
-					  scan_mean_time, os_type, os_version, device_model, total_vulnerabilities_scanned
+					  scan_mean_time, os_type, os_version, device_model, 
+					  serial_number, total_vulnerabilities_scanned
 					  FROM device_va_results 
 					  WHERE $1 = ANY(vulnerabilities_found)
 					  AND (enterprise_id = $2 OR $2 IS NULL)
@@ -693,6 +720,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) (*[]Devic
 			&dev.OSType,
 			&dev.OSVersion,
 			&dev.DeviceModel,
+			&dev.SerialNumber,
 			&dev.TotalVulnScanned,
 		)
 
@@ -716,22 +744,15 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) (*[]Devic
 
 	var devSlice []DeviceVADB
 
-	pEnt := &ent
-	// Set parameters values to NULL if empty
-	if ent == "" {
-		errNullAssign := pgtype.NullAssignTo(&pEnt)
-		if errNullAssign != nil {
-			logging.VulscanoLog("error",
-				"failed to assigned NULL to enterprise field ", errNullAssign.Error())
-			return nil, fmt.Errorf("error while processing enterprise %v update", ent)
-		}
-	}
+	// Normalize ent to Postgres NULL type if empty
+	pEnt := normalizeString(ent)
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
 
 	const sqlQuery = `SELECT device_id, mgmt_ip_address, last_successful_scan, enterprise_id,
-					  scan_mean_time, os_type, os_version, device_model, total_vulnerabilities_scanned
+					  scan_mean_time, os_type, os_version, device_model, 
+ 				      serial_number, total_vulnerabilities_scanned 
 					  FROM device_va_results 
 					  WHERE (
 							SELECT advisory_id FROM cisco_advisories WHERE $1 = ANY(cve_id)
@@ -764,6 +785,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) (*[]Devic
 			&dev.OSType,
 			&dev.OSVersion,
 			&dev.DeviceModel,
+			&dev.SerialNumber,
 			&dev.TotalVulnScanned,
 		)
 
@@ -782,6 +804,165 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) (*[]Devic
 	}
 
 	return &devSlice, nil
+}
+
+func (p *vulscanoDB) UserGetDevVAResultsByCVE(cve string, ent string) (*[]DeviceVADB, error) {
+
+	var devSlice []DeviceVADB
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `SELECT device_id, mgmt_ip_address, last_successful_scan, enterprise_id,
+					  scan_mean_time, os_type, os_version, device_model, 
+					  serial_number, total_vulnerabilities_scanned
+					  FROM device_va_results 
+					  WHERE (
+							SELECT advisory_id FROM cisco_advisories WHERE $1 = ANY(cve_id)
+						    ) = ANY(vulnerabilities_found)
+				      AND enterprise_id = $2
+				     `
+
+	defer cancelQuery()
+
+	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, cve, ent)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"cannot fetch Vulnerabilities affecting device from DB: ", err.Error(),
+		)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		dev := DeviceVADB{}
+
+		err = rows.Scan(
+			&dev.DeviceID,
+			&dev.MgmtIPAddress,
+			&dev.LastScan,
+			&dev.EnterpriseID,
+			&dev.ScanMeanTime,
+			&dev.OSType,
+			&dev.OSVersion,
+			&dev.DeviceModel,
+			&dev.SerialNumber,
+			&dev.TotalVulnScanned,
+		)
+
+		if err != nil {
+			logging.VulscanoLog("error",
+				"error while scanning device_va_results table rows: ", err.Error())
+			return nil, err
+		}
+		devSlice = append(devSlice, dev)
+	}
+	err = rows.Err()
+	if err != nil {
+		logging.VulscanoLog("error",
+			"error returned while fetching vulnerabilities affecting device: ", err.Error())
+		return nil, err
+	}
+
+	return &devSlice, nil
+}
+
+func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB, error) {
+
+	var sshGw SSHGatewayDB
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `SELECT gateway_name, 
+	                  gateway_ip, 
+	                  gateway_username, 
+	                  COALESCE(pgp_sym_decrypt(gateway_password, $1), ''), 
+	                  COALESCE(pgp_sym_decrypt(gateway_private_key, $1), '')
+                      FROM ssh_gateway
+					  WHERE enterprise_id = $2 AND gateway_name = $3
+					 `
+
+	defer cancelQuery()
+
+	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, entid, gw)
+
+	err := row.Scan(
+		&sshGw.GatewayName,
+		&sshGw.GatewayIP,
+		&sshGw.GatewayUsername,
+		&sshGw.GatewayPassword,
+		&sshGw.GatewayPrivateKey,
+	)
+
+	switch err {
+	case pgx.ErrNoRows:
+		logging.VulscanoLog(
+			"error", "SSH Gateway "+gw+" not found in database")
+		return nil, fmt.Errorf("SSH Gateway %v not found", gw)
+
+	case nil:
+
+		return &sshGw, nil
+
+	default:
+		logging.VulscanoLog(
+			"error", "error while searching for SSH Gateway in Database: ", err.Error())
+
+		return nil, fmt.Errorf("error while searching for SSH Gateway %v: %v", gw, err.Error())
+	}
+
+}
+
+func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCredentialsDB, error) {
+
+	var deviceCreds DeviceCredentialsDB
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	const sqlQuery = `SELECT credentials_name,
+ 				      device_vendor,
+	                  device_username,
+	                  COALESCE(pgp_sym_decrypt(device_password, $1), ''), 
+	                  COALESCE(pgp_sym_decrypt(device_private_key, $1), ''), 
+	                  COALESCE(pgp_sym_decrypt(device_ios_enable_pwd, $1), '')
+                      FROM device_credentials_set
+					  WHERE user_id = $2 AND credentials_name = $3
+					 `
+
+	defer cancelQuery()
+
+	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, uid, cn)
+
+	err := row.Scan(
+		&deviceCreds.CredentialsName,
+		&deviceCreds.CredentialsDeviceVendor,
+		&deviceCreds.Username,
+		&deviceCreds.Password,
+		&deviceCreds.PrivateKey,
+		&deviceCreds.IOSEnablePassword,
+	)
+
+	switch err {
+	case pgx.ErrNoRows:
+		logging.VulscanoLog(
+			"error", "Device Credentials Name "+cn+" not found in database")
+		return nil, fmt.Errorf("device credentials name %v not found", cn)
+
+	case nil:
+
+		return &deviceCreds, nil
+
+	default:
+		logging.VulscanoLog(
+			"error", "error while searching for Device Credentials in Database: ", err.Error())
+
+		return nil, fmt.Errorf("error while searching for Device Credentials %v: %v", cn, err.Error())
+	}
+
 }
 
 func (p *vulscanoDB) AssertUserExists(id interface{}) bool {
@@ -819,4 +1000,221 @@ func (p *vulscanoDB) AssertUserExists(id interface{}) bool {
 		return false
 	}
 
+}
+
+func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) error {
+
+	// Set Query timeout to 10 minutes
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 10*time.Minute)
+
+	const sqlQueryDeviceReport = `INSERT INTO device_va_results
+  								  (device_id, mgmt_ip_address, last_successful_scan, 
+                                  vulnerabilities_found, total_vulnerabilities_scanned,
+							      enterprise_id, scan_mean_time, os_type, os_version, 
+								  device_model, serial_number, device_hostname)
+								  VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+								  ON CONFLICT (device_id)
+								  DO UPDATE SET
+								  mgmt_ip_address = EXCLUDED.mgmt_ip_address,
+								  last_successful_scan = EXCLUDED.last_successful_scan,
+								  vulnerabilities_found = EXCLUDED.vulnerabilities_found,
+							      total_vulnerabilities_scanned = EXCLUDED.total_vulnerabilities_scanned,
+								  enterprise_id = EXCLUDED.enterprise_id,
+								  scan_mean_time = EXCLUDED.scan_mean_time,
+							      os_type = EXCLUDED.os_type,
+								  os_version = EXCLUDED.os_version,
+								  device_model = EXCLUDED.device_model,
+								  serial_number = EXCLUDED.serial_number,
+								  device_hostname = EXCLUDED.device_hostname
+								 `
+
+	defer cancelQuery()
+
+	// Prepare SQL Statement in DB for Batch
+	_, err := p.db.Prepare("insert_device_va_report", sqlQueryDeviceReport)
+
+	if err != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to prepare Batch statement: ",
+			err.Error())
+		return err
+	}
+
+	b := p.db.BeginBatch()
+
+	for _, d := range args {
+
+		b.Queue("insert_device_va_report",
+			[]interface{}{
+				d["deviceName"],
+				d["deviceIP"],
+				d["lastScan"],
+				d["advisoryID"],
+				d["totalVulnScanned"],
+				d["enterpriseID"],
+				d["scanMeantime"],
+				d["osType"],
+				d["osVersion"],
+				d["deviceModel"],
+				d["serialNumber"],
+				d["deviceHostname"],
+			},
+			nil, nil)
+	}
+
+	// Send Batch SQL Query
+	errSendBatch := b.Send(ctxTimeout, nil)
+	if errSendBatch != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to send Batch query: ",
+			errSendBatch.Error())
+
+		return errSendBatch
+
+	}
+
+	// Execute Batch SQL Query
+	errExecBatch := b.Close()
+	if errExecBatch != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to execute Batch query: ",
+			errExecBatch.Error())
+
+		return errExecBatch
+	}
+	return nil
+}
+
+func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) error {
+
+	// Set Query timeout to 10 minutes
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 10*time.Minute)
+
+	const sqlQueryDeviceHistory = `INSERT INTO device_va_history
+  								  (device_id, vuln_found, timestamp)
+								  VALUES ($1, $2, $3)
+								 `
+
+	defer cancelQuery()
+
+	// Prepare SQL Statement in DB for Batch
+	_, err := p.db.Prepare("insert_device_va_history", sqlQueryDeviceHistory)
+
+	if err != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to prepare Batch statement: ",
+			err.Error())
+		return err
+	}
+
+	b := p.db.BeginBatch()
+
+	for _, d := range args {
+
+		b.Queue("insert_device_va_history",
+			[]interface{}{
+				d["deviceName"],
+				d["advisoryID"],
+				d["lastScan"],
+			},
+			nil, nil)
+	}
+
+	// Send Batch SQL Query
+	errSendBatch := b.Send(ctxTimeout, nil)
+	if errSendBatch != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to send Batch query: ",
+			errSendBatch.Error())
+
+		return errSendBatch
+
+	}
+
+	// Execute Batch SQL Query
+	errExecBatch := b.Close()
+	if errExecBatch != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to execute Batch query: ",
+			errExecBatch.Error())
+
+		return errExecBatch
+	}
+	return nil
+}
+
+// UpdateDeviceSuggestedSW will update all Devices Suggested Software Version from Cisco API
+func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
+
+	// Set Query timeout to 10 minutes
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 10*time.Minute)
+
+	// SQL Statement to insert all Cisco advisories Metadata from openVuln API
+	// If Cisco Advisory ID already exists, we just update it with fields returned by Cisco openVuln API
+	const sqlQuery = `UPDATE device_va_results SET suggested_sw = $1 WHERE device_id = $2`
+
+	defer cancelQuery()
+
+	// Prepare SQL Statement in DB for Batch
+	_, err := p.db.Prepare("update_device_suggested_sw", sqlQuery)
+
+	if err != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to prepare Batch statement: ",
+			err.Error())
+		return err
+	}
+
+	b := p.db.BeginBatch()
+
+	for _, d := range devSW {
+
+		b.Queue("update_device_suggested_sw",
+			[]interface{}{
+				d["suggestedVersion"],
+				d["deviceID"],
+			},
+			nil, nil)
+	}
+
+	// Send Batch SQL Query
+	errSendBatch := b.Send(ctxTimeout, nil)
+	if errSendBatch != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to send Batch query: ",
+			errSendBatch.Error())
+
+		return errSendBatch
+
+	}
+
+	// Execute Batch SQL Query
+	errExecBatch := b.Close()
+	if errExecBatch != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to execute Batch query: ",
+			errExecBatch.Error())
+
+		return errExecBatch
+	}
+	return nil
+}
+
+// normalizeString is a helper function that converts empty string to nil pointer.
+// Main usage is to convert empty string to Postgres NULL type
+func normalizeString(s string) *string {
+	if s == "" {
+		return nil
+	} else {
+		return &s
+	}
 }

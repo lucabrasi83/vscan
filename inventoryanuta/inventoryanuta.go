@@ -18,6 +18,8 @@ type AnutaAPIDeviceDetails struct {
 	OSType           string                          `json:"ostype-string"`
 	OSVersion        string                          `json:"os-version"`
 	CiscoModel       string                          `json:"device-type"`
+	SerialNumber     string                          `json:"serial-number"`
+	Hostname         string                          `json:"name"`
 	RealIOSXEVersion AnutaIOSXEVersionChildContainer `json:"iosxeversion:iosxe-version,omitempty"`
 }
 
@@ -29,10 +31,9 @@ type AnutaAPIDeviceParent struct {
 	Controller *AnutaAPIDeviceDetails `json:"controller:device"`
 }
 
-// TODO: Replace with Environment Variables
 const (
 	anutaDeviceFilters = "?fields=id;mgmt-ip-address;status;os-version;" +
-		"iosxeversion:iosxe-version/version;ostype-string;device-type"
+		"iosxeversion:iosxe-version/version;ostype-string;device-type;serial-number;name"
 )
 
 var (

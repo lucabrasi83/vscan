@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -25,58 +25,11 @@ import (
 // in order to avoid repeated VA request for the same device
 var scannedDevices []string
 
-type CiscoScanDevice struct {
-	jovalURL    string
-	openVulnURL string
-}
-
-type ScanResults struct {
-	ScanJobID                   string                      `json:"scanJobID"`
-	ScanJobStartTime            time.Time                   `json:"scanJobStartTime"`
-	ScanJobEndTime              time.Time                   `json:"scanJobEndTime"`
-	ScanDeviceMeanTime          string                      `json:"scanJobDeviceMeanTime"`
-	TotalVulnerabilitiesFound   int                         `json:"totalVulnerabilitiesFound"`
-	TotalVulnerabilitiesScanned int                         `json:"totalVulnerabilitiesScanned"`
-	VulnerabilitiesFoundDetails *[]openvulnapi.VulnMetadata `json:"vulnerabilitiesFoundDetails"`
-}
-
-// Scan ReportFile represents the JSON report file created for each device by Joval scan
-type ScanReportFile struct {
-	DeviceName  string                  `json:"fact_friendlyname"`
-	RuleResults []*ScanReportFileResult `json:"rule_results"`
-}
-
-// ScanReportFileResult represents the rule_result section of the JSON report file
-type ScanReportFileResult struct {
-	RuleResult     string                            `json:"rule_result"`
-	RuleIdentifier []*ScanReportFileResultIdentifier `json:"rule_identifiers"`
-}
-
-// ScanReportFileResultIdentifier represents the rule_identifiers section of the JSON report file
-type ScanReportFileResultIdentifier struct {
-	ResultCiscoSA string `json:"identifier"`
-}
-
 // DeviceScanner interface provides abstraction for multi-vendor scan.
 // Implementation is for single device scan request
 type DeviceScanner interface {
 	Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error)
 }
-
-//func newCiscoIOSXEDevice() *CiscoIOSXEDevice {
-//	d := CiscoIOSXEDevice{
-//		jovalURL:    "http://download.jovalcm.com/content/cisco.iosxe.cve.oval.xml",
-//		openVulnURL: "https://api.cisco.com/security/advisories/iosxe.json?version=",
-//	}
-//	return &d
-//}
-//func newCiscoIOSDevice() *CiscoIOSDevice {
-//	d := CiscoIOSDevice{
-//		jovalURL:    "http://download.jovalcm.com/content/cisco.ios.cve.oval.xml",
-//		openVulnURL: "https://api.cisco.com/security/advisories/ios.json?version=",
-//	}
-//	return &d
-//}
 
 // NewCiscoScanDevice will instantiate a new Scan device instance struct based on the OS type
 func NewCiscoScanDevice(os string) *CiscoScanDevice {
@@ -114,6 +67,8 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	var reportScanJobEndTime time.Time
+	var successfulScannedDevName []string
+	var successfulScannedDevIP []net.IP
 	var scanJobStatus string
 
 	// We Generate a Scan Job ID from HashGen library
@@ -134,8 +89,8 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 			jobID,
 			reportScanJobStartTime,
 			reportScanJobEndTime,
-			[]string{dev.Hostname},
-			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
+			successfulScannedDevName,
+			successfulScannedDevIP,
 			scanJobStatus,
 			j)
 
@@ -183,7 +138,33 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	}
 	devList = append(devList, device)
 
-	if errIniBuilder := BuildIni(jobID, devList, d.jovalURL); errIniBuilder != nil {
+	var sshGateway UserSSHGateway
+
+	if dev.SSHGateway != "" {
+		sshGatewayDB, errSSHGw := getUserSSHGatewayDetails(j.Enterprise, dev.SSHGateway)
+
+		if errSSHGw != nil {
+			return nil, errSSHGw
+		}
+
+		// Map SSHGateway DB struct to UserSSHGateway struct
+		sshGateway.GatewayUsername = (*sshGatewayDB).GatewayUsername
+		sshGateway.GatewayPassword = (*sshGatewayDB).GatewayPassword
+		sshGateway.GatewayName = (*sshGatewayDB).GatewayName
+		sshGateway.GatewayIP = (*sshGatewayDB).GatewayIP
+		sshGateway.GatewayPrivateKey = (*sshGatewayDB).GatewayPrivateKey
+
+	}
+
+	// Get Device Credentials details and pass the ini file builder
+	// No need to check if Credentials Name is empty as it is already validated by Gin Handler
+	devCreds, errDevCredsDB := getUserDeviceCredentialsDetails(j.UserID, dev.CredentialsName)
+
+	if errDevCredsDB != nil {
+		return nil, errDevCredsDB
+	}
+
+	if errIniBuilder := BuildIni(jobID, devList, d.jovalURL, &sshGateway, devCreds); errIniBuilder != nil {
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
@@ -192,7 +173,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		return nil, errIniBuilder
 	}
 
-	err := LaunchJovalDocker(&sr, jobID)
+	err := LaunchJovalDocker(jobID)
 
 	if err != nil {
 
@@ -220,6 +201,11 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	go func() {
 		defer wg.Done()
 
+		// Exit Goroutine if no device version submitted from API consumer
+		if dev.OSVersion == "" {
+			return
+		}
+
 		vulnFixed, err := openvulnapi.GetVulnFixedVersions(
 			d.openVulnURL,
 			dev.OSVersion,
@@ -237,9 +223,9 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		}
 
 		for _, vFixed := range *vulnFixed {
-			for idx, vFound := range *sr.VulnerabilitiesFoundDetails {
+			for idx, vFound := range sr.VulnerabilitiesFoundDetails {
 				if vFixed.AdvisoryID == vFound.AdvisoryID {
-					(*sr.VulnerabilitiesFoundDetails)[idx].FixedVersions = vFixed.FixedVersions
+					sr.VulnerabilitiesFoundDetails[idx].FixedVersions = vFixed.FixedVersions
 				}
 			}
 		}
@@ -250,414 +236,15 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	sr.ScanJobEndTime = reportScanJobEndTime
 
+	// Set Scan Job Report data if successful. This is will picked by the defer anonymous function
 	scanJobStatus = "SUCCESS"
+	successfulScannedDevName = append(successfulScannedDevName, dev.Hostname)
+	successfulScannedDevIP = append(successfulScannedDevIP, net.ParseIP(dev.IPAddress).To4())
 
 	wg.Wait()
 
 	return &sr, nil
 }
-
-// Scan method will launch a vulnerability scan for a single Cisco IOS-XE Device
-// This is one of the most important of Vulscano as it is responsible to launch a scan job on the Docker daemon and
-// provide results for vulnerabilities found
-// It takes an AdHocScanDevice struct as parameter and return the Scan Results or an error
-//func (d *CiscoIOSXEDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error) {
-//
-//	// Set Initial Job Start/End time type
-//	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//	var reportScanJobEndTime time.Time
-//
-//	// We Generate a Scan Job ID from HashGen library
-//	jobID, errHash := hashgen.GenHash()
-//	if errHash != nil {
-//		logging.VulscanoLog(
-//			"error",
-//			"Error when generating hash: ", errHash.Error())
-//
-//		return nil, errHash
-//	}
-//
-//	// Mutex for scannedDevices slice to prevent race condition
-//	var muScannedDevice sync.Mutex
-//
-//	// Check if ongoing VA for requested device. This is to avoid repeated VA for the same device
-//	if deviceBeingScanned := isDeviceBeingScanned(dev.IPAddress); !deviceBeingScanned {
-//
-//		muScannedDevice.Lock()
-//		scannedDevices = append(scannedDevices, dev.IPAddress)
-//		muScannedDevice.Unlock()
-//	} else {
-//
-//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//		errJobInsertDB := scanJobReportDB(
-//			jobID,
-//			reportScanJobStartTime,
-//			reportScanJobEndTime,
-//			[]string{dev.Hostname},
-//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//			"FAILED",
-//			j)
-//
-//		if errJobInsertDB != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		}
-//
-//		return nil, fmt.Errorf("there is already an ongoing VA for device %v with IP: %v",
-//			dev.Hostname, dev.IPAddress)
-//	}
-//
-//	// Remove device from ongoing scan slice in defer function
-//	defer func() {
-//		removeDevicefromScannedDeviceSlice(dev.IPAddress)
-//	}()
-//
-//	var sr ScanResults
-//
-//	// Set the Scan Job ID in ScanResults struct
-//	sr.ScanJobID = jobID
-//
-//	// Set the Scan Job Start Time
-//	sr.ScanJobStartTime = reportScanJobStartTime
-//
-//	var devList []map[string]string
-//
-//	device := map[string]string{
-//		"hostname": dev.Hostname,
-//		"ip":       dev.IPAddress,
-//	}
-//	devList = append(devList, device)
-//
-//	if errIniBuilder := BuildIni(jobID, devList, d.jovalURL); errIniBuilder != nil {
-//
-//		//removeDevicefromScannedDeviceSlice(dev.IPAddress)
-//
-//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//		errJobInsertDB := scanJobReportDB(
-//			jobID,
-//			reportScanJobStartTime,
-//			reportScanJobEndTime,
-//			[]string{dev.Hostname},
-//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//			"FAILED",
-//			j)
-//
-//		if errJobInsertDB != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		}
-//		return nil, errIniBuilder
-//	}
-//	err := LaunchJovalDocker(&sr, jobID)
-//
-//	if err != nil {
-//		//removeDevicefromScannedDeviceSlice(dev.IPAddress)
-//
-//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//		errJobInsertDB := scanJobReportDB(
-//			jobID,
-//			reportScanJobStartTime,
-//			reportScanJobEndTime,
-//			[]string{dev.Hostname},
-//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//			"FAILED",
-//			j)
-//
-//		if errJobInsertDB != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		}
-//		return nil, err
-//	}
-//
-//	err = parseScanReport(&sr, jobID)
-//	if err != nil {
-//
-//		//removeDevicefromScannedDeviceSlice(dev.IPAddress)
-//
-//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//		errJobInsertDB := scanJobReportDB(
-//			jobID,
-//			reportScanJobStartTime,
-//			reportScanJobEndTime,
-//			[]string{dev.Hostname},
-//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//			"FAILED",
-//			j)
-//
-//		if errJobInsertDB != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		}
-//		return nil, err
-//	}
-//
-//	var wg sync.WaitGroup
-//	wg.Add(1)
-//
-//	// Fetch Vulnerabilities fixed versions in separate Goroutine
-//	go func() {
-//		defer wg.Done()
-//
-//		vulnFixed, err := openvulnapi.GetVulnFixedVersions(
-//			d.openVulnURL,
-//			dev.OSVersion,
-//		)
-//
-//		if err != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to fetch vulnerability fixed versions from openVulnAPI for Version: ",
-//				dev.OSVersion,
-//				" Error: ",
-//				err.Error(),
-//			)
-//			return
-//		}
-//
-//		for _, vFixed := range *vulnFixed {
-//			for idx, vFound := range *sr.VulnerabilitiesFoundDetails {
-//				if vFixed.AdvisoryID == vFound.AdvisoryID {
-//					(*sr.VulnerabilitiesFoundDetails)[idx].FixedVersions = vFixed.FixedVersions
-//				}
-//			}
-//		}
-//
-//	}()
-//
-//	// Set Scan Job End Time
-//	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//	sr.ScanJobEndTime = reportScanJobEndTime
-//
-//	errJobInsertDB := scanJobReportDB(
-//		jobID,
-//		reportScanJobStartTime,
-//		reportScanJobEndTime,
-//		[]string{dev.Hostname},
-//		[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//		"SUCCESS",
-//		j)
-//
-//	if errJobInsertDB != nil {
-//		logging.VulscanoLog(
-//			"error",
-//			"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		return nil, errJobInsertDB
-//	}
-//
-//	wg.Wait()
-//
-//	return &sr, nil
-//}
-
-// Scan method will launch a vulnerability scan for a single Cisco IOS Device
-// This is one of the most important of Vulscano as it is responsible to launch a scan job on the Docker daemon and
-// provide results for vulnerabilities found
-// It takes an AdHocScanDevice struct as parameter and return the Scan Results or an error
-//func (d *CiscoIOSDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error) {
-//
-//	// Set Initial Job Start/End time type
-//	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//	var reportScanJobEndTime time.Time
-//
-//	// We Generate a Scan Job ID from HashGen library
-//	jobID, errHash := hashgen.GenHash()
-//	if errHash != nil {
-//		logging.VulscanoLog(
-//			"error",
-//			"Error when generating hash: ", errHash.Error())
-//
-//		return nil, errHash
-//	}
-//
-//	// Mutex for scannedDevices slice to prevent race condition
-//	var muScannedDevice sync.Mutex
-//
-//	// Check if ongoing VA for requested device. This is to avoid repeated VA for the same device
-//	if deviceBeingScanned := isDeviceBeingScanned(dev.IPAddress); !deviceBeingScanned {
-//
-//		muScannedDevice.Lock()
-//		scannedDevices = append(scannedDevices, dev.IPAddress)
-//		muScannedDevice.Unlock()
-//	} else {
-//
-//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//		errJobInsertDB := scanJobReportDB(
-//			jobID,
-//			reportScanJobStartTime,
-//			reportScanJobEndTime,
-//			[]string{dev.Hostname},
-//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//			"FAILED",
-//			j)
-//
-//		if errJobInsertDB != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		}
-//
-//		return nil, fmt.Errorf("there is already an ongoing VA for device %v with IP: %v",
-//			dev.Hostname, dev.IPAddress)
-//	}
-//
-//	// Remove device from ongoing scan slice in defer function
-//	defer func() {
-//		removeDevicefromScannedDeviceSlice(dev.IPAddress)
-//	}()
-//
-//	var sr ScanResults
-//
-//	// Set the Scan Job ID in ScanResults struct
-//	sr.ScanJobID = jobID
-//
-//	// Set the Scan Job Start Time
-//	sr.ScanJobStartTime = reportScanJobStartTime
-//
-//	var devList []map[string]string
-//
-//	device := map[string]string{
-//		"hostname": dev.Hostname,
-//		"ip":       dev.IPAddress,
-//	}
-//
-//	// devList is used to build the Joval INI file in case multiple devices to be scanned in same container
-//	devList = append(devList, device)
-//
-//	if errIniBuilder := BuildIni(jobID, devList, d.jovalURL); errIniBuilder != nil {
-//
-//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//		errJobInsertDB := scanJobReportDB(
-//			jobID,
-//			reportScanJobStartTime,
-//			reportScanJobEndTime,
-//			[]string{dev.Hostname},
-//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//			"FAILED",
-//			j)
-//
-//		if errJobInsertDB != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		}
-//		return nil, errIniBuilder
-//	}
-//	err := LaunchJovalDocker(&sr, jobID)
-//
-//	if err != nil {
-//
-//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//		errJobInsertDB := scanJobReportDB(
-//			jobID,
-//			reportScanJobStartTime,
-//			reportScanJobEndTime,
-//			[]string{dev.Hostname},
-//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//			"FAILED",
-//			j)
-//
-//		if errJobInsertDB != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		}
-//
-//		return nil, err
-//	}
-//
-//	err = parseScanReport(&sr, jobID)
-//	if err != nil {
-//
-//		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//
-//		errJobInsertDB := scanJobReportDB(
-//			jobID,
-//			reportScanJobStartTime,
-//			reportScanJobEndTime,
-//			[]string{dev.Hostname},
-//			[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//			"FAILED",
-//			j)
-//
-//		if errJobInsertDB != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		}
-//		return nil, err
-//	}
-//
-//	var wg sync.WaitGroup
-//	wg.Add(1)
-//
-//	// Fetch Vulnerabilities fixed versions in separate Goroutine
-//	go func() {
-//		defer wg.Done()
-//
-//		vulnFixed, err := openvulnapi.GetVulnFixedVersions(
-//			d.openVulnURL,
-//			dev.OSVersion,
-//		)
-//
-//		if err != nil {
-//			logging.VulscanoLog(
-//				"error",
-//				"Failed to fetch vulnerability fixed versions from openVulnAPI for Version: ",
-//				dev.OSVersion,
-//				" Error: ",
-//				err.Error(),
-//			)
-//			return
-//		}
-//
-//		for _, vFixed := range *vulnFixed {
-//			for idx, vFound := range *sr.VulnerabilitiesFoundDetails {
-//				if vFixed.AdvisoryID == vFound.AdvisoryID {
-//					(*sr.VulnerabilitiesFoundDetails)[idx].FixedVersions = vFixed.FixedVersions
-//				}
-//			}
-//		}
-//
-//	}()
-//
-//	// Set Scan Job End Time
-//	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-//	sr.ScanJobEndTime = reportScanJobEndTime
-//
-//	errJobInsertDB := scanJobReportDB(
-//		jobID,
-//		reportScanJobStartTime,
-//		reportScanJobEndTime,
-//		[]string{dev.Hostname},
-//		[]net.IP{net.ParseIP(dev.IPAddress).To4()},
-//		"SUCCESS",
-//		j)
-//
-//	if errJobInsertDB != nil {
-//		logging.VulscanoLog(
-//			"error",
-//			"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
-//		return nil, errJobInsertDB
-//	}
-//
-//	wg.Wait()
-//
-//	return &sr, nil
-//}
 
 // parseScanReport handles parsing reports/JobID folder after a VA scan is done.
 // It will look for .json files and parse the content for each to report found vulnerabilities
@@ -672,7 +259,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				logging.VulscanoLog("error",
 					"unable to access Joval reports directory: ", path, "error: ", err,
 				)
-				fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
+				//fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
 				return err
 			}
 			if !info.IsDir() {
@@ -703,13 +290,15 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				duplicateSAMap := map[string]bool{}
 
 				// vulnMetaSlice is a slice of Cisco openVuln API vulnerabilities metadata
-				var vulnMetaSlice []openvulnapi.VulnMetadata
+				var vulnMetaSlice []*openvulnapi.VulnMetadata
 
 				// Declare WaitGroup to send requests to openVuln API in parallel
 				var wg sync.WaitGroup
 
 				// We set a rate limit to throttle Goroutines querying DB for Vulnerabilities metadata.
 				rateLimit := time.NewTicker(20 * time.Millisecond)
+
+				defer rateLimit.Stop()
 
 				// Count number of found vulnerabilities in report to determine Wait Group length
 				// Update duplicateSAMap to find duplicated Cisco SA in Joval Report
@@ -743,7 +332,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 
 							// Exclusive access to vulnMetaSlice to prevent race condition
 							mu.Lock()
-							vulnMetaSlice = append(vulnMetaSlice, *vulnMeta)
+							vulnMetaSlice = append(vulnMetaSlice, vulnMeta)
 							mu.Unlock()
 
 						}(ruleResult)
@@ -753,9 +342,13 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				}
 				wg.Wait()
 				// Start mapping Report File into ScanResults struct
-				(*res).VulnerabilitiesFoundDetails = &vulnMetaSlice
+				(*res).VulnerabilitiesFoundDetails = vulnMetaSlice
 				(*res).TotalVulnerabilitiesFound = vulnCount
 				(*res).TotalVulnerabilitiesScanned = vulnTotal
+
+				deviceScanStartTime, _ := time.Parse(time.RFC3339, scanReport.ScanStartTime)
+				deviceScanEndTime, _ := time.Parse(time.RFC3339, scanReport.ScanEndTime)
+				(*res).ScanDeviceMeanTime = int(deviceScanEndTime.Sub(deviceScanStartTime).Seconds() * 1000)
 
 			}
 
@@ -773,14 +366,23 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 }
 
 // AnutaInventoryScan is the main function to handle VA for devices part of Anuta NCX Inventory
-func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInventory, *ScanResults, error) {
+func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInventory, error) {
 
 	anutaDev, errAnuta := inventoryanuta.GetAnutaDevice((*d).DeviceID)
 
 	if errAnuta != nil {
 		logging.VulscanoLog("error",
 			"Error while fetching device inventory details from Anuta NCX: ", errAnuta.Error())
-		return nil, nil, errAnuta
+		return nil, errAnuta
+
+	}
+
+	// Don't waste resources trying to scan an offline device
+	if (*anutaDev).Status != "ONLINE" {
+		logging.VulscanoLog("error", "Anuta device "+(*anutaDev).DeviceName+
+			" scan request aborted as device is currently marked as offline")
+
+		return nil, fmt.Errorf("device %v currently marked as offline in Anuta inventory", (*anutaDev).DeviceName)
 
 	}
 
@@ -791,25 +393,33 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 		OSType:        anutaDev.OSType,
 		OSVersion:     anutaDev.OSVersion,
 		CiscoModel:    anutaDev.CiscoModel,
-		EnterpriseID:  string(anutaDev.DeviceName[0:3]),
+		SerialNumber:  anutaDev.SerialNumber,
+		Hostname:      anutaDev.Hostname,
+		EnterpriseID:  strings.ToUpper(string(anutaDev.DeviceName[0:3])),
 	}
 
 	// Look for real IOS-XE Version from Anuta. This will help to query recommended IOSXE Versions
 	// for vulnerability remediation
-	if (*anutaDev).OSType == "IOSXE" && (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer != "" {
+	if (*anutaDev).OSType == "IOSXE" {
 
-		// Put original IOSd version if noSuchInstance reported from CPE during Anuta SNMP collection
-		if (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer != "noSuchInstance" {
-			anutaScannedDev.OSVersion = (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer
-		}
 		anutaScannedDev.OSType = "IOS-XE"
+
+		if (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer != "" && (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer != "noSuchInstance" {
+
+			// Put original IOSd version if noSuchInstance reported from CPE during Anuta SNMP collection
+			anutaScannedDev.OSVersion = (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer
+
+		}
+
 	}
 
 	ads := AdHocScanDevice{
-		Hostname:  anutaScannedDev.DeviceName,
-		IPAddress: anutaScannedDev.MgmtIPAddress.String(),
-		OSType:    anutaScannedDev.OSType,
-		OSVersion: anutaScannedDev.OSVersion,
+		Hostname:        anutaScannedDev.DeviceName,
+		IPAddress:       anutaScannedDev.MgmtIPAddress.String(),
+		OSType:          anutaScannedDev.OSType,
+		OSVersion:       anutaScannedDev.OSVersion,
+		SSHGateway:      (*d).SSHGateway,
+		CredentialsName: (*d).CredentialsName,
 	}
 
 	// devScanner represents DeviceScanner interface. Depending on the OS Type given, we instantiate
@@ -820,28 +430,32 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 	case "IOS-XE", "IOS":
 		devScanner = NewCiscoScanDevice(ads.OSType)
 		if devScanner == nil {
-			return nil, nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", ads.OSType)
+			return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", ads.OSType)
 		}
 	default:
-		return nil, nil, fmt.Errorf("OS Type %v not supported for device %v",
+		return nil, fmt.Errorf("OS Type %v not supported for device %v",
 			anutaScannedDev.OSType, anutaScannedDev.DeviceName)
 	}
 
+	// Launch Vulnerability Assessment
 	scanRes, err := LaunchAbstractVendorScan(devScanner, &ads, j)
 
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
+	anutaScannedDev.ScanResults = scanRes
+
+	// Persist Vulnerability Assessment in DB
 	err = deviceVAReportDB(&anutaScannedDev, scanRes)
 
 	if err != nil {
 		logging.VulscanoLog("error",
 			"Error while inserting Device VA Report into DB: ", err.Error())
-		return nil, nil, err
+		return nil, err
 	}
 
-	return &anutaScannedDev, scanRes, nil
+	return &anutaScannedDev, nil
 
 }
 
@@ -860,20 +474,10 @@ func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults) error {
 
 	var vulnFound []string
 
-	for _, vuln := range *r.VulnerabilitiesFoundDetails {
+	for _, vuln := range r.VulnerabilitiesFoundDetails {
 		vulnFound = append(vulnFound, vuln.AdvisoryID)
 	}
-
-	// Convert Device Scan Mean time to int to comply with Postgres column type
-	deviceScanMeanTimeStripms := string((*r).ScanDeviceMeanTime[:len((*r).ScanDeviceMeanTime)-2])
-	deviceScanMeanTime, errMeanTimeConv := strconv.Atoi(deviceScanMeanTimeStripms)
-
-	if errMeanTimeConv != nil {
-		logging.VulscanoLog("error",
-			"Failed to convert Device Scan Mean Time for Job ID ", (*r).ScanJobID,
-			"Raw value: ", (*r).ScanDeviceMeanTime, errMeanTimeConv.Error())
-	}
-
+	// Insert Device Vulnerability Assessment detailed results
 	errDB := postgresdb.DBInstance.PersistDeviceVAJobReport(
 		(*d).DeviceName,                  // Column device_id
 		(*d).MgmtIPAddress,               // Column mgmt_ip_address
@@ -881,15 +485,29 @@ func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults) error {
 		vulnFound,                        // Column vulnerabilities_found
 		(*r).TotalVulnerabilitiesScanned, // Column total_vulnerabilities_scanned
 		(*d).EnterpriseID,                // Column enterprise_id
-		deviceScanMeanTime,               // Column scan_mean_time
+		(*r).ScanDeviceMeanTime,          // Column scan_mean_time
 		(*d).OSType,                      // Column os_type
 		(*d).OSVersion,                   // Column os_version,
 		(*d).CiscoModel,                  // Column device_model
+		(*d).SerialNumber,                // Column serial_number
+		(*d).Hostname,                    // Column device_hostname
 	)
 
 	if errDB != nil {
 		return errDB
 	}
+
+	// Insert Device Vulnerability Assessment summary history record
+	errDB = postgresdb.DBInstance.PersistDeviceVAHistory(
+		(*d).DeviceName,     // Column device_id
+		vulnFound,           // Column vuln_found
+		(*r).ScanJobEndTime, // Column timestamp
+	)
+
+	if errDB != nil {
+		return errDB
+	}
+
 	return nil
 }
 
@@ -907,7 +525,7 @@ func isDeviceBeingScanned(d string) bool {
 }
 
 // removeDeviceFromScannedDeviceSlice is a helper function to remove the device from scannedDevices slice
-// The removal happens upon a call to on-demand-scan API endpoint and is executing after successful scan or
+// The removal happens upon a call to Device VA Scan API endpoint and is executing after successful scan or
 // whenever an error is returned from the Scan() method
 func removeDevicefromScannedDeviceSlice(d string) {
 
@@ -921,4 +539,54 @@ func removeDevicefromScannedDeviceSlice(d string) {
 	muScannedDevices.Lock()
 	scannedDevices = append(scannedDevices[:i], scannedDevices[i+1:]...)
 	muScannedDevices.Unlock()
+}
+
+// getUserSSHGatewayDetails will return the User SSH Gateway Details if one is specified
+func getUserSSHGatewayDetails(entid string, gw string) (*UserSSHGateway, error) {
+
+	sshGw, err := postgresdb.DBInstance.FetchUserSSHGateway(entid, gw)
+
+	if err != nil {
+		return nil, err
+	}
+
+	userSSHGw := &UserSSHGateway{
+		GatewayName:       sshGw.GatewayName,
+		GatewayIP:         sshGw.GatewayIP,
+		GatewayUsername:   sshGw.GatewayUsername,
+		GatewayPassword:   sshGw.GatewayPassword,
+		GatewayPrivateKey: sshGw.GatewayPrivateKey,
+	}
+
+	if (*userSSHGw).GatewayPassword == "" && (*userSSHGw).GatewayPrivateKey == "" {
+		return nil, fmt.Errorf("gateway %s has neither password nor SSH private key associated", (*userSSHGw).GatewayName)
+	}
+
+	return userSSHGw, nil
+}
+
+// getUserSSHGatewayDetails will return the User SSH Gateway Details if one is specified
+func getUserDeviceCredentialsDetails(uid string, cn string) (*UserDeviceCredentials, error) {
+
+	dbDeviceCreds, err := postgresdb.DBInstance.FetchDeviceCredentials(uid, cn)
+
+	if err != nil {
+		return nil, err
+	}
+
+	dCreds := &UserDeviceCredentials{
+		CredentialsName:         (*dbDeviceCreds).CredentialsName,
+		CredentialsDeviceVendor: strings.ToUpper((*dbDeviceCreds).CredentialsDeviceVendor),
+		Username:                (*dbDeviceCreds).Username,
+		Password:                (*dbDeviceCreds).Password,
+		PrivateKey:              (*dbDeviceCreds).PrivateKey,
+		IOSEnablePassword:       (*dbDeviceCreds).IOSEnablePassword,
+	}
+
+	if (*dbDeviceCreds).Password == "" && (*dbDeviceCreds).PrivateKey == "" {
+		return nil, fmt.Errorf("device credentials %s has neither password nor SSH private key associated",
+			(*dCreds).CredentialsName)
+	}
+
+	return dCreds, nil
 }

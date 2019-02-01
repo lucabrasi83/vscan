@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/go-ini/ini"
 	"github.com/lucabrasi83/vulscano/datadiros"
-	"github.com/lucabrasi83/vulscano/logging"
-	"gopkg.in/ini.v1"
 )
 
 // Skeleton Struct to reflect from config.ini
@@ -37,36 +37,64 @@ type Logs struct {
 }
 
 // init function to check Environment Variables to access Cisco Routers are well set
-func init() {
-	if os.Getenv("VULSCANO_CISCO_ROUTER_USERNAME") == "" {
-		logging.VulscanoLog("fatal",
-			"VULSCANO_CISCO_ROUTER_USERNAME environment variable is not set!")
-	}
-	if os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") == "" {
-		logging.VulscanoLog("fatal",
-			"VULSCANO_CISCO_ROUTER_PASSWORD environment variable is not set!")
-	}
-}
+//func init() {
+//	if os.Getenv("VULSCANO_CISCO_ROUTER_USERNAME") == "" {
+//		logging.VulscanoLog("fatal",
+//			"VULSCANO_CISCO_ROUTER_USERNAME environment variable is not set!")
+//	}
+//	if os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") == "" {
+//		logging.VulscanoLog("fatal",
+//			"VULSCANO_CISCO_ROUTER_PASSWORD environment variable is not set!")
+//	}
+//}
 
 // BuildIni generates config.ini file per scan jobs.
 // The config.ini file is placed in tmp/<scan-job-id>/ folder by default
 // It returns any error encountered during the config.ini file generation
-func BuildIni(jobID string, dev []map[string]string, jovalSource string) (err error) {
+func BuildIni(jobID string, dev []map[string]string, jovalSource string, sshGW *UserSSHGateway,
+	creds *UserDeviceCredentials) (err error) {
 
 	// Starts with baseline ini file
-	cfg, err := ini.Load([]byte(
-		`[Report: JSON]
+	cfg, err := ini.Load(
+		[]byte(
+			`[Report: JSON]
 		input.type = xccdf_results
 		output.extension = json 
 		transform.file =` + filepath.FromSlash(
-			"/opt/jovaldata/tools/arf_xccdf_results_to_json_events.xsl") + `
-		[Credential: ssh-cisco]
-		ios_enable_password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_ENABLE_PASSWORD") + `
-		password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") + `
-		type = SSH
-		username = ` + os.Getenv("VULSCANO_CISCO_ROUTER_USERNAME")))
+				"/opt/jovaldata/tools/arf_xccdf_results_to_json_events.xsl")))
+	//[Credential: ssh-device]
+	//ios_enable_password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_ENABLE_PASSWORD") + `
+	//password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") + `
+	//type = SSH
+	//username = ` + os.Getenv("VULSCANO_CISCO_ROUTER_USERNAME")))
+
 	if err != nil {
 		return fmt.Errorf("error while loading default ini content for job ID %v: %v", jobID, err)
+	}
+
+	// Add Device Credentials sections details
+	var credsName string
+	if (*creds).CredentialsName != "" {
+
+		credsName = (*creds).CredentialsName
+		err = buildDeviceCredentialsSections(cfg, creds)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	// Add SSH Gateway sections details if a gateway is specified to UserSSHGateway is not nil
+	var sshGWName string
+	if (*sshGW).GatewayName != "" {
+
+		sshGWName = (*sshGW).GatewayName
+		err = buildSSHGatewaySections(cfg, sshGW)
+
+		if err != nil {
+			return err
+		}
+
 	}
 
 	secSkeleton := &Skeleton{
@@ -88,7 +116,7 @@ func BuildIni(jobID string, dev []map[string]string, jovalSource string) (err er
 	}
 
 	// Continue INI building in separate function for dynamic parameters
-	if err = dynaIniGen(cfg, jobID, dev); err != nil {
+	if err = dynaIniGen(cfg, jobID, dev, sshGWName, credsName); err != nil {
 		return fmt.Errorf("error while generating dynamic parameters for config.ini: %v", err)
 	}
 
@@ -123,8 +151,122 @@ func BuildIni(jobID string, dev []map[string]string, jovalSource string) (err er
 	return nil
 }
 
+func buildSSHGatewaySections(cfg *ini.File, sshGW *UserSSHGateway) error {
+
+	sshGWCredSec, err := cfg.NewSection("Credential: " + "ssh-gateway")
+
+	if err != nil {
+		return fmt.Errorf("Error When Setting SSH Gateway Credentials section in Config.ini: %v ", err)
+	}
+
+	_, err = sshGWCredSec.NewKey("type", "SSH")
+
+	if err != nil {
+		return fmt.Errorf("Error When Setting SSH Gateway Credentials Type key in Config.ini: %v ", err)
+	}
+	_, err = sshGWCredSec.NewKey("username", (*sshGW).GatewayUsername)
+
+	if err != nil {
+		return fmt.Errorf("Error When Setting SSH Gateway Username key in Config.ini: %v ", err)
+	}
+
+	if (*sshGW).GatewayPassword != "" {
+		_, err = sshGWCredSec.NewKey("password", (*sshGW).GatewayPassword)
+
+		if err != nil {
+			return fmt.Errorf("Error When Setting SSH Gateway Password key in Config.ini: %v ", err)
+		}
+	}
+
+	if (*sshGW).GatewayPrivateKey != "" {
+
+		// Format SSH Private Key to comply with Joval ini format
+		pvKeyJovalFormat := strings.Replace((*sshGW).GatewayPrivateKey, "\n", "\\\r", -1)
+
+		_, err := sshGWCredSec.NewKey("private_key", pvKeyJovalFormat)
+
+		if err != nil {
+			return fmt.Errorf("Error When Setting SSH Gateway Private Key in Config.ini: %v ", err)
+		}
+
+	}
+
+	sshGwSec, err := cfg.NewSection("Gateway: " + (*sshGW).GatewayName)
+
+	if err != nil {
+		return fmt.Errorf("Error When Setting SSH Gateway section in Config.ini: %v ", err)
+	}
+
+	_, err = sshGwSec.NewKey("host", (*sshGW).GatewayIP.String())
+
+	if err != nil {
+		return fmt.Errorf("Error When Setting SSH Gateway IP key in Config.ini: %v ", err)
+	}
+
+	_, err = sshGwSec.NewKey("credential", "ssh-gateway")
+
+	if err != nil {
+		return fmt.Errorf("Error When Setting SSH Gateway Credentials key in Config.ini: %v ", err)
+	}
+
+	return nil
+
+}
+
+func buildDeviceCredentialsSections(cfg *ini.File, creds *UserDeviceCredentials) error {
+
+	deviceCredSec, err := cfg.NewSection("Credential: " + (*creds).CredentialsName)
+
+	if err != nil {
+		return fmt.Errorf("Error When Setting SSH Device Credentials section in Config.ini: %v ", err)
+	}
+
+	_, err = deviceCredSec.NewKey("type", "SSH")
+
+	if err != nil {
+		return fmt.Errorf("Error When Setting SSH Device Credentials Type key in Config.ini: %v ", err)
+	}
+	_, err = deviceCredSec.NewKey("username", (*creds).Username)
+
+	if err != nil {
+		return fmt.Errorf("Error When Setting SSH Device Username key in Config.ini: %v ", err)
+	}
+
+	if (*creds).Password != "" {
+		_, err = deviceCredSec.NewKey("password", (*creds).Password)
+
+		if err != nil {
+			return fmt.Errorf("Error When Setting SSH Device Password key in Config.ini: %v ", err)
+		}
+	}
+
+	if (*creds).CredentialsDeviceVendor == "CISCO" && (*creds).IOSEnablePassword != "" {
+		_, err = deviceCredSec.NewKey("ios_enable_password", (*creds).IOSEnablePassword)
+
+		if err != nil {
+			return fmt.Errorf("Error When Setting SSH Device IOS Enable Password key in Config.ini: %v ", err)
+		}
+	}
+
+	if (*creds).PrivateKey != "" {
+
+		// Format SSH Private Key to comply with Joval ini format
+		pvKeyJovalFormat := strings.Replace((*creds).PrivateKey, "\n", "\\\r", -1)
+
+		_, err := deviceCredSec.NewKey("private_key", pvKeyJovalFormat)
+
+		if err != nil {
+			return fmt.Errorf("Error When Setting SSH Device Private Key in Config.ini: %v ", err)
+		}
+
+	}
+
+	return nil
+
+}
+
 // dynaIniGen generates the remainder of the config.ini file for dynamic sections and key/value pairs
-func dynaIniGen(cfg *ini.File, jobID string, dev []map[string]string) error {
+func dynaIniGen(cfg *ini.File, jobID string, dev []map[string]string, sshGWName string, credsName string) error {
 
 	_, err := cfg.Section(
 		"Report: JSON").NewKey("export.dir", filepath.FromSlash("./reports/"+jobID))
@@ -139,7 +281,7 @@ func dynaIniGen(cfg *ini.File, jobID string, dev []map[string]string) error {
 		if err != nil {
 			return fmt.Errorf("Error When Setting Device Section In Config.ini: %v ", err)
 		}
-		_, err = devSection.NewKey("credential", "ssh-cisco")
+		_, err = devSection.NewKey("credential", credsName)
 
 		if err != nil {
 			return fmt.Errorf("Error When Setting Credential key In Config.ini: %v ", err)
@@ -148,6 +290,15 @@ func dynaIniGen(cfg *ini.File, jobID string, dev []map[string]string) error {
 
 		if err != nil {
 			return fmt.Errorf("Error When Setting Host key In Config.ini: %v ", err)
+		}
+
+		// Add SSH Gateway Name if not empty string
+		if sshGWName != "" {
+			_, err = devSection.NewKey("gateway", sshGWName)
+
+			if err != nil {
+				return fmt.Errorf("Error When Setting gateway key In Config.ini: %v ", err)
+			}
 		}
 	}
 
