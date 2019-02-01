@@ -1,6 +1,10 @@
 package handlers
 
-import "net"
+import (
+	"github.com/lucabrasi83/vulscano/openvulnapi"
+	"net"
+	"time"
+)
 
 // Login represents the JSON payload to be sent to POST /api/v1/login
 type Login struct {
@@ -8,26 +12,75 @@ type Login struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// AdHocScanDevice represents the JSON payload to be sent to POST /api/v1/admin/on-demand-scan
-type AdHocScanDevice struct {
-	Hostname  string `json:"hostname" binding:"required"`
-	IPAddress string `json:"ip" binding:"required"`
-	OSType    string `json:"os_type" binding:"required"`
-	OSVersion string `json:"os_version"`
+type CiscoScanDevice struct {
+	jovalURL    string
+	openVulnURL string
 }
 
-// AdHocBulkScan represents a slice of AdHocScanDevice struct for multiple devices to be scanned in a single container
+type ScanResults struct {
+	ScanJobID                   string                      `json:"scanJobID"`
+	ScanJobStartTime            time.Time                   `json:"scanJobStartTime"`
+	ScanJobEndTime              time.Time                   `json:"scanJobEndTime"`
+	ScanDeviceMeanTime          int                         `json:"scanDeviceMeanTimeMsec"`
+	TotalVulnerabilitiesFound   int                         `json:"totalVulnerabilitiesFound"`
+	TotalVulnerabilitiesScanned int                         `json:"totalVulnerabilitiesScanned"`
+	VulnerabilitiesFoundDetails []*openvulnapi.VulnMetadata `json:"vulnerabilitiesFoundDetails"`
+}
+
+// Scan ReportFile represents the JSON report file created for each device by Joval scan
+type ScanReportFile struct {
+	DeviceName    string                  `json:"fact_friendlyname"`
+	ScanStartTime string                  `json:"start_time"`
+	ScanEndTime   string                  `json:"end_time"`
+	RuleResults   []*ScanReportFileResult `json:"rule_results"`
+}
+
+// ScanReportFileResult represents the rule_result section of the JSON report file
+type ScanReportFileResult struct {
+	RuleResult     string                            `json:"rule_result"`
+	RuleIdentifier []*ScanReportFileResultIdentifier `json:"rule_identifiers"`
+}
+
+// ScanReportFileResultIdentifier represents the rule_identifiers section of the JSON report file
+type ScanReportFileResultIdentifier struct {
+	ResultCiscoSA string `json:"identifier"`
+}
+
+// AdHocScanDevice represents the JSON payload to be sent to POST /api/v1/admin/on-demand-scan
+type AdHocScanDevice struct {
+	Hostname        string `json:"hostname" binding:"required"`
+	IPAddress       string `json:"ip" binding:"required"`
+	OSType          string `json:"osType" binding:"required"`
+	CredentialsName string `json:"credentialsName" binding:"required"`
+	OSVersion       string `json:"osVersion"`
+	SSHGateway      string `json:"sshGateway"`
+}
+
+// AdHocBulkScan represents a slice of AdHocBulkScanDevice struct for multiple devices to be scanned in a single container
 type AdHocBulkScan struct {
-	Devices *[]AdHocScanDevice `json:"devices" binding:"required"`
+	OSType          string                `json:"osType" binding:"required"`
+	SSHGateway      string                `json:"sshGateway"`
+	CredentialsName string                `json:"credentialsName" binding:"required"`
+	Devices         []AdHocBulkScanDevice `json:"devices" binding:"required"`
+}
+
+type AdHocBulkScanDevice struct {
+	Hostname  string `json:"hostname" binding:"required"`
+	IPAddress string `json:"ip binding:required"`
 }
 
 // AnutaDeviceScanRequest represents the JSON payload to be sent to POST /api/v1/scan/anuta-inventory-device
 type AnutaDeviceScanRequest struct {
-	DeviceID string `json:"deviceID" binding:"required"`
+	DeviceID        string `json:"deviceID" binding:"required"`
+	CredentialsName string `json:"credentialsName" binding:"required"`
+	SSHGateway      string `json:"sshGateway"`
 }
 
 type AnutaDeviceBulkScanRequest struct {
-	Devices *[]AnutaDeviceScanRequest `json:"devices" binding:"required"`
+	OSType          string                   `json:"osType" binding:"required"`
+	SSHGateway      string                   `json:"sshGateway"`
+	CredentialsName string                   `json:"credentialsName" binding:"required"`
+	Devices         []AnutaDeviceScanRequest `json:"devices" binding:"required"`
 }
 
 // AnutaDeviceInventory struct represents a device attributes from Anuta NCX inventory
@@ -38,8 +91,57 @@ type AnutaDeviceInventory struct {
 	OSType        string       `json:"OSType"`
 	OSVersion     string       `json:"OSVersion"`
 	CiscoModel    string       `json:"ciscoModel"`
+	Hostname      string       `json:"hostname"`
+	SerialNumber  string       `json:"serialNumber,omitempty"`
+	RecommendedSW string       `json:"suggestedVersion,omitempty"`
 	EnterpriseID  string       `json:"-"`
-	ScanResults   *ScanResults `json:",omitempty"`
+	ScanResults   *ScanResults `json:"scanResults"`
+}
+
+// AnutaBulkScanResults struct represents the response attributes when doing a bulk scan on multiple Anuta inventory
+// devices
+type AnutaBulkScanResults struct {
+	ScanJobID             string                       `json:"scanJobID"`
+	ScanJobStartTime      time.Time                    `json:"scanJobStartTime"`
+	ScanJobEndTime        time.Time                    `json:"scanJobEndTime"`
+	DevicesScannedSuccess []string                     `json:"devicesScannedSuccess"`
+	DevicesScannedSkipped []string                     `json:"deviesScannedSkipped,omitempty"`
+	DevicesScannedFailure []string                     `json:"devicesScannedFailure"`
+	DevicesScanResults    []*AnutaBulkScanResultsChild `json:"devicesScanResults"`
+}
+
+type AnutaBulkScanResultsChild struct {
+	DeviceName                  string                      `json:"deviceName"`
+	MgmtIPAddress               net.IP                      `json:"mgmtIPAddress"`
+	Status                      string                      `json:"status"`
+	OSType                      string                      `json:"OSType"`
+	OSVersion                   string                      `json:"OSVersion"`
+	CiscoModel                  string                      `json:"ciscoModel"`
+	SerialNumber                string                      `json:"serialNumber,omitempty"`
+	Hostname                    string                      `json:"hostname"`
+	RecommendedSW               string                      `json:"suggestedVersion,omitempty"`
+	EnterpriseID                string                      `json:"-"`
+	TotalVulnerabilitiesFound   int                         `json:"totalVulnerabilitiesFound"`
+	TotalVulnerabilitiesScanned int                         `json:"totalVulnerabilitiesScanned"`
+	ScanDeviceMeanTime          int                         `json:"scanDeviceMeanTimeMsec"`
+	VulnerabilitiesFoundDetails []*openvulnapi.VulnMetadata `json:"vulnerabilitiesFoundDetails"`
+}
+
+type BulkScanResults struct {
+	ScanJobID             string               `json:"scanJobID"`
+	ScanJobStartTime      time.Time            `json:"scanJobStartTime"`
+	ScanJobEndTime        time.Time            `json:"scanJobEndTime"`
+	DevicesScannedSuccess []string             `json:"devicesScannedSuccess"`
+	DevicesScannedFailure []string             `json:"devicesScannedFailure"`
+	VulnerabilitiesFound  []*BulkScanVulnFound `json:"vulnFoundDetails"`
+}
+
+type BulkScanVulnFound struct {
+	DeviceName                  string                      `json:"deviceName"`
+	ScanDeviceMeanTime          int                         `json:"scanDeviceMeanTimeMsec"`
+	TotalVulnerabilitiesFound   int                         `json:"totalVulnerabilitiesFound"`
+	TotalVulnerabilitiesScanned int                         `json:"totalVulnerabilitiesScanned"`
+	VulnerabilitiesFoundDetails []*openvulnapi.VulnMetadata `json:"vulnerabilitiesFoundDetails"`
 }
 
 // JwtClaim struct represents the JWTMapClaim type from middleware authjwt package
@@ -66,4 +168,23 @@ type VulscanoUserPatch struct {
 	Password   string `json:"password"`
 	Role       string `json:"role"`
 	Enterprise string `json:"enterpriseID"`
+}
+
+// UserSSHGateway struct represents the attributes of a user defined SSH Gateway
+type UserSSHGateway struct {
+	GatewayName       string
+	GatewayIP         net.IP
+	GatewayUsername   string
+	GatewayPassword   string
+	GatewayPrivateKey string
+}
+
+// UserDeviceCredentials struct represents the Device Credentials to connect to a scanned device
+type UserDeviceCredentials struct {
+	CredentialsName         string
+	CredentialsDeviceVendor string
+	Username                string
+	Password                string
+	IOSEnablePassword       string
+	PrivateKey              string
 }

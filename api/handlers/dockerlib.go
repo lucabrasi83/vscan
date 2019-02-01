@@ -152,11 +152,16 @@ func init() {
 // LaunchJovalDocker handles the creation of Joval container to launch scan jobs
 // It takes ScanResults pointer and JobID as parameters and returns an error in case of any issue reported during
 // interaction with Docker daemon
-func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
+func LaunchJovalDocker(jobID string) (err error) {
+
+	// Container should run for maximum 10 minutes
+	ctxContainerCancel, cancelContainerFunc := context.WithTimeout(ctx, 10*time.Minute)
+
+	defer cancelContainerFunc()
 
 	// We Create the container upon receiving a scan Job
 	// Set Performance profile struct to allow different CPU/Memory allocations per container
-	resp, errContainerCreate := cli.ContainerCreate(ctx, &container.Config{
+	resp, errContainerCreate := cli.ContainerCreate(ctxContainerCancel, &container.Config{
 		Image: os.Getenv("VULSCANO_DOCKER_JOVAL_IMAGE"),
 		Tty:   true,
 		Env:   []string{"INIFILE=" + filepath.FromSlash("./jobconfig/"+jobID+"/config.ini")},
@@ -180,13 +185,13 @@ func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
 	}
 
 	// Here we launch the container and get its SHA-1 ID returned by the Docker daemon
-	if errContainerStart := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); errContainerStart != nil {
+	if errContainerStart := cli.ContainerStart(ctxContainerCancel, resp.ID, types.ContainerStartOptions{}); errContainerStart != nil {
 		return errContainerStart
 	}
 
 	// The container will generate logs for each scan job.
 	// We parse the logs for information such as device successful/failure scans, Mean Scan time,...
-	outContainerLogs, errContainerLogs := cli.ContainerLogs(ctx, resp.ID, types.ContainerLogsOptions{
+	outContainerLogs, errContainerLogs := cli.ContainerLogs(ctxContainerCancel, resp.ID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		Follow:     true})
 
@@ -201,14 +206,14 @@ func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
 		}
 	}()
 
-	exit, errCh := cli.ContainerWait(ctx, resp.ID)
+	exit, errCh := cli.ContainerWait(ctxContainerCancel, resp.ID)
 
 	if errCh != nil {
 		return errCh
 	}
 
 	if exit != 0 {
-		logging.VulscanoLog("warning",
+		logging.VulscanoLog("error",
 			"Scan container for Job ID "+jobID+" exited with code: ", exit)
 
 		return fmt.Errorf("scan job ID %v failed with error code: %v", jobID, exit)
@@ -229,14 +234,6 @@ func LaunchJovalDocker(sr *ScanResults, jobID string) (err error) {
 			return fmt.Errorf("no scan performed for job ID %v . Check the job logs for details", jobID)
 		}
 
-		// Find the Device Scan Mean Time
-		RegexpMeanTime := regexp.MustCompile(`Mean target scan duration: (.*)`)
-		RegexpMeanTimeMatch := RegexpMeanTime.FindStringSubmatch(containerLogs.Text())
-		if len(RegexpMeanTimeMatch) >= 2 {
-			(*sr).ScanDeviceMeanTime = RegexpMeanTimeMatch[1]
-		}
-
 	}
-
 	return nil
 }

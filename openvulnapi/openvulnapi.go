@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
+//https://play.golang.org/p/sJjy61xyY9M
 func init() {
 	if os.Getenv("VULSCANO_OPENVULN_CLIENT_ID") == "" {
 		panic("Environment Variable VULSCANO_OPENVULN_CLIENT_ID is empty!")
@@ -23,6 +25,8 @@ func init() {
 const (
 	baseAllVulnURL = "https://api.cisco.com/security/advisories/all.json"
 	grantType      = "client_credentials"
+	snToPIDBaseURL = "https://api.cisco.com/sn2info/v2/identifiers/orderable/serial_numbers/"
+	SWSugBaseURL   = "https://api.cisco.com/software/suggestion/v2/suggestions/releases/productIds/"
 )
 
 var clientID = os.Getenv("VULSCANO_OPENVULN_CLIENT_ID")
@@ -42,6 +46,32 @@ type VulnMetadata struct {
 
 type VulnMetadataList struct {
 	Advisories *[]VulnMetadata `json:"advisories"`
+}
+
+type CiscoSnAPI struct {
+	SerialNumbers []struct {
+		SrNo             string `json:"sr_no"`
+		OrderablePidList []struct {
+			OrderablePid string `json:"orderable_pid"`
+		} `json:"orderable_pid_list"`
+	} `json:"serial_numbers"`
+}
+
+type CiscoSWSuggestionAPI struct {
+	ProductList []struct {
+		Product struct {
+			BasePID      string `json:"basePID"`
+			MdfID        string `json:"mdfId"`
+			ProductName  string `json:"productName"`
+			SoftwareType string `json:"softwareType"`
+		} `json:"product"`
+		Suggestions []struct {
+			ID             string `json:"id"`
+			IsSuggested    string `json:"isSuggested"`
+			ReleaseFormat2 string `json:"releaseFormat2"`
+			ReleaseDate    string `json:"releaseDate"`
+		} `json:"suggestions"`
+	} `json:"productList"`
 }
 
 type BearerToken struct {
@@ -186,5 +216,99 @@ func GetVulnFixedVersions(url string, ver string) (*[]VulnMetadata, error) {
 	defer vulnMetaRes.Body.Close()
 
 	return (&v).Advisories, nil
+
+}
+
+// GetCiscoPID will return the Cisco Product ID from Cisco sn2info API
+func GetCiscoPID(sn ...string) (*CiscoSnAPI, error) {
+
+	token, err := getOpenVulnToken()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Bearer token from Cisco openVulnAPI: %v", err)
+	}
+
+	snJoined := strings.Join(sn, ",")
+
+	PIDReq, err := http.NewRequest("GET", snToPIDBaseURL+snJoined, nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("cannot fetch Cisco Product ID: %v", err)
+	}
+
+	PIDReq.Header.Add("Content-Type", "application/json")
+	PIDReq.Header.Add("Authorization", "Bearer "+token)
+
+	ctx, cancel := context.WithTimeout(PIDReq.Context(), 10*time.Minute)
+	defer cancel()
+
+	PIDReq = PIDReq.WithContext(ctx)
+
+	PIDRes, err := http.DefaultClient.Do(PIDReq)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while contacting Cisco API: %v", err)
+	}
+
+	if PIDRes.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("sn2info API responded with error code: %v", http.StatusText(PIDRes.StatusCode))
+	}
+
+	var p CiscoSnAPI
+
+	if err := json.NewDecoder(PIDRes.Body).Decode(&p); err != nil {
+		return nil, fmt.Errorf("error while serializing into JSON body into struct: %v", err)
+	}
+
+	defer PIDRes.Body.Close()
+
+	return &p, nil
+
+}
+
+// GetSuggestedSW will return the Recommended Software Versions for each Product ID
+func GetCiscoSWSuggestion(pid ...string) (*CiscoSWSuggestionAPI, error) {
+
+	token, err := getOpenVulnToken()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Bearer token from Cisco openVulnAPI: %v", err)
+	}
+
+	pidJoined := strings.Join(pid, ",")
+
+	SWReq, err := http.NewRequest("GET", SWSugBaseURL+pidJoined, nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("cannot fetch Cisco Suggested SW: %v", err)
+	}
+
+	SWReq.Header.Add("Content-Type", "application/json")
+	SWReq.Header.Add("Authorization", "Bearer "+token)
+
+	ctx, cancel := context.WithTimeout(SWReq.Context(), 10*time.Minute)
+	defer cancel()
+
+	SWReq = SWReq.WithContext(ctx)
+
+	SWRes, err := http.DefaultClient.Do(SWReq)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while contacting Cisco API: %v", err)
+	}
+
+	if SWRes.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("swsuggestions API responded with error code: %v", http.StatusText(SWRes.StatusCode))
+	}
+
+	var s CiscoSWSuggestionAPI
+
+	if err := json.NewDecoder(SWRes.Body).Decode(&s); err != nil {
+		return nil, fmt.Errorf("error while serializing into JSON body into struct: %v", err)
+	}
+
+	defer SWRes.Body.Close()
+
+	return &s, nil
 
 }
