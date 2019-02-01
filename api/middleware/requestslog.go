@@ -2,12 +2,13 @@ package middleware
 
 import (
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/appleboy/gin-jwt"
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vulscano/logging"
-	"net/http"
-	"time"
 )
 
 var (

@@ -2,14 +2,15 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/lucabrasi83/vulscano/initializer"
-	"github.com/lucabrasi83/vulscano/openvulnapi"
 	"net/http"
 	"regexp"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/lucabrasi83/vulscano/initializer"
+	"github.com/lucabrasi83/vulscano/openvulnapi"
 
 	"github.com/appleboy/gin-jwt"
 

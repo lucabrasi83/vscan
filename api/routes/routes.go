@@ -2,10 +2,11 @@
 package routes
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vulscano/api/handlers"
 	"github.com/lucabrasi83/vulscano/api/middleware"
-	"net/http"
 )
 
 func LoadRoutes(routes *gin.Engine) {

@@ -1214,7 +1214,6 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 func normalizeString(s string) *string {
 	if s == "" {
 		return nil
-	} else {
-		return &s
 	}
+	return &s
 }
