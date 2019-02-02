@@ -36,18 +36,6 @@ type Logs struct {
 	OutputExtension string `ini:"output.extension"`
 }
 
-// init function to check Environment Variables to access Cisco Routers are well set
-//func init() {
-//	if os.Getenv("VULSCANO_CISCO_ROUTER_USERNAME") == "" {
-//		logging.VulscanoLog("fatal",
-//			"VULSCANO_CISCO_ROUTER_USERNAME environment variable is not set!")
-//	}
-//	if os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") == "" {
-//		logging.VulscanoLog("fatal",
-//			"VULSCANO_CISCO_ROUTER_PASSWORD environment variable is not set!")
-//	}
-//}
-
 // BuildIni generates config.ini file per scan jobs.
 // The config.ini file is placed in tmp/<scan-job-id>/ folder by default
 // It returns any error encountered during the config.ini file generation
@@ -62,11 +50,6 @@ func BuildIni(jobID string, dev []map[string]string, jovalSource string, sshGW *
 		output.extension = json 
 		transform.file =` + filepath.FromSlash(
 				"/opt/jovaldata/tools/arf_xccdf_results_to_json_events.xsl")))
-	//[Credential: ssh-device]
-	//ios_enable_password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_ENABLE_PASSWORD") + `
-	//password = ` + os.Getenv("VULSCANO_CISCO_ROUTER_PASSWORD") + `
-	//type = SSH
-	//username = ` + os.Getenv("VULSCANO_CISCO_ROUTER_USERNAME")))
 
 	if err != nil {
 		return fmt.Errorf("error while loading default ini content for job ID %v: %v", jobID, err)
