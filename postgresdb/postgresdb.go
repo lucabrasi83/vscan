@@ -77,17 +77,31 @@ func init() {
 			"(VULSCANO_DB_USERNAME / VULSCANO_DB_PASSWORD)")
 	}
 
+	// Check Environment Variables for Postgres Hostname
+	if os.Getenv("VULSCANO_DB_HOST") == "" {
+		logging.VulscanoLog("fatal",
+			"Missing Environment Variable for PostgresDB Hostname ",
+			"(VULSCANO_DB_HOST")
+	}
+
+	// Check Environment Variables for Postgres Database Name
+	if os.Getenv("VULSCANO_DB_DATABASE_NAME") == "" {
+		logging.VulscanoLog("fatal",
+			"Missing Environment Variable for PostgresDB Database Name ",
+			"(VULSCANO_DB_DATABASE_NAME")
+	}
+
 	var err error
 
 	connPoolConfig := pgx.ConnPoolConfig{
 		ConnConfig: pgx.ConnConfig{
-			Host: "vulscano-db", // To be moved to Environment Variable
+			Host: os.Getenv("VULSCANO_DB_HOST"),
 			TLSConfig: &tls.Config{
 				InsecureSkipVerify: true,
 			},
-			User:     os.Getenv("VULSCANO_DB_USERNAME"), // To be moved to Environment Variable
-			Password: os.Getenv("VULSCANO_DB_PASSWORD"), // To be moved to Environment Variable
-			Database: "vulscanodb",
+			User:     os.Getenv("VULSCANO_DB_USERNAME"),
+			Password: os.Getenv("VULSCANO_DB_PASSWORD"),
+			Database: os.Getenv("VULSCANO_DB_DATABASE_NAME"),
 		},
 		MaxConnections: 20,
 	}
