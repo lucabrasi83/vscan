@@ -9,5 +9,5 @@ service:
   golangci-lint-version: 1.13.1 # use fixed version to not introduce new linters unexpectedly
   prepare:
     - export GO111MODULE=on      
-    - go mod tidy
+    - GO111MODULE=on go mod tidy
   
