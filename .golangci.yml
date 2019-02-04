@@ -1,0 +1,12 @@
+run:
+  skip-dirs:
+    - github.com/gin-gonic/gin/json 
+
+# golangci.com configuration
+# https://github.com/golangci/golangci/wiki/Configuration
+service:
+  project-path: github.com/lucabrasi83/vulscano
+  golangci-lint-version: 1.13.1 # use fixed version to not introduce new linters unexpectedly
+  prepare:
+    - go mod tidy
+  
