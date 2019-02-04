@@ -149,13 +149,21 @@ func isUserVulscanoRoot(jwtMapClaim map[string]interface{}) bool {
 }
 
 // Ping is a health check status handler of the Vulscano API
+// @Summary Ping Health Check
+// @Description Verify the API is responding to HTTP requests
+// @Accept  json
+// @Produce  json
+// @Success 200 {object} handlers.PingAPIResponse
+// @Router /ping [get]
 func Ping(c *gin.Context) {
 
-	c.JSON(http.StatusOK, gin.H{
-		"pong":          "I'm alive!",
-		"version":       initializer.Version,
-		"golangRuntime": runtime.Version(),
-	})
+	pingRes := PingAPIResponse{
+		ReplyBack:       "pong",
+		VulscanoVersion: initializer.Version,
+		GolangVersion:   runtime.Version(),
+	}
+
+	c.JSON(http.StatusOK, pingRes)
 }
 
 func GetCurrentlyScannedDevices(c *gin.Context) {
@@ -322,12 +330,12 @@ func AdminGetSAVulnAffectingDevice(c *gin.Context) {
 		return
 	}
 
-	if len(*devices) == 0 {
+	if len(devices) == 0 {
 		c.JSON(http.StatusOK, gin.H{"results": "no device affected found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"results": *devices})
+	c.JSON(http.StatusOK, gin.H{"results": devices})
 }
 
 func AdminGetCVEVulnAffectingDevice(c *gin.Context) {
@@ -342,12 +350,12 @@ func AdminGetCVEVulnAffectingDevice(c *gin.Context) {
 		return
 	}
 
-	if len(*devices) == 0 {
+	if len(devices) == 0 {
 		c.JSON(http.StatusOK, gin.H{"results": "no device affected found"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"results": *devices})
+	c.JSON(http.StatusOK, gin.H{"results": devices})
 }
 
 // AdminGetAnutaDeviceSuggestedSW will pull in bulk the devices and serial numbers from onboarded inventory devices
@@ -628,9 +636,9 @@ func buildCiscoSNList(snSlice []string) []*openvulnapi.CiscoSnAPI {
 	snGuard := make(chan struct{}, snMaxAPICalls)
 
 	var wgSn sync.WaitGroup
-	var muSn sync.Mutex
+	var muSn sync.RWMutex
 
-	var ciscoSNAPISlice []*openvulnapi.CiscoSnAPI
+	ciscoSNAPISlice := make([]*openvulnapi.CiscoSnAPI, 0)
 
 	for snCount := 0; snCount+snIncrement < len(snSlice); snCount += snIncrement {
 		snGuard <- struct{}{}
@@ -695,9 +703,9 @@ func buildCiscoSuggSWList(snPID []string) []*openvulnapi.CiscoSWSuggestionAPI {
 	snGuard := make(chan struct{}, snMaxAPICalls)
 
 	var wgSn sync.WaitGroup
-	var muSn sync.Mutex
+	var muSn sync.RWMutex
 
-	var ciscoSuggSWSlice []*openvulnapi.CiscoSWSuggestionAPI
+	ciscoSuggSWSlice := make([]*openvulnapi.CiscoSWSuggestionAPI, 0)
 
 	for snCount := 0; snCount+snIncrement < len(snPID); snCount += snIncrement {
 		snGuard <- struct{}{}

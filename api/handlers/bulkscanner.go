@@ -45,9 +45,9 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	var reportScanJobEndTime time.Time
-	var successfulScannedDevName []string
-	var successfulScannedDevIP []net.IP
-	var currentJobOngoingScannedDevices []string
+	successfulScannedDevName := make([]string, 0)
+	successfulScannedDevIP := make([]net.IP, 0)
+	currentJobOngoingScannedDevices := make([]string, 0)
 	var scanJobStatus string
 
 	// We Generate a Scan Job ID from HashGen library
@@ -61,7 +61,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	}
 
 	// Mutex for scannedDevices slice to prevent race condition
-	var muScannedDevice sync.Mutex
+	var muScannedDevice sync.RWMutex
 
 	defer func() {
 		errJobInsertDB := scanJobReportDB(
@@ -257,7 +257,7 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 					duplicateSAMap := map[string]bool{}
 
 					// vulnMetaSlice is a slice of Cisco openVuln API vulnerabilities metadata
-					var vulnMetaSlice []*openvulnapi.VulnMetadata
+					vulnMetaSlice := make([]*openvulnapi.VulnMetadata, 0)
 
 					// Declare WaitGroup to send requests to openVuln API in parallel
 					var wg sync.WaitGroup
@@ -281,7 +281,7 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 					wg.Add(vulnCount)
 
 					// Declare Mutex to prevent Race condition on vulnMetaSlice slice
-					var mu sync.Mutex
+					var mu sync.RWMutex
 
 					// Reset duplicateSAMap
 					duplicateSAMap = make(map[string]bool)
@@ -350,10 +350,9 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 	var wg sync.WaitGroup
 	wg.Add(devCount)
 
-	var mu sync.Mutex
+	var mu sync.RWMutex
 
-	var anutaScannedDevList []*AnutaDeviceInventory
-
+	anutaScannedDevList := make([]*AnutaDeviceInventory, 0)
 	var skippedScannedDevices []string
 
 	// We set a rate limit to throttle Goroutines querying Anuta.
@@ -372,7 +371,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 				logging.VulscanoLog("error",
 					err.Error(),
 				)
-				skippedScannedDevices = append(skippedScannedDevices, (*anutaDev).DeviceName)
+				skippedScannedDevices = append(skippedScannedDevices, dv)
 				return
 			}
 
@@ -426,10 +425,10 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 		return nil, fmt.Errorf("error: unable to find eligible device to scan from the ones provided")
 	}
 
-	var adBulkScanList []AdHocBulkScanDevice
+	adBulkScanList := make([]*AdHocBulkScanDevice, 0)
 
 	for _, d := range anutaScannedDevList {
-		adBulkScanList = append(adBulkScanList, AdHocBulkScanDevice{
+		adBulkScanList = append(adBulkScanList, &AdHocBulkScanDevice{
 			Hostname:  (*d).DeviceName,
 			IPAddress: (*d).MgmtIPAddress.String(),
 		})
@@ -553,11 +552,11 @@ func mergeAnutaBulkScanResults(r *BulkScanResults, d []*AnutaDeviceInventory, s 
 // deviceVAReportDB handles DB interaction to persist VA Results when scanned is requested from an inventory source
 func deviceBulkVAReportDB(res *AnutaBulkScanResults) error {
 
-	var scanResSlice []map[string]interface{}
+	scanResSlice := make([]map[string]interface{}, 0)
 
 	for _, vuln := range res.DevicesScanResults {
 
-		var vulnFound []string
+		vulnFound := make([]string, 0)
 
 		for _, v := range vuln.VulnerabilitiesFoundDetails {
 

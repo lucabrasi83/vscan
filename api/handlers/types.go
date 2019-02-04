@@ -13,11 +13,14 @@ type Login struct {
 	Password string `json:"password" binding:"required"`
 }
 
+// CiscoScanDevice struct represents the attributes of a Scanned Cisco Device
+// The attributes include the Joval definition URL and the Cisco openVuln API URL
 type CiscoScanDevice struct {
 	jovalURL    string
 	openVulnURL string
 }
 
+// Scan Results struct represent the Vulnerability Assessment results for a single device
 type ScanResults struct {
 	ScanJobID                   string                      `json:"scanJobID"`
 	ScanJobStartTime            time.Time                   `json:"scanJobStartTime"`
@@ -26,6 +29,13 @@ type ScanResults struct {
 	TotalVulnerabilitiesFound   int                         `json:"totalVulnerabilitiesFound"`
 	TotalVulnerabilitiesScanned int                         `json:"totalVulnerabilitiesScanned"`
 	VulnerabilitiesFoundDetails []*openvulnapi.VulnMetadata `json:"vulnerabilitiesFoundDetails"`
+}
+
+// PingAPIResponse struct represents the JSON Body Response for API Health Check
+type PingAPIResponse struct {
+	ReplyBack       string `json:"pong"`
+	VulscanoVersion string `json:"version"`
+	GolangVersion   string `json:"golangRuntime"`
 }
 
 // Scan ReportFile represents the JSON report file created for each device by Joval scan
@@ -59,15 +69,15 @@ type AdHocScanDevice struct {
 
 // AdHocBulkScan represents a slice of AdHocBulkScanDevice struct for multiple devices to be scanned in a single container
 type AdHocBulkScan struct {
-	OSType          string                `json:"osType" binding:"required"`
-	SSHGateway      string                `json:"sshGateway"`
-	CredentialsName string                `json:"credentialsName" binding:"required"`
-	Devices         []AdHocBulkScanDevice `json:"devices" binding:"required"`
+	OSType          string                 `json:"osType" binding:"required"`
+	SSHGateway      string                 `json:"sshGateway"`
+	CredentialsName string                 `json:"credentialsName" binding:"required"`
+	Devices         []*AdHocBulkScanDevice `json:"devices" binding:"required"`
 }
 
 type AdHocBulkScanDevice struct {
 	Hostname  string `json:"hostname" binding:"required"`
-	IPAddress string `json:"ip binding:required"`
+	IPAddress string `json:"ip" binding:"required"`
 }
 
 // AnutaDeviceScanRequest represents the JSON payload to be sent to POST /api/v1/scan/anuta-inventory-device
@@ -78,10 +88,10 @@ type AnutaDeviceScanRequest struct {
 }
 
 type AnutaDeviceBulkScanRequest struct {
-	OSType          string                   `json:"osType" binding:"required"`
-	SSHGateway      string                   `json:"sshGateway"`
-	CredentialsName string                   `json:"credentialsName" binding:"required"`
-	Devices         []AnutaDeviceScanRequest `json:"devices" binding:"required"`
+	OSType          string                    `json:"osType" binding:"required"`
+	SSHGateway      string                    `json:"sshGateway"`
+	CredentialsName string                    `json:"credentialsName" binding:"required"`
+	Devices         []*AnutaDeviceScanRequest `json:"devices" binding:"required"`
 }
 
 // AnutaDeviceInventory struct represents a device attributes from Anuta NCX inventory
@@ -106,7 +116,7 @@ type AnutaBulkScanResults struct {
 	ScanJobStartTime      time.Time                    `json:"scanJobStartTime"`
 	ScanJobEndTime        time.Time                    `json:"scanJobEndTime"`
 	DevicesScannedSuccess []string                     `json:"devicesScannedSuccess"`
-	DevicesScannedSkipped []string                     `json:"deviesScannedSkipped,omitempty"`
+	DevicesScannedSkipped []string                     `json:"devicesScannedSkipped"`
 	DevicesScannedFailure []string                     `json:"devicesScannedFailure"`
 	DevicesScanResults    []*AnutaBulkScanResultsChild `json:"devicesScanResults"`
 }

@@ -5,6 +5,7 @@
 [![Docker Build](https://img.shields.io/docker/build/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/builds/)
 [![Microbadger](https://img.shields.io/microbadger/image-size/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/tags/)
 [![GolangCI](https://golangci.com/badges/github.com/lucabrasi83/vulscano.svg)](https://golangci.com/r/github.com/lucabrasi83/vulscano)
+[![godoc](https://docstand.rocro.com/badges/github.com/lucabrasi83/vulscano/documentation/godoc?token=xwzHrjcWq5_ajaRHXPPzhY1agb3ZF1Sx-12hCBRUJAc&branch=master)](https://docstand.rocro.com/docs/github.com/lucabrasi83/vulscano/branch/master/godoc/github.com/lucabrasi83/vulscano/)
 
 #   
 

@@ -1,5 +1,3 @@
-// File dockerlib handles interaction with Docker daemon to launch Joval Scan containers.
-// It communicates via /var/run/docker.sock file by default and allows compute resource controls per scan job
 package handlers
 
 import (
@@ -150,8 +148,7 @@ func init() {
 }
 
 // LaunchJovalDocker handles the creation of Joval container to launch scan jobs
-// It takes ScanResults pointer and JobID as parameters and returns an error in case of any issue reported during
-// interaction with Docker daemon
+// It takes ScanResults pointer and JobID as parameters and returns an error in case of any issue reported during interaction with Docker daemon
 func LaunchJovalDocker(jobID string) (err error) {
 
 	// Container should run for maximum 10 minutes

@@ -1,3 +1,4 @@
+// Package inventoryanuta contains functions to interact with Anuta NCX inventory API
 package inventoryanuta
 
 import (
