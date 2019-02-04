@@ -23,7 +23,7 @@ import (
 
 // scannedDevices slice stores devices currently undergoing a Vulnerability Assessment
 // in order to avoid repeated VA request for the same device
-var scannedDevices []string
+var scannedDevices = make([]string, 0)
 
 // DeviceScanner interface provides abstraction for multi-vendor scan.
 // Implementation is for single device scan request
@@ -67,8 +67,8 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	var reportScanJobEndTime time.Time
-	var successfulScannedDevName []string
-	var successfulScannedDevIP []net.IP
+	successfulScannedDevName := make([]string, 0)
+	successfulScannedDevIP := make([]net.IP, 0)
 	var scanJobStatus string
 
 	// We Generate a Scan Job ID from HashGen library
@@ -82,7 +82,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	}
 
 	// Mutex for scannedDevices slice to prevent race condition
-	var muScannedDevice sync.Mutex
+	var muScannedDevice sync.RWMutex
 
 	defer func() {
 		errJobInsertDB := scanJobReportDB(
@@ -222,7 +222,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 			return
 		}
 
-		for _, vFixed := range *vulnFixed {
+		for _, vFixed := range vulnFixed {
 			for idx, vFound := range sr.VulnerabilitiesFoundDetails {
 				if vFixed.AdvisoryID == vFound.AdvisoryID {
 					sr.VulnerabilitiesFoundDetails[idx].FixedVersions = vFixed.FixedVersions
@@ -290,7 +290,8 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				duplicateSAMap := map[string]bool{}
 
 				// vulnMetaSlice is a slice of Cisco openVuln API vulnerabilities metadata
-				var vulnMetaSlice []*openvulnapi.VulnMetadata
+				//var vulnMetaSlice []*openvulnapi.VulnMetadata
+				vulnMetaSlice := make([]*openvulnapi.VulnMetadata, 0)
 
 				// Declare WaitGroup to send requests to openVuln API in parallel
 				var wg sync.WaitGroup
@@ -314,7 +315,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				wg.Add(vulnCount)
 
 				// Declare Mutex to prevent Race condition on vulnMetaSlice slice
-				var mu sync.Mutex
+				var mu sync.RWMutex
 
 				// Reset duplicateSAMap
 				duplicateSAMap = make(map[string]bool)
@@ -472,7 +473,7 @@ func scanJobReportDB(j string, st time.Time, et time.Time, dn []string, di []net
 // deviceVAReportDB handles DB interaction to persist VA Results when scanned is requested from an inventory source
 func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults) error {
 
-	var vulnFound []string
+	vulnFound := make([]string, 0)
 
 	for _, vuln := range r.VulnerabilitiesFoundDetails {
 		vulnFound = append(vulnFound, vuln.AdvisoryID)
@@ -530,7 +531,7 @@ func isDeviceBeingScanned(d string) bool {
 func removeDevicefromScannedDeviceSlice(d string) {
 
 	// Mutex for scannedDevices slice to prevent race condition
-	var muScannedDevices sync.Mutex
+	var muScannedDevices sync.RWMutex
 
 	sort.Strings(scannedDevices)
 	i := sort.Search(len(scannedDevices),

@@ -7,6 +7,7 @@ import (
 	"github.com/speps/go-hashids"
 )
 
+// GenHash function will generate a unique Hash using the current time in Unix epoch format as the seed
 func GenHash() (string, error) {
 
 	UnixTime := time.Now().UnixNano()

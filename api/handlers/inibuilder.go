@@ -1,8 +1,3 @@
-// File inibuilder handles creation of config.ini file for Joval Scan jobs.
-// Based on scan job inputs in REST API request body, it will dynamically generate ini sections for:
-//  - Target Devices Hostname and IP Address
-//  - Log folder unique per scan job ID
-//  - Reports folder unique per scan job ID
 package handlers
 
 import (

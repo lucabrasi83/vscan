@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vulscano/api/handlers"
 	"github.com/lucabrasi83/vulscano/api/middleware"
+	"github.com/swaggo/gin-swagger"
+	"github.com/swaggo/gin-swagger/swaggerFiles"
 )
 
 func LoadRoutes(routes *gin.Engine) {
@@ -32,6 +34,7 @@ func LoadRoutes(routes *gin.Engine) {
 		apiV1.POST("/login", jwtMiddleware.LoginHandler)
 		apiV1.GET("/refresh-token", jwtMiddleware.RefreshHandler)
 		apiV1.GET("/ping", handlers.Ping)
+		apiV1.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 		admin := apiV1.Group("/admin").Use(authWare())
 		{
@@ -71,6 +74,22 @@ func LoadRoutes(routes *gin.Engine) {
 			vuln.GET("/device/:device-name", tempHandler)
 			vuln.GET("/cisco-published-sa", tempHandler)
 			vuln.GET("/summary", tempHandler)
+		}
+		sshgw := apiV1.Group("/ssh-gateways").Use(authWare())
+		{
+			sshgw.GET("/all", tempHandler)
+			sshgw.GET("/gateway/:gw-name", tempHandler)
+			sshgw.POST("/gateway", tempHandler)
+			sshgw.PATCH("/gateway/:gw-name", tempHandler)
+			sshgw.DELETE("/gateway/:gw-name", tempHandler)
+		}
+		devcreds := apiV1.Group("/device-credentials").Use(authWare())
+		{
+			devcreds.GET("/all", tempHandler)
+			devcreds.GET("/credential/:creds-name", tempHandler)
+			devcreds.POST("/credential", tempHandler)
+			devcreds.PATCH("/credential/:creds-name", tempHandler)
+			devcreds.DELETE("/credential/:creds-name", tempHandler)
 		}
 
 	}

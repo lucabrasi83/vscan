@@ -18,10 +18,11 @@ var (
 	FatalMessage   = color.New(color.BgRed, color.FgHiWhite).SprintFunc()
 	UnderlineText  = color.New(color.Underline).SprintFunc()
 )
-var (
-	VulscanoLogFile *os.File
-	// err             error
-)
+
+//var (
+//	VulscanoLogFile *os.File
+//	err             error
+//)
 
 func logToStdOut(level string, fields ...interface{}) {
 	var log = logrus.New()

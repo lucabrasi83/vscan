@@ -31,6 +31,8 @@ const (
 
 var clientID = os.Getenv("VULSCANO_OPENVULN_CLIENT_ID")
 var clientSecret = os.Getenv("VULSCANO_OPENVULN_CLIENT_SECRET")
+var ciscoAPIToken string
+var tokenExpiryDate time.Time
 
 type VulnMetadata struct {
 	AdvisoryID           string   `json:"advisoryId"`
@@ -45,7 +47,7 @@ type VulnMetadata struct {
 }
 
 type VulnMetadataList struct {
-	Advisories *[]VulnMetadata `json:"advisories"`
+	Advisories []*VulnMetadata `json:"advisories"`
 }
 
 type CiscoSnAPI struct {
@@ -80,7 +82,7 @@ type BearerToken struct {
 	ExpiresIn int    `json:"expires_in"`
 }
 
-func getOpenVulnToken() (string, error) {
+func getOpenVulnToken() error {
 
 	tokenReq, err := http.NewRequest("POST",
 		"https://cloudsso.cisco.com/as/token.oauth2?grant_type="+grantType+"&client_id="+clientID+
@@ -89,11 +91,11 @@ func getOpenVulnToken() (string, error) {
 	tokenReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	if err != nil {
-		return "", fmt.Errorf("error while building request for Cisco openvulnAPI token: %v", err)
+		return fmt.Errorf("error while building request for Cisco openvulnAPI token: %v", err)
 	}
 
 	// Set timeout to 5 seconds for HTTP requests
-	ctx, cancel := context.WithTimeout(tokenReq.Context(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(tokenReq.Context(), 30*time.Second)
 	defer cancel()
 
 	tokenReq = tokenReq.WithContext(ctx)
@@ -103,30 +105,33 @@ func getOpenVulnToken() (string, error) {
 	// TODO: Current error exposes full URL with credentials. Need to find a way to obfuscate while still displaying
 	// the error returned.
 	if err != nil {
-		return "", fmt.Errorf("error while contacting Cisco SSO API: %v", err)
+		return fmt.Errorf("error while contacting Cisco SSO API: %v", err)
 	}
 
 	if tokenRes.StatusCode != http.StatusOK || tokenRes.StatusCode > http.StatusAccepted {
-		return "", errors.New("token request rejected by Cisco SSO API")
+		return errors.New("token request rejected by Cisco SSO API")
 	}
 
 	var t BearerToken
 	if err := json.NewDecoder(tokenRes.Body).Decode(&t); err != nil {
-		return "", fmt.Errorf("error while serializing into JSON token body into struct: %v", err)
+		return fmt.Errorf("error while serializing into JSON token body into struct: %v", err)
 	}
 
 	defer tokenRes.Body.Close()
 
-	return t.Token, nil
+	ciscoAPIToken = t.Token
+	tokenExpiryDate = time.Now().Add(time.Second * time.Duration(t.ExpiresIn))
+
+	return nil
 }
 
 // GetAllVulnMetaData will fetch the all vulnerabilities metadata from Cisco openVuln API published by Cisco
 // It takes the Cisco Advisory ID as parameter and returns VulnMetadata struct or error
-func GetAllVulnMetaData() (*[]VulnMetadata, error) {
+func GetAllVulnMetaData() ([]*VulnMetadata, error) {
 
 	url := baseAllVulnURL
 
-	token, err := getOpenVulnToken()
+	err := checkTokenValidity(time.Now())
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Bearer token from Cisco openVulnAPI: %v", err)
@@ -139,7 +144,7 @@ func GetAllVulnMetaData() (*[]VulnMetadata, error) {
 	}
 
 	vulnMetaReq.Header.Add("Content-Type", "application/json")
-	vulnMetaReq.Header.Add("Authorization", "Bearer "+token)
+	vulnMetaReq.Header.Add("Authorization", "Bearer "+ciscoAPIToken)
 
 	ctx, cancel := context.WithTimeout(vulnMetaReq.Context(), 10*time.Minute)
 	defer cancel()
@@ -164,19 +169,19 @@ func GetAllVulnMetaData() (*[]VulnMetadata, error) {
 
 	defer vulnMetaRes.Body.Close()
 
-	return (&v).Advisories, nil
+	return v.Advisories, nil
 
 }
 
 // GetVulnFixedVersions will fetch the security advisories published for a particular IOS/IOS-XE version
 // from Cisco openVuln API
 // It will return a pointer to slice of type VulnMetadata which will contain the fixed versions for each advisory
-func GetVulnFixedVersions(url string, ver string) (*[]VulnMetadata, error) {
+func GetVulnFixedVersions(url string, ver string) ([]*VulnMetadata, error) {
 
 	// Construct URL with Cisco IOS/IOS-XE Version requested
 	url += ver
 
-	token, err := getOpenVulnToken()
+	err := checkTokenValidity(time.Now())
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Bearer token from Cisco openVulnAPI: %v", err)
@@ -189,7 +194,7 @@ func GetVulnFixedVersions(url string, ver string) (*[]VulnMetadata, error) {
 	}
 
 	vulnMetaReq.Header.Add("Content-Type", "application/json")
-	vulnMetaReq.Header.Add("Authorization", "Bearer "+token)
+	vulnMetaReq.Header.Add("Authorization", "Bearer "+ciscoAPIToken)
 
 	ctx, cancel := context.WithTimeout(vulnMetaReq.Context(), 30*time.Second)
 	defer cancel()
@@ -215,14 +220,14 @@ func GetVulnFixedVersions(url string, ver string) (*[]VulnMetadata, error) {
 
 	defer vulnMetaRes.Body.Close()
 
-	return (&v).Advisories, nil
+	return v.Advisories, nil
 
 }
 
 // GetCiscoPID will return the Cisco Product ID from Cisco sn2info API
 func GetCiscoPID(sn ...string) (*CiscoSnAPI, error) {
 
-	token, err := getOpenVulnToken()
+	err := checkTokenValidity(time.Now())
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Bearer token from Cisco openVulnAPI: %v", err)
@@ -237,7 +242,7 @@ func GetCiscoPID(sn ...string) (*CiscoSnAPI, error) {
 	}
 
 	PIDReq.Header.Add("Content-Type", "application/json")
-	PIDReq.Header.Add("Authorization", "Bearer "+token)
+	PIDReq.Header.Add("Authorization", "Bearer "+ciscoAPIToken)
 
 	ctx, cancel := context.WithTimeout(PIDReq.Context(), 10*time.Minute)
 	defer cancel()
@@ -269,7 +274,7 @@ func GetCiscoPID(sn ...string) (*CiscoSnAPI, error) {
 // GetSuggestedSW will return the Recommended Software Versions for each Product ID
 func GetCiscoSWSuggestion(pid ...string) (*CiscoSWSuggestionAPI, error) {
 
-	token, err := getOpenVulnToken()
+	err := checkTokenValidity(time.Now())
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get Bearer token from Cisco openVulnAPI: %v", err)
@@ -284,7 +289,7 @@ func GetCiscoSWSuggestion(pid ...string) (*CiscoSWSuggestionAPI, error) {
 	}
 
 	SWReq.Header.Add("Content-Type", "application/json")
-	SWReq.Header.Add("Authorization", "Bearer "+token)
+	SWReq.Header.Add("Authorization", "Bearer "+ciscoAPIToken)
 
 	ctx, cancel := context.WithTimeout(SWReq.Context(), 10*time.Minute)
 	defer cancel()
@@ -310,5 +315,24 @@ func GetCiscoSWSuggestion(pid ...string) (*CiscoSWSuggestionAPI, error) {
 	defer SWRes.Body.Close()
 
 	return &s, nil
+
+}
+
+// checkTokenValidity is a helper function that will verify the Bearer Token from Cisco API is still valid.
+// If not, we get a new one through getOpenVulnToken function
+func checkTokenValidity(now time.Time) error {
+
+	if ciscoAPIToken == "" {
+		err := getOpenVulnToken()
+		if err != nil {
+			return err
+		}
+	} else if now.After(tokenExpiryDate) {
+		err := getOpenVulnToken()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 
 }
