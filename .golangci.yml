@@ -22,9 +22,7 @@ run:
     - github.com/alecthomas/template
     - github.com/swaggo/swag
     - vendor$
-
-linters:
-   fast: true      
+      
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 modules-download-mode: readonly

@@ -14,7 +14,7 @@ import (
 func LoadRoutes(routes *gin.Engine) {
 
 	// Set Default Middleware
-	routes.Use(middleware.RequestSizeLimiter(4096), middleware.RequestsLogger())
+	routes.Use(middleware.RequestSizeLimiter(4096), middleware.RequestsLogger(), middleware.APILoadControl())
 
 	// Set up default handler for no routes found
 	routes.NoRoute(func(c *gin.Context) {

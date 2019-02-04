@@ -450,7 +450,11 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 
 	// Merge snToPIDMap and DevList to have complete Mapping of Device, Serial Number, PID and Suggested Version
 	for _, p := range snToPIDMap {
-		p["suggestedVersion"] = tempSoftMap[p["productID"]]
+		if tempSoftMap[p["productID"]] == "" {
+			p["suggestedVersion"] = "NA"
+		} else {
+			p["suggestedVersion"] = tempSoftMap[p["productID"]]
+		}
 		for _, d := range devList {
 			if p["serialNumber"] == (*d).SerialNumber {
 				p["deviceID"] = (*d).DeviceID

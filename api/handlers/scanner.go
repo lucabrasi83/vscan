@@ -187,6 +187,10 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	err = parseScanReport(&sr, jobID)
 	if err != nil {
 
+		logging.VulscanoLog("error",
+			"Error while parsing Joval JSON reports: ", err.Error(),
+		)
+
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 		scanJobStatus = "FAILED"
@@ -278,7 +282,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				err = json.NewDecoder(reportFile).Decode(&scanReport)
 
 				if err != nil {
-					return fmt.Errorf("error while parsing JSON report file: %v", err)
+					return fmt.Errorf("error while parsing JSON report file %v for Job ID %v: %v", path, jobID, err)
 				}
 				// vulnCount determines the number of vulnerabilities found in the report
 				var vulnCount int
@@ -357,7 +361,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 		})
 
 		if err != nil {
-			return fmt.Errorf("error while parsing Reports folder recursively: %v", err)
+			return fmt.Errorf("error while parsing Joval Reports folder for Job ID %v recursively: %v", jobID, err)
 		}
 
 		return nil
