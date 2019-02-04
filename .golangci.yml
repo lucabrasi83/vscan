@@ -1,9 +1,10 @@
 run:
   skip-dirs:
-    - github.com/gin-gonic/gin/json 
-
+    - vendor$      
+    - Godeps$
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
+modules-download-mode: readonly
 service:
   project-path: github.com/lucabrasi83/vulscano
   golangci-lint-version: 1.13.1 # use fixed version to not introduce new linters unexpectedly
