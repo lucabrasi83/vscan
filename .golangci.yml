@@ -1,13 +1,36 @@
 run:
   skip-dirs:
-    - vendor$      
-    - Godeps$
+    - github.com/x-cray/logrus-prefixed-formatter
+    - github.com/sirupsen/logrus
+    - github.com/speps/go-hashids
+    - github.com/shirou/gopsutil/disk
+    - github.com/shirou/gopsutil/cpu
+    - github.com/shirou/gopsutil/host
+    - github.com/shirou/gopsutil/mem
+    - github.com/jackc/pgx
+    - github.com/appleboy/gin-jwt
+    - github.com/docker/docker/api/types
+    - github.com/docker/docker/api/types/container
+    - github.com/docker/docker/api/types/mount
+    - github.com/gin-gonic/gin
+    - github.com/gin-gonic/gin/json
+    - github.com/go-ini/ini
+    - gopkg.in/dgrijalva/jwt-go.v3
+    - github.com/docker/docker/client
+    - github.com/swaggo/gin-swagger
+    - github.com/swaggo/gin-swagger/swaggerFiles
+    - github.com/alecthomas/template
+    - github.com/swaggo/swag
+    - vendor$
+
+linters:
+   fast: true      
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
 modules-download-mode: readonly
 service:
   project-path: github.com/lucabrasi83/vulscano
-  golangci-lint-version: 1.13.1 # use fixed version to not introduce new linters unexpectedly
+  golangci-lint-version: 1.13.2 # use fixed version to not introduce new linters unexpectedly
   prepare:
     - export GO111MODULE=on      
     - GO111MODULE=on go mod tidy
