@@ -148,7 +148,8 @@ func init() {
 }
 
 // LaunchJovalDocker handles the creation of Joval container to launch scan jobs
-// It takes ScanResults pointer and JobID as parameters and returns an error in case of any issue reported during interaction with Docker daemon
+// It takes ScanResults pointer and JobID as parameters and returns an error in case
+// of any issue reported during interaction with Docker daemon
 func LaunchJovalDocker(jobID string) (err error) {
 
 	// Container should run for maximum 10 minutes
@@ -186,6 +187,35 @@ func LaunchJovalDocker(jobID string) (err error) {
 		return errContainerStart
 	}
 
+	// Semaphore channel to signal when the container has exited
+	sem := make(chan bool, 1)
+
+	// Verify if the context channel is closed which means we have exceeded the timeout for a Joval scan job
+	go func() {
+
+		for {
+			select {
+
+			case <-ctxContainerCancel.Done():
+
+				errStopContainer := cli.ContainerKill(context.TODO(), resp.ID, "SIGKILL")
+
+				if errStopContainer != nil {
+					logging.VulscanoLog("error",
+						"failed to stop Joval scan container "+resp.ID+" for Job ID "+jobID,
+					)
+					err = errStopContainer
+				}
+				return
+
+			case <-sem:
+				return
+
+			}
+		}
+
+	}()
+
 	// The container will generate logs for each scan job.
 	// We parse the logs for information such as device successful/failure scans, Mean Scan time,...
 	outContainerLogs, errContainerLogs := cli.ContainerLogs(ctxContainerCancel, resp.ID, types.ContainerLogsOptions{
@@ -204,6 +234,7 @@ func LaunchJovalDocker(jobID string) (err error) {
 	}()
 
 	exit, errCh := cli.ContainerWait(ctxContainerCancel, resp.ID)
+	sem <- true
 
 	if errCh != nil {
 		return errCh

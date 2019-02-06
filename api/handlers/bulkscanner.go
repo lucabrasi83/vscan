@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -40,6 +41,10 @@ func LaunchAbstractVendorBulkScan(abs DeviceBulkScanner, dev *AdHocBulkScan, j *
 // and provide results for vulnerabilities found
 // It takes a slice of AdHocScanDevice struct as parameter and return the Scan Results or an error
 func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanResults, error) {
+
+	// Constant for Job Scan Results
+	const scanJobFailedRes = "FAILED"
+	const scanJobSuccessRes = "SUCCESS"
 
 	// Set Initial Job Start/End time type
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -93,7 +98,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 
 			reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-			scanJobStatus = "FAILED"
+			scanJobStatus = scanJobFailedRes
 
 			// For Bulk Scan, make sure devices previously added as part of this job
 			// are removed from ongoing Scanned device slice.
@@ -103,6 +108,10 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 					removeDevicefromScannedDeviceSlice(ip)
 				}
 			}
+			reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+
+			scanJobStatus = scanJobFailedRes
+
 			return nil, fmt.Errorf("there is already an ongoing VA for device %v with IP: %v",
 				dv.Hostname, dv.IPAddress)
 		}
@@ -123,7 +132,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	// Set the Scan Job Start Time
 	sr.ScanJobStartTime = reportScanJobStartTime
 
-	var devList []map[string]string
+	devList := make([]map[string]string, 0)
 
 	for _, dv := range dev.Devices {
 		device := map[string]string{
@@ -143,11 +152,11 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 		}
 
 		// Map SSHGateway DB struct to UserSSHGateway struct
-		sshGateway.GatewayUsername = (*sshGatewayDB).GatewayUsername
-		sshGateway.GatewayPassword = (*sshGatewayDB).GatewayPassword
-		sshGateway.GatewayName = (*sshGatewayDB).GatewayName
-		sshGateway.GatewayIP = (*sshGatewayDB).GatewayIP
-		sshGateway.GatewayPrivateKey = (*sshGatewayDB).GatewayPrivateKey
+		sshGateway.GatewayUsername = sshGatewayDB.GatewayUsername
+		sshGateway.GatewayPassword = sshGatewayDB.GatewayPassword
+		sshGateway.GatewayName = sshGatewayDB.GatewayName
+		sshGateway.GatewayIP = sshGatewayDB.GatewayIP
+		sshGateway.GatewayPrivateKey = sshGatewayDB.GatewayPrivateKey
 
 	}
 
@@ -163,7 +172,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		scanJobStatus = "FAILED"
+		scanJobStatus = scanJobFailedRes
 
 		return nil, errIniBuilder
 	}
@@ -174,21 +183,25 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		scanJobStatus = "FAILED"
+		scanJobStatus = scanJobFailedRes
 
-		return nil, err
+		switch err {
+		case context.DeadlineExceeded:
+			return nil, fmt.Errorf("scan job %s did not complete within the timeout", jobID)
+		default:
+			return nil, err
+		}
+
 	}
 
 	err = parseBulkScanReport(&sr, jobID)
 	if err != nil {
 
-		logging.VulscanoLog("error",
-			"Error while parsing Joval JSON reports: ", err.Error(),
-		)
+		logging.VulscanoLog("error", err.Error())
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		scanJobStatus = "FAILED"
+		scanJobStatus = scanJobFailedRes
 
 		return nil, err
 	}
@@ -198,7 +211,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	sr.ScanJobEndTime = reportScanJobEndTime
 
 	// Set Scan Job Report data if successful. This is will picked by the defer anonymous function
-	scanJobStatus = "SUCCESS"
+	scanJobStatus = scanJobSuccessRes
 
 	// Parse Scan Results to populate slices of devices successfully scanned Hostname and IP
 	for _, dv := range sr.VulnerabilitiesFound {
@@ -217,6 +230,9 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 // parseScanReport handles parsing reports/JobID folder after a VA scan is done.
 // It will look for .json files and parse the content for each to report found vulnerabilities
 func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
+
+	const jovalReportFoundTag = "fail"
+
 	reportDir := filepath.FromSlash(datadiros.GetDataDir() + "/reports/" + jobID)
 	var scanReport ScanReportFile
 
@@ -275,7 +291,8 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 					// Update duplicateSAMap to find duplicated Cisco SA in Joval Report
 					for _, ruleResult := range scanReport.RuleResults {
 
-						if ruleResult.RuleResult == "fail" && !duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
+						if ruleResult.RuleResult == jovalReportFoundTag &&
+							!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
 							duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
 							vulnCount++
 						}
@@ -293,13 +310,14 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 					// Loop to search for found vulnerabilities in the scan report and fetch metadata for each
 					// vulnerability in a goroutine
 					for _, ruleResult := range scanReport.RuleResults {
-						if ruleResult.RuleResult == "fail" && !duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
+						if ruleResult.RuleResult == jovalReportFoundTag &&
+							!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
 							duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
 							go func(r *ScanReportFileResult) {
 								defer wg.Done()
 								<-rateLimit.C
 
-								vulnMeta := postgresdb.DBInstance.FetchCiscoSAMeta((*r).RuleIdentifier[0].ResultCiscoSA)
+								vulnMeta := postgresdb.DBInstance.FetchCiscoSAMeta(r.RuleIdentifier[0].ResultCiscoSA)
 
 								// Exclusive access to vulnMetaSlice to prevent race condition
 								mu.Lock()
@@ -325,11 +343,11 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 						TotalVulnerabilitiesFound:   vulnCount,
 					}
 					// Start mapping Report File into BulkScanResults struct
-					(*res).VulnerabilitiesFound = append((*res).VulnerabilitiesFound, vulnFound)
+					res.VulnerabilitiesFound = append(res.VulnerabilitiesFound, vulnFound)
 				} else {
 					// Devices with empty rule_results JSON array were not successfully scanned
 					// Append to the DevicesScannedFailure slice
-					(*res).DevicesScannedFailure = append((*res).DevicesScannedFailure, scanReport.DeviceName)
+					res.DevicesScannedFailure = append(res.DevicesScannedFailure, scanReport.DeviceName)
 				}
 			}
 
@@ -349,7 +367,7 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 // AnutaInventoryBulkScan is the main function to handle VA for multiple devices part of Anuta NCX Inventory
 func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaBulkScanResults, error) {
 
-	devCount := len((*d).Devices)
+	devCount := len(d.Devices)
 
 	var wg sync.WaitGroup
 	wg.Add(devCount)
@@ -364,7 +382,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 
 	defer rateLimit.Stop()
 
-	for _, dev := range (*d).Devices {
+	for _, dev := range d.Devices {
 		go func(dv string) {
 			defer wg.Done()
 
@@ -380,28 +398,28 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 			}
 
 			// Don't waste resources trying to scan an offline device
-			if (*anutaDev).Status != "ONLINE" {
+			if anutaDev.Status != "ONLINE" {
 				logging.VulscanoLog("warning",
-					"Skipping Anuta device "+(*anutaDev).DeviceName+" Scan Request as it is currently offline",
+					"Skipping Anuta device "+anutaDev.DeviceName+" Scan Request as it is currently offline",
 				)
-				skippedScannedDevices = append(skippedScannedDevices, (*anutaDev).DeviceName)
+				skippedScannedDevices = append(skippedScannedDevices, anutaDev.DeviceName)
 
 				return
 			}
 
-			osType := (*anutaDev).OSType
-			osVersion := (*anutaDev).OSVersion
+			osType := anutaDev.OSType
+			osVersion := anutaDev.OSVersion
 
 			normalizeAnutaBulkDeviceOS(&osType, &osVersion, anutaDev)
 
 			// Filter Devices if OS Type Requested is different than Device
 			// This is to avoid false positive VA results and load the right OVAL definitions
-			if osType != (*d).OSType {
+			if osType != d.OSType {
 				logging.VulscanoLog("warning",
-					"Skipping Anuta device "+(*anutaDev).DeviceName+" Scan Request as OSType requested "+(*d).
+					"Skipping Anuta device "+anutaDev.DeviceName+" Scan Request as OSType requested "+d.
 						OSType+" does not match with device "+dv)
 
-				skippedScannedDevices = append(skippedScannedDevices, (*anutaDev).DeviceName)
+				skippedScannedDevices = append(skippedScannedDevices, anutaDev.DeviceName)
 
 				return
 			}
@@ -416,7 +434,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 				CiscoModel:    anutaDev.CiscoModel,
 				SerialNumber:  anutaDev.SerialNumber,
 				Hostname:      anutaDev.Hostname,
-				EnterpriseID:  strings.ToUpper(string(anutaDev.DeviceName[0:3])),
+				EnterpriseID:  strings.ToUpper(anutaDev.DeviceName[0:3]),
 			})
 			mu.Unlock()
 
@@ -433,30 +451,30 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 
 	for _, d := range anutaScannedDevList {
 		adBulkScanList = append(adBulkScanList, &AdHocBulkScanDevice{
-			Hostname:  (*d).DeviceName,
-			IPAddress: (*d).MgmtIPAddress.String(),
+			Hostname:  d.DeviceName,
+			IPAddress: d.MgmtIPAddress.String(),
 		})
 	}
 
 	adBulkScanReq := &AdHocBulkScan{
-		OSType:          (*d).OSType,
-		SSHGateway:      (*d).SSHGateway,
+		OSType:          d.OSType,
+		SSHGateway:      d.SSHGateway,
 		Devices:         adBulkScanList,
-		CredentialsName: (*d).CredentialsName,
+		CredentialsName: d.CredentialsName,
 	}
 
 	// devScanner represents DeviceScanner interface. Depending on the OS Type given, we instantiate
 	// with proper device vendor parameters
 	var devBulkScanner DeviceBulkScanner
 
-	switch (*d).OSType {
-	case "IOS-XE", "IOS":
-		devBulkScanner = NewCiscoScanDevice((*d).OSType)
+	switch d.OSType {
+	case ciscoIOSXE, ciscoIOS:
+		devBulkScanner = NewCiscoScanDevice(d.OSType)
 		if devBulkScanner == nil {
-			return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", (*d).OSType)
+			return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", d.OSType)
 		}
 	default:
-		return nil, fmt.Errorf("OS Type %v not supported", (*d).OSType)
+		return nil, fmt.Errorf("OS Type %v not supported", d.OSType)
 	}
 
 	// Launch Bulk Vulnerability Assessment
@@ -483,19 +501,19 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 
 func normalizeAnutaBulkDeviceOS(osType *string, osVersion *string, adInv *inventoryanuta.AnutaAPIDeviceDetails) {
 
-	if (*adInv).OSType == "IOSXE" {
+	if adInv.OSType == "IOSXE" {
 
-		*osType = "IOS-XE"
+		*osType = ciscoIOSXE
 
 		// Look for real IOS-XE Version from Anuta. This will help to query recommended IOSXE Versions
 		// for vulnerability remediation
-		*osVersion = (*adInv).OSVersion
+		*osVersion = adInv.OSVersion
 
-		if (*adInv).RealIOSXEVersion.IOSXEVersionChildContainer != "" && (*adInv).RealIOSXEVersion.
+		if adInv.RealIOSXEVersion.IOSXEVersionChildContainer != "" && adInv.RealIOSXEVersion.
 			IOSXEVersionChildContainer != "noSuchInstance" {
 
 			// Put original IOSd version if noSuchInstance reported from CPE during Anuta SNMP collection
-			*osVersion = (*adInv).RealIOSXEVersion.IOSXEVersionChildContainer
+			*osVersion = adInv.RealIOSXEVersion.IOSXEVersionChildContainer
 
 		}
 
@@ -508,11 +526,11 @@ func mergeAnutaBulkScanResults(r *BulkScanResults, d []*AnutaDeviceInventory, s 
 	var anutaBulkRes AnutaBulkScanResults
 
 	// Map Scan Job Summay Data
-	anutaBulkRes.ScanJobID = (*r).ScanJobID
-	anutaBulkRes.ScanJobStartTime = (*r).ScanJobStartTime
-	anutaBulkRes.ScanJobEndTime = (*r).ScanJobEndTime
-	anutaBulkRes.DevicesScannedFailure = (*r).DevicesScannedFailure
-	anutaBulkRes.DevicesScannedSuccess = (*r).DevicesScannedSuccess
+	anutaBulkRes.ScanJobID = r.ScanJobID
+	anutaBulkRes.ScanJobStartTime = r.ScanJobStartTime
+	anutaBulkRes.ScanJobEndTime = r.ScanJobEndTime
+	anutaBulkRes.DevicesScannedFailure = r.DevicesScannedFailure
+	anutaBulkRes.DevicesScannedSuccess = r.DevicesScannedSuccess
 
 	if len(s) > 0 {
 		anutaBulkRes.DevicesScannedSkipped = s
@@ -520,26 +538,26 @@ func mergeAnutaBulkScanResults(r *BulkScanResults, d []*AnutaDeviceInventory, s 
 
 	for _, dev := range d {
 
-		for _, res := range (*r).VulnerabilitiesFound {
+		for _, res := range r.VulnerabilitiesFound {
 
-			if (*dev).DeviceName == (*res).DeviceName {
+			if dev.DeviceName == res.DeviceName {
 				anutaBulkRes.DevicesScanResults = append(
 					anutaBulkRes.DevicesScanResults,
 					&AnutaBulkScanResultsChild{
-						DeviceName:                  (*dev).DeviceName,
-						MgmtIPAddress:               (*dev).MgmtIPAddress,
-						Status:                      (*dev).Status,
-						OSType:                      (*dev).OSType,
-						OSVersion:                   (*dev).OSVersion,
-						CiscoModel:                  (*dev).CiscoModel,
-						SerialNumber:                (*dev).SerialNumber,
-						Hostname:                    (*dev).Hostname,
-						RecommendedSW:               (*dev).RecommendedSW,
-						TotalVulnerabilitiesFound:   (*res).TotalVulnerabilitiesFound,
-						TotalVulnerabilitiesScanned: (*res).TotalVulnerabilitiesScanned,
-						ScanDeviceMeanTime:          (*res).ScanDeviceMeanTime,
-						VulnerabilitiesFoundDetails: (*res).VulnerabilitiesFoundDetails,
-						EnterpriseID:                (*dev).EnterpriseID,
+						DeviceName:                  dev.DeviceName,
+						MgmtIPAddress:               dev.MgmtIPAddress,
+						Status:                      dev.Status,
+						OSType:                      dev.OSType,
+						OSVersion:                   dev.OSVersion,
+						CiscoModel:                  dev.CiscoModel,
+						SerialNumber:                dev.SerialNumber,
+						Hostname:                    dev.Hostname,
+						RecommendedSW:               dev.RecommendedSW,
+						TotalVulnerabilitiesFound:   res.TotalVulnerabilitiesFound,
+						TotalVulnerabilitiesScanned: res.TotalVulnerabilitiesScanned,
+						ScanDeviceMeanTime:          res.ScanDeviceMeanTime,
+						VulnerabilitiesFoundDetails: res.VulnerabilitiesFoundDetails,
+						EnterpriseID:                dev.EnterpriseID,
 					},
 				)
 
@@ -564,22 +582,22 @@ func deviceBulkVAReportDB(res *AnutaBulkScanResults) error {
 
 		for _, v := range vuln.VulnerabilitiesFoundDetails {
 
-			vulnFound = append(vulnFound, (*v).AdvisoryID)
+			vulnFound = append(vulnFound, v.AdvisoryID)
 		}
 
 		scanResMap := map[string]interface{}{
-			"deviceName":       (*vuln).DeviceName,                  // Column device_id
-			"deviceIP":         (*vuln).MgmtIPAddress,               // Column mgmt_ip_address
-			"lastScan":         (*res).ScanJobEndTime,               // Column last_successful_scan
-			"advisoryID":       vulnFound,                           // Column vulnerabilities_found
-			"totalVulnScanned": (*vuln).TotalVulnerabilitiesScanned, // Column total_vulnerabilities_scanned
-			"enterpriseID":     (*vuln).EnterpriseID,                // Column enterprise_id
-			"scanMeantime":     (*vuln).ScanDeviceMeanTime,          // Column scan_mean_time
-			"osType":           (*vuln).OSType,                      // Column os_type
-			"osVersion":        (*vuln).OSVersion,                   // Column os_version
-			"deviceModel":      (*vuln).CiscoModel,                  // Column device_model
-			"serialNumber":     (*vuln).SerialNumber,                // Column serial_number
-			"deviceHostname":   (*vuln).Hostname,                    // Column device_hostname
+			"deviceName":       vuln.DeviceName,                  // Column device_id
+			"deviceIP":         vuln.MgmtIPAddress,               // Column mgmt_ip_address
+			"lastScan":         res.ScanJobEndTime,               // Column last_successful_scan
+			"advisoryID":       vulnFound,                        // Column vulnerabilities_found
+			"totalVulnScanned": vuln.TotalVulnerabilitiesScanned, // Column total_vulnerabilities_scanned
+			"enterpriseID":     vuln.EnterpriseID,                // Column enterprise_id
+			"scanMeantime":     vuln.ScanDeviceMeanTime,          // Column scan_mean_time
+			"osType":           vuln.OSType,                      // Column os_type
+			"osVersion":        vuln.OSVersion,                   // Column os_version
+			"deviceModel":      vuln.CiscoModel,                  // Column device_model
+			"serialNumber":     vuln.SerialNumber,                // Column serial_number
+			"deviceHostname":   vuln.Hostname,                    // Column device_hostname
 		}
 
 		scanResSlice = append(scanResSlice, scanResMap)

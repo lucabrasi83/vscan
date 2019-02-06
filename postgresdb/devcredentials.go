@@ -3,8 +3,6 @@ package postgresdb
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/jackc/pgx"
 	"github.com/lucabrasi83/vulscano/logging"
 )
@@ -23,8 +21,8 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 
 	var deviceCreds DeviceCredentialsDB
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `SELECT credentials_name,
  				      device_vendor,

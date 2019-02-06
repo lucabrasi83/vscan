@@ -31,8 +31,8 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 		return err
 	}
 
-	// Set Query timeout to 10 minutes
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 10*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), longQueryTimeout)
 
 	// SQL Statement to insert all Cisco advisories Metadata from openVuln API
 	// If Cisco Advisory ID already exists, we just update it with fields returned by Cisco openVuln API
@@ -139,8 +139,8 @@ func (p *vulscanoDB) FetchCiscoSAMeta(sa string) *openvulnapi.VulnMetadata {
 	var timestamps time.Time
 	var cvssScore float64
 
-	// Set Query timeout to 1 sec
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 10*time.Second)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `SELECT 
 					  advisory_title, first_published, bug_id, cve_id, 
@@ -189,8 +189,8 @@ func (p *vulscanoDB) FetchCiscoSAMeta(sa string) *openvulnapi.VulnMetadata {
 // UpdateDeviceSuggestedSW will update all Devices Suggested Software Version from Cisco API
 func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 
-	// Set Query timeout to 10 minutes
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 10*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), longQueryTimeout)
 
 	// SQL Statement to insert all Cisco advisories Metadata from openVuln API
 	// If Cisco Advisory ID already exists, we just update it with fields returned by Cisco openVuln API

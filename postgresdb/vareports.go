@@ -3,15 +3,13 @@ package postgresdb
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"github.com/lucabrasi83/vulscano/logging"
 )
 
 func (p *vulscanoDB) PersistScanJobReport(args ...interface{}) error {
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
 	// SQL Query to insert VA Job stats
 	const sqlQueryJobReport = `INSERT INTO scan_jobs_history
@@ -39,7 +37,7 @@ func (p *vulscanoDB) PersistScanJobReport(args ...interface{}) error {
 func (p *vulscanoDB) PersistDeviceVAJobReport(args ...interface{}) error {
 
 	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
 	// SQL Query to insert VA Scan Result per device
 	const sqlQueryDeviceReport = `INSERT INTO device_va_results
@@ -82,7 +80,7 @@ func (p *vulscanoDB) PersistDeviceVAJobReport(args ...interface{}) error {
 func (p *vulscanoDB) PersistDeviceVAHistory(args ...interface{}) error {
 
 	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	// SQL Query to insert VA Scan Result per device
 	const sqlQueryDeviceHistory = `INSERT INTO device_va_history
@@ -107,8 +105,8 @@ func (p *vulscanoDB) PersistDeviceVAHistory(args ...interface{}) error {
 
 func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) error {
 
-	// Set Query timeout to 10 minutes
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 10*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), longQueryTimeout)
 
 	const sqlQueryDeviceReport = `INSERT INTO device_va_results
   								  (device_id, mgmt_ip_address, last_successful_scan, 
@@ -195,8 +193,8 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 
 func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) error {
 
-	// Set Query timeout to 10 minutes
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 10*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), longQueryTimeout)
 
 	const sqlQueryDeviceHistory = `INSERT INTO device_va_history
   								  (device_id, vuln_found, timestamp)

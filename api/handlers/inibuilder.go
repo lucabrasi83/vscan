@@ -52,9 +52,9 @@ func BuildIni(jobID string, dev []map[string]string, jovalSource string, sshGW *
 
 	// Add Device Credentials sections details
 	var credsName string
-	if (*creds).CredentialsName != "" {
+	if creds.CredentialsName != "" {
 
-		credsName = (*creds).CredentialsName
+		credsName = creds.CredentialsName
 		err = buildDeviceCredentialsSections(cfg, creds)
 
 		if err != nil {
@@ -64,9 +64,9 @@ func BuildIni(jobID string, dev []map[string]string, jovalSource string, sshGW *
 
 	// Add SSH Gateway sections details if a gateway is specified to UserSSHGateway is not nil
 	var sshGWName string
-	if (*sshGW).GatewayName != "" {
+	if sshGW.GatewayName != "" {
 
-		sshGWName = (*sshGW).GatewayName
+		sshGWName = sshGW.GatewayName
 		err = buildSSHGatewaySections(cfg, sshGW)
 
 		if err != nil {
@@ -134,57 +134,57 @@ func buildSSHGatewaySections(cfg *ini.File, sshGW *UserSSHGateway) error {
 	sshGWCredSec, err := cfg.NewSection("Credential: " + "ssh-gateway")
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting SSH Gateway Credentials section in Config.ini: %v ", err)
+		return fmt.Errorf("error while setting SSH gateway credentials section in config.ini: %v ", err)
 	}
 
 	_, err = sshGWCredSec.NewKey("type", "SSH")
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting SSH Gateway Credentials Type key in Config.ini: %v ", err)
+		return fmt.Errorf("error while setting SSH gateway credentials type key in config.ini: %v ", err)
 	}
-	_, err = sshGWCredSec.NewKey("username", (*sshGW).GatewayUsername)
+	_, err = sshGWCredSec.NewKey("username", sshGW.GatewayUsername)
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting SSH Gateway Username key in Config.ini: %v ", err)
+		return fmt.Errorf("error while setting SSH gateway username key in config.ini: %v ", err)
 	}
 
-	if (*sshGW).GatewayPassword != "" {
-		_, err = sshGWCredSec.NewKey("password", (*sshGW).GatewayPassword)
+	if sshGW.GatewayPassword != "" {
+		_, err = sshGWCredSec.NewKey("password", sshGW.GatewayPassword)
 
 		if err != nil {
-			return fmt.Errorf("Error When Setting SSH Gateway Password key in Config.ini: %v ", err)
+			return fmt.Errorf("error while setting SSH gateway password key in config.ini: %v ", err)
 		}
 	}
 
-	if (*sshGW).GatewayPrivateKey != "" {
+	if sshGW.GatewayPrivateKey != "" {
 
 		// Format SSH Private Key to comply with Joval ini format
-		pvKeyJovalFormat := strings.Replace((*sshGW).GatewayPrivateKey, "\n", "\\\r", -1)
+		pvKeyJovalFormat := strings.Replace(sshGW.GatewayPrivateKey, "\n", "\\\r", -1)
 
 		_, err := sshGWCredSec.NewKey("private_key", pvKeyJovalFormat)
 
 		if err != nil {
-			return fmt.Errorf("Error When Setting SSH Gateway Private Key in Config.ini: %v ", err)
+			return fmt.Errorf("error while setting SSH gateway private key in config.ini: %v ", err)
 		}
 
 	}
 
-	sshGwSec, err := cfg.NewSection("Gateway: " + (*sshGW).GatewayName)
+	sshGwSec, err := cfg.NewSection("Gateway: " + sshGW.GatewayName)
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting SSH Gateway section in Config.ini: %v ", err)
+		return fmt.Errorf("error while setting SSH sateway section in config.ini: %v ", err)
 	}
 
-	_, err = sshGwSec.NewKey("host", (*sshGW).GatewayIP.String())
+	_, err = sshGwSec.NewKey("host", sshGW.GatewayIP.String())
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting SSH Gateway IP key in Config.ini: %v ", err)
+		return fmt.Errorf("error while setting SSH gateway IP key in config.ini: %v ", err)
 	}
 
 	_, err = sshGwSec.NewKey("credential", "ssh-gateway")
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting SSH Gateway Credentials key in Config.ini: %v ", err)
+		return fmt.Errorf("error while setting SSH gateway credentials key in config.ini: %v ", err)
 	}
 
 	return nil
@@ -193,48 +193,48 @@ func buildSSHGatewaySections(cfg *ini.File, sshGW *UserSSHGateway) error {
 
 func buildDeviceCredentialsSections(cfg *ini.File, creds *UserDeviceCredentials) error {
 
-	deviceCredSec, err := cfg.NewSection("Credential: " + (*creds).CredentialsName)
+	deviceCredSec, err := cfg.NewSection("Credential: " + creds.CredentialsName)
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting SSH Device Credentials section in Config.ini: %v ", err)
+		return fmt.Errorf("error while setting SSH device credentials section in config.ini: %v ", err)
 	}
 
 	_, err = deviceCredSec.NewKey("type", "SSH")
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting SSH Device Credentials Type key in Config.ini: %v ", err)
+		return fmt.Errorf("error while setting SSH device credentials type key in config.ini: %v ", err)
 	}
-	_, err = deviceCredSec.NewKey("username", (*creds).Username)
+	_, err = deviceCredSec.NewKey("username", creds.Username)
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting SSH Device Username key in Config.ini: %v ", err)
+		return fmt.Errorf("error while setting SSH device username key in config.ini: %v ", err)
 	}
 
-	if (*creds).Password != "" {
-		_, err = deviceCredSec.NewKey("password", (*creds).Password)
+	if creds.Password != "" {
+		_, err = deviceCredSec.NewKey("password", creds.Password)
 
 		if err != nil {
-			return fmt.Errorf("Error When Setting SSH Device Password key in Config.ini: %v ", err)
+			return fmt.Errorf("error while setting SSH device password key in config.ini: %v ", err)
 		}
 	}
 
-	if (*creds).CredentialsDeviceVendor == "CISCO" && (*creds).IOSEnablePassword != "" {
-		_, err = deviceCredSec.NewKey("ios_enable_password", (*creds).IOSEnablePassword)
+	if creds.CredentialsDeviceVendor == "CISCO" && creds.IOSEnablePassword != "" {
+		_, err = deviceCredSec.NewKey("ios_enable_password", creds.IOSEnablePassword)
 
 		if err != nil {
-			return fmt.Errorf("Error When Setting SSH Device IOS Enable Password key in Config.ini: %v ", err)
+			return fmt.Errorf("error while setting SSH device IOS enable password key in config.ini: %v ", err)
 		}
 	}
 
-	if (*creds).PrivateKey != "" {
+	if creds.PrivateKey != "" {
 
 		// Format SSH Private Key to comply with Joval ini format
-		pvKeyJovalFormat := strings.Replace((*creds).PrivateKey, "\n", "\\\r", -1)
+		pvKeyJovalFormat := strings.Replace(creds.PrivateKey, "\n", "\\\r", -1)
 
 		_, err := deviceCredSec.NewKey("private_key", pvKeyJovalFormat)
 
 		if err != nil {
-			return fmt.Errorf("Error When Setting SSH Device Private Key in Config.ini: %v ", err)
+			return fmt.Errorf("error when setting SSH device private key in config.ini: %v ", err)
 		}
 
 	}
@@ -250,24 +250,24 @@ func dynaIniGen(cfg *ini.File, jobID string, dev []map[string]string, sshGWName 
 		"Report: JSON").NewKey("export.dir", filepath.FromSlash("./reports/"+jobID))
 
 	if err != nil {
-		return fmt.Errorf("Error When Setting Reports Directory In Config.ini: %v ", err)
+		return fmt.Errorf("error while setting reports directory in config.ini: %v ", err)
 	}
 	// Loop through devices slice to access the map and build config.ini [Target] section(s)
 	for idx := range dev {
 		devSection, err := cfg.NewSection("Target: " + dev[idx]["hostname"])
 
 		if err != nil {
-			return fmt.Errorf("Error When Setting Device Section In Config.ini: %v ", err)
+			return fmt.Errorf("error while setting device section in config.ini: %v ", err)
 		}
 		_, err = devSection.NewKey("credential", credsName)
 
 		if err != nil {
-			return fmt.Errorf("Error When Setting Credential key In Config.ini: %v ", err)
+			return fmt.Errorf("error while setting credential key in config.ini: %v ", err)
 		}
 		_, err = devSection.NewKey("host", dev[idx]["ip"])
 
 		if err != nil {
-			return fmt.Errorf("Error When Setting Host key In Config.ini: %v ", err)
+			return fmt.Errorf("error while setting host key in config.ini: %v ", err)
 		}
 
 		// Add SSH Gateway Name if not empty string
@@ -275,7 +275,7 @@ func dynaIniGen(cfg *ini.File, jobID string, dev []map[string]string, sshGWName 
 			_, err = devSection.NewKey("gateway", sshGWName)
 
 			if err != nil {
-				return fmt.Errorf("Error When Setting gateway key In Config.ini: %v ", err)
+				return fmt.Errorf("error while setting gateway key in config.ini: %v ", err)
 			}
 		}
 	}

@@ -3,11 +3,9 @@ package postgresdb
 import (
 	"context"
 	"fmt"
-	"net"
-	"time"
-
 	"github.com/jackc/pgx"
 	"github.com/lucabrasi83/vulscano/logging"
+	"net"
 )
 
 type SSHGatewayDB struct {
@@ -24,7 +22,7 @@ func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB
 	var sshGw SSHGatewayDB
 
 	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `SELECT gateway_name, 
 	                  gateway_ip, 

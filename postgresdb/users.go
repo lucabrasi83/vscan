@@ -3,11 +3,9 @@ package postgresdb
 import (
 	"context"
 	"fmt"
-	"strings"
-	"time"
-
 	"github.com/jackc/pgx"
 	"github.com/lucabrasi83/vulscano/logging"
+	"strings"
 )
 
 type VulscanoDBUser struct {
@@ -22,7 +20,7 @@ func (p *vulscanoDB) FetchUser(u string) (*VulscanoDBUser, error) {
 	var user VulscanoDBUser
 
 	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `SELECT user_id, email, enterprise_id, role
 				      FROM vulscano_users WHERE 
@@ -51,8 +49,8 @@ func (p *vulscanoDB) FetchUser(u string) (*VulscanoDBUser, error) {
 
 func (p *vulscanoDB) InsertNewUser(email string, pass string, ent string, role string) error {
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `INSERT INTO vulscano_users
 					  (email, password, enterprise_id, role)
@@ -87,8 +85,8 @@ func (p *vulscanoDB) InsertNewUser(email string, pass string, ent string, role s
 }
 func (p *vulscanoDB) DeleteUser(email string) error {
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `DELETE FROM vulscano_users
 					  WHERE email = $1
@@ -121,8 +119,8 @@ func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent strin
 	pEnterprise := normalizeString(ent)
 	pPassword := normalizeString(pass)
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `UPDATE vulscano_users SET
 			          password = COALESCE(crypt($1, gen_salt('bf', 8)), password),
@@ -160,7 +158,7 @@ func (p *vulscanoDB) FetchAllUsers() (*[]VulscanoDBUser, error) {
 	var vulscanoUsers []VulscanoDBUser
 
 	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
 	const sqlQuery = `SELECT user_id, email, enterprise_id, role FROM vulscano_users`
 
@@ -203,8 +201,8 @@ func (p *vulscanoDB) AuthenticateUser(user string, pass string) (*VulscanoDBUser
 
 	var uDB VulscanoDBUser
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `SELECT user_id, email, enterprise_id, role 
 				      FROM vulscano_users WHERE 
@@ -248,8 +246,8 @@ func (p *vulscanoDB) AssertUserExists(id interface{}) bool {
 
 	var u string
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `SELECT user_id
 				      FROM vulscano_users WHERE 

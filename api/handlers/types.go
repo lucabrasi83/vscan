@@ -67,7 +67,8 @@ type AdHocScanDevice struct {
 	SSHGateway      string `json:"sshGateway"`
 }
 
-// AdHocBulkScan represents a slice of AdHocBulkScanDevice struct for multiple devices to be scanned in a single container
+// AdHocBulkScan represents a slice of AdHocBulkScanDevice struct
+// for multiple devices to be scanned in a single container
 type AdHocBulkScan struct {
 	OSType          string                 `json:"osType" binding:"required"`
 	SSHGateway      string                 `json:"sshGateway"`
