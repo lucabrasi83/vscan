@@ -1,7 +1,6 @@
 run:    
 # golangci.com configuration
 # https://github.com/golangci/golangci/wiki/Configuration
-# enable linters below
 linters:
   enable:
     - golint
