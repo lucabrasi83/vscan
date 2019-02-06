@@ -2,7 +2,7 @@ module github.com/lucabrasi83/vulscano
 
 require (
 	github.com/Microsoft/go-winio v0.4.11 // indirect
-	github.com/StackExchange/wmi v0.0.0-20180725035823-b12b22c5341f // indirect
+	github.com/StackExchange/wmi v0.0.0-20181212234831-e0a55b97c705 // indirect
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc
 	github.com/appleboy/gin-jwt v2.5.0+incompatible
 	github.com/appleboy/gofight v2.0.0+incompatible // indirect
@@ -17,7 +17,7 @@ require (
 	github.com/gin-contrib/sse v0.0.0-20190125020943-a7658810eb74 // indirect
 	github.com/gin-gonic/gin v1.3.0
 	github.com/go-ini/ini v1.41.0
-	github.com/go-ole/go-ole v1.2.1 // indirect
+	github.com/go-ole/go-ole v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v0.18.0 // indirect
 	github.com/go-openapi/swag v0.18.0 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
@@ -29,12 +29,13 @@ require (
 	github.com/labstack/echo v3.3.5+incompatible // indirect
 	github.com/labstack/gommon v0.2.8 // indirect
 	github.com/lib/pq v1.0.0 // indirect
-	github.com/mattn/go-colorable v0.0.9 // indirect
+	github.com/mattn/go-colorable v0.1.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/onsi/gomega v1.4.2 // indirect
-	github.com/shirou/gopsutil v2.17.12+incompatible
+	github.com/onsi/ginkgo v1.7.0 // indirect
+	github.com/onsi/gomega v1.4.3 // indirect
+	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24 // indirect
 	github.com/sirupsen/logrus v1.3.0
@@ -47,15 +48,15 @@ require (
 	github.com/swaggo/swag v1.4.1-0.20190125033530-4dfb5f32ddf2
 	github.com/tidwall/gjson v1.1.3 // indirect
 	github.com/tidwall/match v1.0.1 // indirect
-	github.com/ugorji/go/codec v0.0.0-20190128213124-ee1426cffec0 // indirect
+	github.com/ugorji/go/codec v0.0.0-20190204201341-e444a5086c43 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v0.0.0-20170224212429-dcecefd839c4 // indirect
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	golang.org/x/crypto v0.0.0-20190131182504-b8fe1690c613 // indirect
 	golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3 // indirect
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4 // indirect
-	golang.org/x/sys v0.0.0-20190203050204-7ae0202eb74c // indirect
-	golang.org/x/tools v0.0.0-20190202235157-7414d4c1f71c // indirect
+	golang.org/x/sys v0.0.0-20190204203706-41f3e6584952 // indirect
+	golang.org/x/tools v0.0.0-20190205050122-7f7074d5bcfd // indirect
 	gopkg.in/appleboy/gofight.v2 v2.0.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0

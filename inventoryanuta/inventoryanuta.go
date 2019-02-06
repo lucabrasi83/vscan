@@ -35,6 +35,8 @@ type AnutaAPIDeviceParent struct {
 const (
 	anutaDeviceFilters = "?fields=id;mgmt-ip-address;status;os-version;" +
 		"iosxeversion:iosxe-version/version;ostype-string;device-type;serial-number;name"
+
+	shortHTTPReqTimeout = 10 * time.Second
 )
 
 var (
@@ -73,7 +75,7 @@ func GetAnutaDevice(dev string) (*AnutaAPIDeviceDetails, error) {
 	anutaDeviceReq.Header.Add("Content-Type", "application/json")
 	anutaDeviceReq.Header.Add("Authorization", "Basic "+anutaBaseAuth)
 
-	ctx, cancel := context.WithTimeout(anutaDeviceReq.Context(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(anutaDeviceReq.Context(), shortHTTPReqTimeout)
 	defer cancel()
 
 	anutaDeviceReq = anutaDeviceReq.WithContext(ctx)

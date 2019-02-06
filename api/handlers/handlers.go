@@ -20,9 +20,11 @@ import (
 )
 
 const (
-	rootRole = "vulscanoroot"
-	rootUser = "root@vulscano.com"
-	userRole = "vulscanouser"
+	rootRole   = "vulscanoroot"
+	rootUser   = "root@vulscano.com"
+	userRole   = "vulscanouser"
+	ciscoIOSXE = "IOS-XE"
+	ciscoIOS   = "IOS"
 )
 
 // LaunchAdHocScan handler is the API endpoint to trigger a single device ad-hoc VA scan on the passed JSON body.
@@ -52,7 +54,7 @@ func LaunchAdHocScan(c *gin.Context) {
 	}
 
 	switch ads.OSType {
-	case "IOS-XE", "IOS":
+	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
 		if devScanner == nil {
 			logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
@@ -112,8 +114,8 @@ func LaunchAnutaInventoryScan(c *gin.Context) {
 	}
 
 	// Control to verify user Enterprise ID corresponds to Device trigram
-	if entID, ok := jwtMapClaim["enterprise"].(string); ok && (entID == string(invDevice.
-		DeviceID[:3]) || isUserVulscanoRoot(jwtMapClaim)) {
+	if entID, ok := jwtMapClaim["enterprise"].(string); ok &&
+		(entID == invDevice.DeviceID[0:3]) || isUserVulscanoRoot(jwtMapClaim) {
 
 		jwtClaim := JwtClaim{
 			Enterprise: jwtMapClaim["enterprise"].(string),
@@ -374,7 +376,7 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 
 	for _, dev := range devList {
 		if dev.SerialNumber != "NA" {
-			snSlice = append(snSlice, (*dev).SerialNumber)
+			snSlice = append(snSlice, dev.SerialNumber)
 		}
 	}
 
@@ -456,8 +458,8 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 			p["suggestedVersion"] = tempSoftMap[p["productID"]]
 		}
 		for _, d := range devList {
-			if p["serialNumber"] == (*d).SerialNumber {
-				p["deviceID"] = (*d).DeviceID
+			if p["serialNumber"] == d.SerialNumber {
+				p["deviceID"] = d.DeviceID
 			}
 		}
 	}
@@ -502,7 +504,7 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 	}
 
 	switch ads.OSType {
-	case "IOS-XE", "IOS":
+	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
 		if devScanner == nil {
 			logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
@@ -565,11 +567,11 @@ func LaunchAnutaInventoryBulkScan(c *gin.Context) {
 	}
 
 	// Verify that users is allowed to run a Vulnerability Assessment on all devices specified from Anuta inventory
-	var notAllowedToScanSlice []string
+	notAllowedToScanSlice := make([]string, 0)
 
 	for _, invDevice := range invDevices.Devices {
 
-		if entID == string(invDevice.DeviceID[:3]) || isUserVulscanoRoot(jwtMapClaim) {
+		if entID == invDevice.DeviceID[0:3] || isUserVulscanoRoot(jwtMapClaim) {
 			continue
 		}
 		notAllowedToScanSlice = append(notAllowedToScanSlice, invDevice.DeviceID)
@@ -619,7 +621,8 @@ func validatePassword(p string) bool {
 
 	validatePasswordLengthBool := len(p) >= 10 && len(p) <= 20
 
-	return validateCapitalBool && validateLowerCaseBool && validateNumberBool && validateSpecialCharBool && validatePasswordLengthBool
+	return validateCapitalBool && validateLowerCaseBool &&
+		validateNumberBool && validateSpecialCharBool && validatePasswordLengthBool
 }
 
 // buildCiscoSNList is a helper function to fetch the Product ID's for each device passed in slice
@@ -689,53 +692,53 @@ func buildCiscoSNList(snSlice []string) []*openvulnapi.CiscoSnAPI {
 	return ciscoSNAPISlice
 }
 
-// buildCiscoSNList is a helper function to fetch the Product ID's for each device passed in slice
+// buildCiscoSuggSWList is a helper function to fetch the Cisco suggested Software for each PID passed
 func buildCiscoSuggSWList(snPID []string) []*openvulnapi.CiscoSWSuggestionAPI {
 
 	// Get the Cisco SuggestedSW for each PID
 	// snIncrement will pass 10 PID's per API call until the snSlice exhausts
 	// snTotalCountProc will keep track of the number of PID's processed in snPID
 	// snGuard will allow 2 concurrent API calls as per Cisco API limits
-	snIncrement := 10
+	pidIncrement := 10
 
 	if len(snPID) < 21 {
-		snIncrement = len(snPID) / 2
+		pidIncrement = len(snPID) / 2
 	}
 
-	snTotalCountProc := 0
-	snMaxAPICalls := 2
-	snGuard := make(chan struct{}, snMaxAPICalls)
+	pidTotalCountProc := 0
+	pidMaxAPICalls := 2
+	pidGuard := make(chan struct{}, pidMaxAPICalls)
 
 	var wgSn sync.WaitGroup
 	var muSn sync.RWMutex
 
 	ciscoSuggSWSlice := make([]*openvulnapi.CiscoSWSuggestionAPI, 0)
 
-	for snCount := 0; snCount+snIncrement < len(snPID); snCount += snIncrement {
-		snGuard <- struct{}{}
+	for snCount := 0; snCount+pidIncrement < len(snPID); snCount += pidIncrement {
+		pidGuard <- struct{}{}
 		wgSn.Add(1)
 		go func(count int) {
 
 			defer wgSn.Done()
 
 			logging.VulscanoLog("info",
-				"sending API Call for PID ", snPID[count:count+snIncrement])
+				"sending API Call for PID ", snPID[count:count+pidIncrement])
 
-			sw, err := openvulnapi.GetCiscoSWSuggestion(snPID[count : count+snIncrement]...)
+			sw, err := openvulnapi.GetCiscoSWSuggestion(snPID[count : count+pidIncrement]...)
 
 			if err != nil {
 				logging.VulscanoLog("error",
 					err.Error())
-				<-snGuard
+				<-pidGuard
 				return
 			}
 
 			muSn.Lock()
 			ciscoSuggSWSlice = append(ciscoSuggSWSlice, sw)
-			snTotalCountProc = count
+			pidTotalCountProc = count
 			muSn.Unlock()
 
-			<-snGuard
+			<-pidGuard
 		}(snCount)
 
 	}
@@ -743,9 +746,9 @@ func buildCiscoSuggSWList(snPID []string) []*openvulnapi.CiscoSWSuggestionAPI {
 
 	// Send last increment of serial numbers slice to Cisco API
 	logging.VulscanoLog("info",
-		"sending API Call for Cisco PID ", snPID[snTotalCountProc+snIncrement:])
+		"sending API Call for Cisco PID ", snPID[pidTotalCountProc+pidIncrement:])
 
-	swLast, err := openvulnapi.GetCiscoSWSuggestion(snPID[snTotalCountProc+snIncrement:]...)
+	swLast, err := openvulnapi.GetCiscoSWSuggestion(snPID[pidTotalCountProc+pidIncrement:]...)
 
 	if err != nil {
 		logging.VulscanoLog("error",

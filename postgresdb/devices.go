@@ -26,7 +26,7 @@ func (p *vulscanoDB) FetchAllDevices() ([]*DeviceVADB, error) {
 	vulscanoDevices := make([]*DeviceVADB, 0)
 
 	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
 	const sqlQuery = `SELECT device_id, serial_number FROM device_va_results`
 
@@ -71,8 +71,8 @@ func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) ([]*Devic
 
 	pEnt := normalizeString(ent)
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
 	const sqlQuery = `SELECT device_id, mgmt_ip_address, last_successful_scan, enterprise_id,
 					  scan_mean_time, os_type, os_version, device_model, 
@@ -134,8 +134,8 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) ([]*Devic
 	// Normalize ent to Postgres NULL type if empty
 	pEnt := normalizeString(ent)
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
 	const sqlQuery = `SELECT device_id, mgmt_ip_address, last_successful_scan, enterprise_id,
 					  scan_mean_time, os_type, os_version, device_model, 
@@ -197,8 +197,8 @@ func (p *vulscanoDB) UserGetDevVAResultsByCVE(cve string, ent string) ([]*Device
 
 	devSlice := make([]*DeviceVADB, 0)
 
-	// Set Query timeout to 1 minute
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1*time.Minute)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
 	const sqlQuery = `SELECT device_id, mgmt_ip_address, last_successful_scan, enterprise_id,
 					  scan_mean_time, os_type, os_version, device_model, 

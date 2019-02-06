@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -34,12 +35,12 @@ type DeviceScanner interface {
 // NewCiscoScanDevice will instantiate a new Scan device instance struct based on the OS type
 func NewCiscoScanDevice(os string) *CiscoScanDevice {
 	switch os {
-	case "IOS":
+	case ciscoIOS:
 		return &CiscoScanDevice{
 			jovalURL:    "http://download.jovalcm.com/content/cisco.ios.cve.oval.xml",
 			openVulnURL: "https://api.cisco.com/security/advisories/ios.json?version=",
 		}
-	case "IOS-XE":
+	case ciscoIOSXE:
 		return &CiscoScanDevice{
 			jovalURL:    "http://download.jovalcm.com/content/cisco.iosxe.cve.oval.xml",
 			openVulnURL: "https://api.cisco.com/security/advisories/iosxe.json?version=",
@@ -62,6 +63,10 @@ func LaunchAbstractVendorScan(abs DeviceScanner, dev *AdHocScanDevice, j *JwtCla
 // provide results for vulnerabilities found
 // It takes an AdHocScanDevice struct as parameter and return the Scan Results or an error
 func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults, error) {
+
+	// Constant for Job Scan Results
+	const scanJobFailedRes = "FAILED"
+	const scanJobSuccessRes = "SUCCESS"
 
 	// Set Initial Job Start/End time type
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -111,7 +116,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		scanJobStatus = "FAILED"
+		scanJobStatus = scanJobFailedRes
 
 		return nil, fmt.Errorf("there is already an ongoing VA for device %v with IP: %v",
 			dev.Hostname, dev.IPAddress)
@@ -148,11 +153,11 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		}
 
 		// Map SSHGateway DB struct to UserSSHGateway struct
-		sshGateway.GatewayUsername = (*sshGatewayDB).GatewayUsername
-		sshGateway.GatewayPassword = (*sshGatewayDB).GatewayPassword
-		sshGateway.GatewayName = (*sshGatewayDB).GatewayName
-		sshGateway.GatewayIP = (*sshGatewayDB).GatewayIP
-		sshGateway.GatewayPrivateKey = (*sshGatewayDB).GatewayPrivateKey
+		sshGateway.GatewayUsername = sshGatewayDB.GatewayUsername
+		sshGateway.GatewayPassword = sshGatewayDB.GatewayPassword
+		sshGateway.GatewayName = sshGatewayDB.GatewayName
+		sshGateway.GatewayIP = sshGatewayDB.GatewayIP
+		sshGateway.GatewayPrivateKey = sshGatewayDB.GatewayPrivateKey
 
 	}
 
@@ -168,7 +173,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		scanJobStatus = "FAILED"
+		scanJobStatus = scanJobFailedRes
 
 		return nil, errIniBuilder
 	}
@@ -179,21 +184,25 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		scanJobStatus = "FAILED"
+		scanJobStatus = scanJobFailedRes
 
-		return nil, err
+		switch err {
+		case context.DeadlineExceeded:
+			return nil, fmt.Errorf("scan job %s did not complete within the timeout", jobID)
+		default:
+			return nil, err
+		}
+
 	}
 
 	err = parseScanReport(&sr, jobID)
 	if err != nil {
 
-		logging.VulscanoLog("error",
-			"Error while parsing Joval JSON reports: ", err.Error(),
-		)
+		logging.VulscanoLog("error", err.Error())
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
-		scanJobStatus = "FAILED"
+		scanJobStatus = scanJobFailedRes
 
 		return nil, err
 	}
@@ -241,7 +250,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	sr.ScanJobEndTime = reportScanJobEndTime
 
 	// Set Scan Job Report data if successful. This is will picked by the defer anonymous function
-	scanJobStatus = "SUCCESS"
+	scanJobStatus = scanJobSuccessRes
 	successfulScannedDevName = append(successfulScannedDevName, dev.Hostname)
 	successfulScannedDevIP = append(successfulScannedDevIP, net.ParseIP(dev.IPAddress).To4())
 
@@ -253,6 +262,9 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 // parseScanReport handles parsing reports/JobID folder after a VA scan is done.
 // It will look for .json files and parse the content for each to report found vulnerabilities
 func parseScanReport(res *ScanResults, jobID string) (err error) {
+
+	const jovalReportFoundTag = "fail"
+
 	reportDir := filepath.FromSlash(datadiros.GetDataDir() + "/reports/" + jobID)
 	var scanReport ScanReportFile
 
@@ -309,7 +321,8 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				// Update duplicateSAMap to find duplicated Cisco SA in Joval Report
 				for _, ruleResult := range scanReport.RuleResults {
 
-					if ruleResult.RuleResult == "fail" && !duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
+					if ruleResult.RuleResult == jovalReportFoundTag &&
+						!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
 						duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
 						vulnCount++
 					}
@@ -327,13 +340,14 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				// Loop to search for found vulnerabilities in the scan report and fetch metadata for each
 				// vulnerability in a goroutine
 				for _, ruleResult := range scanReport.RuleResults {
-					if ruleResult.RuleResult == "fail" && !duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
+					if ruleResult.RuleResult == jovalReportFoundTag &&
+						!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
 						duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
 						go func(r *ScanReportFileResult) {
 							defer wg.Done()
 							<-rateLimit.C
 
-							vulnMeta := postgresdb.DBInstance.FetchCiscoSAMeta((*r).RuleIdentifier[0].ResultCiscoSA)
+							vulnMeta := postgresdb.DBInstance.FetchCiscoSAMeta(r.RuleIdentifier[0].ResultCiscoSA)
 
 							// Exclusive access to vulnMetaSlice to prevent race condition
 							mu.Lock()
@@ -347,13 +361,13 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				}
 				wg.Wait()
 				// Start mapping Report File into ScanResults struct
-				(*res).VulnerabilitiesFoundDetails = vulnMetaSlice
-				(*res).TotalVulnerabilitiesFound = vulnCount
-				(*res).TotalVulnerabilitiesScanned = vulnTotal
+				res.VulnerabilitiesFoundDetails = vulnMetaSlice
+				res.TotalVulnerabilitiesFound = vulnCount
+				res.TotalVulnerabilitiesScanned = vulnTotal
 
 				deviceScanStartTime, _ := time.Parse(time.RFC3339, scanReport.ScanStartTime)
 				deviceScanEndTime, _ := time.Parse(time.RFC3339, scanReport.ScanEndTime)
-				(*res).ScanDeviceMeanTime = int(deviceScanEndTime.Sub(deviceScanStartTime).Seconds() * 1000)
+				res.ScanDeviceMeanTime = int(deviceScanEndTime.Sub(deviceScanStartTime).Seconds() * 1000)
 
 			}
 
@@ -373,7 +387,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 // AnutaInventoryScan is the main function to handle VA for devices part of Anuta NCX Inventory
 func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInventory, error) {
 
-	anutaDev, errAnuta := inventoryanuta.GetAnutaDevice((*d).DeviceID)
+	anutaDev, errAnuta := inventoryanuta.GetAnutaDevice(d.DeviceID)
 
 	if errAnuta != nil {
 		logging.VulscanoLog("error",
@@ -383,11 +397,11 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 	}
 
 	// Don't waste resources trying to scan an offline device
-	if (*anutaDev).Status != "ONLINE" {
-		logging.VulscanoLog("error", "Anuta device "+(*anutaDev).DeviceName+
+	if anutaDev.Status != "ONLINE" {
+		logging.VulscanoLog("error", "Anuta device "+anutaDev.DeviceName+
 			" scan request aborted as device is currently marked as offline")
 
-		return nil, fmt.Errorf("device %v currently marked as offline in Anuta inventory", (*anutaDev).DeviceName)
+		return nil, fmt.Errorf("device %v currently marked as offline in Anuta inventory", anutaDev.DeviceName)
 
 	}
 
@@ -400,19 +414,20 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 		CiscoModel:    anutaDev.CiscoModel,
 		SerialNumber:  anutaDev.SerialNumber,
 		Hostname:      anutaDev.Hostname,
-		EnterpriseID:  strings.ToUpper(string(anutaDev.DeviceName[0:3])),
+		EnterpriseID:  strings.ToUpper(anutaDev.DeviceName[0:3]),
 	}
 
 	// Look for real IOS-XE Version from Anuta. This will help to query recommended IOSXE Versions
 	// for vulnerability remediation
-	if (*anutaDev).OSType == "IOSXE" {
+	if anutaDev.OSType == "IOSXE" {
 
-		anutaScannedDev.OSType = "IOS-XE"
+		anutaScannedDev.OSType = ciscoIOSXE
 
-		if (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer != "" && (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer != "noSuchInstance" {
+		if anutaDev.RealIOSXEVersion.IOSXEVersionChildContainer != "" &&
+			anutaDev.RealIOSXEVersion.IOSXEVersionChildContainer != "noSuchInstance" {
 
 			// Put original IOSd version if noSuchInstance reported from CPE during Anuta SNMP collection
-			anutaScannedDev.OSVersion = (*anutaDev).RealIOSXEVersion.IOSXEVersionChildContainer
+			anutaScannedDev.OSVersion = anutaDev.RealIOSXEVersion.IOSXEVersionChildContainer
 
 		}
 
@@ -423,8 +438,8 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 		IPAddress:       anutaScannedDev.MgmtIPAddress.String(),
 		OSType:          anutaScannedDev.OSType,
 		OSVersion:       anutaScannedDev.OSVersion,
-		SSHGateway:      (*d).SSHGateway,
-		CredentialsName: (*d).CredentialsName,
+		SSHGateway:      d.SSHGateway,
+		CredentialsName: d.CredentialsName,
 	}
 
 	// devScanner represents DeviceScanner interface. Depending on the OS Type given, we instantiate
@@ -432,7 +447,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 	var devScanner DeviceScanner
 
 	switch ads.OSType {
-	case "IOS-XE", "IOS":
+	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
 		if devScanner == nil {
 			return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", ads.OSType)
@@ -467,7 +482,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 // scanJobReportDB will interact with Postgres DB to insert the scan job info for analytics
 func scanJobReportDB(j string, st time.Time, et time.Time, dn []string, di []net.IP, r string, jwt *JwtClaim) error {
 
-	errDB := postgresdb.DBInstance.PersistScanJobReport(j, st, et, dn, di, r, (*jwt).UserID)
+	errDB := postgresdb.DBInstance.PersistScanJobReport(j, st, et, dn, di, r, jwt.UserID)
 	if errDB != nil {
 		return errDB
 	}
@@ -484,18 +499,18 @@ func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults) error {
 	}
 	// Insert Device Vulnerability Assessment detailed results
 	errDB := postgresdb.DBInstance.PersistDeviceVAJobReport(
-		(*d).DeviceName,                  // Column device_id
-		(*d).MgmtIPAddress,               // Column mgmt_ip_address
-		(*r).ScanJobEndTime,              // Column last_successful_scan
-		vulnFound,                        // Column vulnerabilities_found
-		(*r).TotalVulnerabilitiesScanned, // Column total_vulnerabilities_scanned
-		(*d).EnterpriseID,                // Column enterprise_id
-		(*r).ScanDeviceMeanTime,          // Column scan_mean_time
-		(*d).OSType,                      // Column os_type
-		(*d).OSVersion,                   // Column os_version,
-		(*d).CiscoModel,                  // Column device_model
-		(*d).SerialNumber,                // Column serial_number
-		(*d).Hostname,                    // Column device_hostname
+		d.DeviceName,                  // Column device_id
+		d.MgmtIPAddress,               // Column mgmt_ip_address
+		r.ScanJobEndTime,              // Column last_successful_scan
+		vulnFound,                     // Column vulnerabilities_found
+		r.TotalVulnerabilitiesScanned, // Column total_vulnerabilities_scanned
+		d.EnterpriseID,                // Column enterprise_id
+		r.ScanDeviceMeanTime,          // Column scan_mean_time
+		d.OSType,                      // Column os_type
+		d.OSVersion,                   // Column os_version,
+		d.CiscoModel,                  // Column device_model
+		d.SerialNumber,                // Column serial_number
+		d.Hostname,                    // Column device_hostname
 	)
 
 	if errDB != nil {
@@ -504,9 +519,9 @@ func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults) error {
 
 	// Insert Device Vulnerability Assessment summary history record
 	errDB = postgresdb.DBInstance.PersistDeviceVAHistory(
-		(*d).DeviceName,     // Column device_id
-		vulnFound,           // Column vuln_found
-		(*r).ScanJobEndTime, // Column timestamp
+		d.DeviceName,     // Column device_id
+		vulnFound,        // Column vuln_found
+		r.ScanJobEndTime, // Column timestamp
 	)
 
 	if errDB != nil {
@@ -563,8 +578,8 @@ func getUserSSHGatewayDetails(entid string, gw string) (*UserSSHGateway, error) 
 		GatewayPrivateKey: sshGw.GatewayPrivateKey,
 	}
 
-	if (*userSSHGw).GatewayPassword == "" && (*userSSHGw).GatewayPrivateKey == "" {
-		return nil, fmt.Errorf("gateway %s has neither password nor SSH private key associated", (*userSSHGw).GatewayName)
+	if userSSHGw.GatewayPassword == "" && userSSHGw.GatewayPrivateKey == "" {
+		return nil, fmt.Errorf("gateway %s has neither password nor SSH private key associated", userSSHGw.GatewayName)
 	}
 
 	return userSSHGw, nil
@@ -580,17 +595,17 @@ func getUserDeviceCredentialsDetails(uid string, cn string) (*UserDeviceCredenti
 	}
 
 	dCreds := &UserDeviceCredentials{
-		CredentialsName:         (*dbDeviceCreds).CredentialsName,
-		CredentialsDeviceVendor: strings.ToUpper((*dbDeviceCreds).CredentialsDeviceVendor),
-		Username:                (*dbDeviceCreds).Username,
-		Password:                (*dbDeviceCreds).Password,
-		PrivateKey:              (*dbDeviceCreds).PrivateKey,
-		IOSEnablePassword:       (*dbDeviceCreds).IOSEnablePassword,
+		CredentialsName:         dbDeviceCreds.CredentialsName,
+		CredentialsDeviceVendor: strings.ToUpper(dbDeviceCreds.CredentialsDeviceVendor),
+		Username:                dbDeviceCreds.Username,
+		Password:                dbDeviceCreds.Password,
+		PrivateKey:              dbDeviceCreds.PrivateKey,
+		IOSEnablePassword:       dbDeviceCreds.IOSEnablePassword,
 	}
 
-	if (*dbDeviceCreds).Password == "" && (*dbDeviceCreds).PrivateKey == "" {
+	if dbDeviceCreds.Password == "" && dbDeviceCreds.PrivateKey == "" {
 		return nil, fmt.Errorf("device credentials %s has neither password nor SSH private key associated",
-			(*dCreds).CredentialsName)
+			dCreds.CredentialsName)
 	}
 
 	return dCreds, nil

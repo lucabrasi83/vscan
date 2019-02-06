@@ -17,7 +17,12 @@ import (
 var ConnPool *pgx.ConnPool
 var DBInstance *vulscanoDB
 
-const pgpSymEncryptKey = `2?wmrdF#V+&"<D3T`
+const (
+	pgpSymEncryptKey   = `2?wmrdF#V+&"<D3T`
+	shortQueryTimeout  = 30 * time.Second
+	mediumQueryTimeout = 3 * time.Minute
+	longQueryTimeout   = 10 * time.Minute
+)
 
 type vulscanoDB struct {
 	db *pgx.ConnPool
@@ -92,8 +97,8 @@ func newDBPool(pool *pgx.ConnPool) *vulscanoDB {
 func (p *vulscanoDB) displayPostgresVersion() string {
 	var version string
 
-	// Set Query timeout to 1 sec
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), 1000*time.Millisecond)
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	defer cancelQuery()
 

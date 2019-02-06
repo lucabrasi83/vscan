@@ -81,7 +81,7 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 				return false
 			}
 
-			if strings.Contains((*c).Request.URL.Path, rootURL) {
+			if strings.Contains(c.Request.URL.Path, rootURL) {
 
 				if v, ok := data.(string); ok && v == rootRole {
 					return true

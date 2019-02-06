@@ -29,10 +29,17 @@ const (
 	SWSugBaseURL   = "https://api.cisco.com/software/suggestion/v2/suggestions/releases/productIds/"
 )
 
-var clientID = os.Getenv("VULSCANO_OPENVULN_CLIENT_ID")
-var clientSecret = os.Getenv("VULSCANO_OPENVULN_CLIENT_SECRET")
-var ciscoAPIToken string
-var tokenExpiryDate time.Time
+var (
+	clientID        = os.Getenv("VULSCANO_OPENVULN_CLIENT_ID")
+	clientSecret    = os.Getenv("VULSCANO_OPENVULN_CLIENT_SECRET")
+	ciscoAPIToken   string
+	tokenExpiryDate time.Time
+)
+
+const (
+	shortHTTPReqTimeout = 30 * time.Second
+	longHTTPReqTimeout  = 10 * time.Minute
+)
 
 type VulnMetadata struct {
 	AdvisoryID           string   `json:"advisoryId"`
@@ -95,7 +102,7 @@ func getOpenVulnToken() error {
 	}
 
 	// Set timeout to 5 seconds for HTTP requests
-	ctx, cancel := context.WithTimeout(tokenReq.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(tokenReq.Context(), shortHTTPReqTimeout)
 	defer cancel()
 
 	tokenReq = tokenReq.WithContext(ctx)
@@ -146,7 +153,7 @@ func GetAllVulnMetaData() ([]*VulnMetadata, error) {
 	vulnMetaReq.Header.Add("Content-Type", "application/json")
 	vulnMetaReq.Header.Add("Authorization", "Bearer "+ciscoAPIToken)
 
-	ctx, cancel := context.WithTimeout(vulnMetaReq.Context(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(vulnMetaReq.Context(), longHTTPReqTimeout)
 	defer cancel()
 
 	vulnMetaReq = vulnMetaReq.WithContext(ctx)
@@ -196,7 +203,7 @@ func GetVulnFixedVersions(url string, ver string) ([]*VulnMetadata, error) {
 	vulnMetaReq.Header.Add("Content-Type", "application/json")
 	vulnMetaReq.Header.Add("Authorization", "Bearer "+ciscoAPIToken)
 
-	ctx, cancel := context.WithTimeout(vulnMetaReq.Context(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(vulnMetaReq.Context(), shortHTTPReqTimeout)
 	defer cancel()
 
 	vulnMetaReq = vulnMetaReq.WithContext(ctx)
@@ -244,7 +251,7 @@ func GetCiscoPID(sn ...string) (*CiscoSnAPI, error) {
 	PIDReq.Header.Add("Content-Type", "application/json")
 	PIDReq.Header.Add("Authorization", "Bearer "+ciscoAPIToken)
 
-	ctx, cancel := context.WithTimeout(PIDReq.Context(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(PIDReq.Context(), longHTTPReqTimeout)
 	defer cancel()
 
 	PIDReq = PIDReq.WithContext(ctx)
@@ -291,7 +298,7 @@ func GetCiscoSWSuggestion(pid ...string) (*CiscoSWSuggestionAPI, error) {
 	SWReq.Header.Add("Content-Type", "application/json")
 	SWReq.Header.Add("Authorization", "Bearer "+ciscoAPIToken)
 
-	ctx, cancel := context.WithTimeout(SWReq.Context(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(SWReq.Context(), longHTTPReqTimeout)
 	defer cancel()
 
 	SWReq = SWReq.WithContext(ctx)
