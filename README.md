@@ -1,6 +1,8 @@
 # Vulscano
 
 
+[![Build Status](https://travis-ci.com/lucabrasi83/vulscano.svg?token=Rjzx1thyrVmqNDLuUZ1P&branch=master)](https://travis-ci.com/lucabrasi83/vulscano)
+[![codecov](https://codecov.io/gh/lucabrasi83/vulscano/branch/master/graph/badge.svg?token=Y5byK7OnSd)](https://codecov.io/gh/lucabrasi83/vulscano)
 [![Docker Automated](https://img.shields.io/docker/automated/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/)
 [![Docker Build](https://img.shields.io/docker/build/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/builds/)
 [![Microbadger](https://img.shields.io/microbadger/image-size/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/tags/)
