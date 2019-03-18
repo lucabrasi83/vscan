@@ -6,7 +6,7 @@
         "termsOfService": "http://swagger.io/terms/",
         "contact": {
             "name": "Vulscano API Support",
-            "url": "https://github.com/lucabrasi83/vulscano/issues",
+            "url": "https://github.com/lucabrasi83/vulscano",
             "email": "sebastien.pouplin@tatacommunications.com"
         },
         "license": {
@@ -15,9 +15,385 @@
         },
         "version": "1.0"
     },
-    "host": "vulscano.vsnl.co.in:443",
+    "host": "vulscano.vsnl.co.in:8443",
     "basePath": "/api/v1",
     "paths": {
+        "/admin/all-users": {
+            "get": {
+                "description": "Fetch all users details provisioned in application",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get all users provisioned",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JWT Bearer Token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/postgresdb.VulscanoDBUser"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "unable to fetch users",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "user not authorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "route requested does not exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/on-demand-scan": {
+            "post": {
+                "description": "Perform a vulnerability scan any device NOT part of an inventory",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Launch On-Demand Vulnerability Scan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JWT Bearer Token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Device Details",
+                        "name": "device-details",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/handlers.AdHocScanDevice"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/handlers.ScanResults"
+                        }
+                    },
+                    "400": {
+                        "description": "unable to launch scan",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "user not authorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "route requested does not exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "413": {
+                        "description": "body size too large",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/user": {
+            "post": {
+                "description": "Create new user to access Vulscano",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Create new user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JWT Bearer Token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "New user details",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/handlers.VulscanoUserCreate"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "user successfully created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "unable to create requested user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "user not authorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "route requested does not exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "413": {
+                        "description": "body size too large",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/user/{username}": {
+            "get": {
+                "description": "Fetch user details specified in user-id param",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get specific user details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JWT Bearer Token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username in email format",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/postgresdb.VulscanoDBUser"
+                        }
+                    },
+                    "400": {
+                        "description": "unable to fetch requested user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "user not authorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "route requested does not exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete an existing user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Delete an existing user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JWT Bearer Token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username in email format",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "user successfully deleted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "unable to update requested user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "user not authorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "route requested does not exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "413": {
+                        "description": "body size too large",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Update an existing user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update an existing user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "JWT Bearer Token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Username in email format",
+                        "name": "username",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Existing user details",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "$ref": "#/definitions/handlers.VulscanoUserPatch"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "user successfully updated",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "unable to update requested user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "user not authorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "route requested does not exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "413": {
+                        "description": "body size too large",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/ping": {
             "get": {
                 "description": "Verify the API is responding to HTTP requests",
@@ -27,7 +403,10 @@
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Ping Health Check",
+                "tags": [
+                    "ping"
+                ],
+                "summary": "Ping API Health Check",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -41,17 +420,190 @@
         }
     },
     "definitions": {
+        "handlers.AdHocScanDevice": {
+            "type": "object",
+            "required": [
+                "credentialsName",
+                "hostname",
+                "ip",
+                "osType"
+            ],
+            "properties": {
+                "credentialsName": {
+                    "type": "string",
+                    "example": "MY-TACACS-CREDS"
+                },
+                "hostname": {
+                    "type": "string",
+                    "example": "TCL-IN-MUMBAI-RTR-1"
+                },
+                "ip": {
+                    "type": "string",
+                    "example": "10.1.1.1"
+                },
+                "osType": {
+                    "type": "string",
+                    "example": "IOS-XE"
+                },
+                "osVersion": {
+                    "type": "string",
+                    "example": "16.06.04"
+                },
+                "sshGateway": {
+                    "type": "string",
+                    "example": "UKL78-SSH-GW"
+                }
+            }
+        },
         "handlers.PingAPIResponse": {
             "type": "object",
             "properties": {
                 "golangRuntime": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "1.11.5"
                 },
                 "pong": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "I'm Alive"
                 },
                 "version": {
+                    "type": "string",
+                    "example": "0.2.1"
+                }
+            }
+        },
+        "handlers.ScanResults": {
+            "type": "object",
+            "properties": {
+                "scanDeviceMeanTimeMsec": {
+                    "type": "integer"
+                },
+                "scanJobEndTime": {
                     "type": "string"
+                },
+                "scanJobID": {
+                    "type": "string"
+                },
+                "scanJobStartTime": {
+                    "type": "string"
+                },
+                "totalVulnerabilitiesFound": {
+                    "type": "integer"
+                },
+                "totalVulnerabilitiesScanned": {
+                    "type": "integer"
+                },
+                "vulnerabilitiesFoundDetails": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/openvulnapi.VulnMetadata"
+                    }
+                }
+            }
+        },
+        "handlers.VulscanoUserCreate": {
+            "type": "object",
+            "required": [
+                "email",
+                "enterpriseID",
+                "password",
+                "role"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "john@vulscano.com"
+                },
+                "enterpriseID": {
+                    "type": "string",
+                    "example": "TCL"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "!Mp0$$ible_2_ReMemBeR"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "vulscanouser"
+                }
+            }
+        },
+        "handlers.VulscanoUserPatch": {
+            "type": "object",
+            "properties": {
+                "enterpriseID": {
+                    "type": "string",
+                    "example": "TCL"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "!Mp0$$ible_2_ReMemBeR"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "vulscanouser"
+                }
+            }
+        },
+        "openvulnapi.VulnMetadata": {
+            "type": "object",
+            "properties": {
+                "advisoryId": {
+                    "type": "string"
+                },
+                "advisoryTitle": {
+                    "type": "string"
+                },
+                "bugIDs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "cves": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "cvssBaseScore": {
+                    "type": "string"
+                },
+                "firstFixed": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "firstPublished": {
+                    "type": "string"
+                },
+                "publicationUrl": {
+                    "type": "string"
+                },
+                "sir": {
+                    "type": "string"
+                }
+            }
+        },
+        "postgresdb.VulscanoDBUser": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "john@vulscano.com"
+                },
+                "enterpriseID": {
+                    "type": "string",
+                    "example": "TCL"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "vulscanouser"
+                },
+                "userID": {
+                    "type": "string",
+                    "example": "1bf3f4e6-5da2-4f82-87e4-606d5bf05d38"
                 }
             }
         }

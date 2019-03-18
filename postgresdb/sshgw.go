@@ -3,9 +3,10 @@ package postgresdb
 import (
 	"context"
 	"fmt"
+	"net"
+
 	"github.com/jackc/pgx"
 	"github.com/lucabrasi83/vulscano/logging"
-	"net"
 )
 
 type SSHGatewayDB struct {

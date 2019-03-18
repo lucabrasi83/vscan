@@ -6,7 +6,7 @@ env:
       - CODECOV_TOKEN="591bd614-fea0-4dd5-b816-6cbd5db6a834"
 
 go:
-  - 1.11.x
+  - 1.12.x
 
 install: true
 

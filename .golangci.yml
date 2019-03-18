@@ -11,6 +11,6 @@ linters:
   fast: false
 service:
   project-path: github.com/lucabrasi83/vulscano
-  golangci-lint-version: 1.13.1 # use fixed version to not introduce new linters unexpectedly
+  golangci-lint-version: 1.15.0 # use fixed version to not introduce new linters unexpectedly
 
   

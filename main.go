@@ -24,13 +24,13 @@ import (
 // @termsOfService http://swagger.io/terms/
 
 // @contact.name Vulscano API Support
-// @contact.url https://github.com/lucabrasi83/vulscano/issues
+// @contact.url https://github.com/lucabrasi83/vulscano
 // @contact.email sebastien.pouplin@tatacommunications.com
 
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host vulscano.vsnl.co.in:443
+// @host vulscano.vsnl.co.in:8443
 // @BasePath /api/v1
 
 // @securityDefinitions.apikey ApiKeyAuth

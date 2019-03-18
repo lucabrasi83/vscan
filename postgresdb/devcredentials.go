@@ -3,6 +3,7 @@ package postgresdb
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx"
 	"github.com/lucabrasi83/vulscano/logging"
 )

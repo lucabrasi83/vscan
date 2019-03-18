@@ -51,7 +51,7 @@ func RequestsLogger() gin.HandlerFunc {
 			fgHiMagenta.Sprintf("%-30s", userID),
 			fgHiCyan.Sprintf("%-15v", c.ClientIP()),
 			colorForStatus(c.Writer.Status()).Sprintf("%3d", c.Writer.Status()),
-			fgHiYellow.Sprintf("%-13v", time.Since(now)),
+			fgHiYellow.Sprintf("%-13v", time.Since(now).String()),
 			bgHiBlue.Sprint(c.Request.URL),
 		)
 		logging.VulscanoLog("info",

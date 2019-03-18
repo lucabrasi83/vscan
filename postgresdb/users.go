@@ -3,16 +3,17 @@ package postgresdb
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/jackc/pgx"
 	"github.com/lucabrasi83/vulscano/logging"
-	"strings"
 )
 
 type VulscanoDBUser struct {
-	UserID       string
-	Email        string
-	Role         string
-	EnterpriseID string
+	UserID       string `json:"userID" example:"1bf3f4e6-5da2-4f82-87e4-606d5bf05d38"`
+	Email        string `json:"email" example:"john@vulscano.com"`
+	Role         string `json:"role" example:"vulscanouser"`
+	EnterpriseID string `json:"enterpriseID" example:"TCL"`
 }
 
 func (p *vulscanoDB) FetchUser(u string) (*VulscanoDBUser, error) {
@@ -153,9 +154,9 @@ func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent strin
 	return nil
 }
 
-func (p *vulscanoDB) FetchAllUsers() (*[]VulscanoDBUser, error) {
+func (p *vulscanoDB) FetchAllUsers() ([]*VulscanoDBUser, error) {
 
-	var vulscanoUsers []VulscanoDBUser
+	var vulscanoUsers []*VulscanoDBUser
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
@@ -184,7 +185,7 @@ func (p *vulscanoDB) FetchAllUsers() (*[]VulscanoDBUser, error) {
 				"error while scanning vulscano_users table rows: ", err.Error())
 			return nil, err
 		}
-		vulscanoUsers = append(vulscanoUsers, user)
+		vulscanoUsers = append(vulscanoUsers, &user)
 	}
 	err = rows.Err()
 	if err != nil {
@@ -193,7 +194,7 @@ func (p *vulscanoDB) FetchAllUsers() (*[]VulscanoDBUser, error) {
 		return nil, err
 	}
 
-	return &vulscanoUsers, nil
+	return vulscanoUsers, nil
 
 }
 

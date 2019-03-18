@@ -27,8 +27,20 @@ const (
 	ciscoIOS   = "IOS"
 )
 
-// LaunchAdHocScan handler is the API endpoint to trigger a single device ad-hoc VA scan on the passed JSON body.
-// The JSON body should be formatted as per below example:
+// LaunchAdHocScan handler is the API endpoint to trigger a single device ad-hoc VA scan.
+// @Summary Launch On-Demand Vulnerability Scan
+// @Tags admin
+// @Description Perform a vulnerability scan any device NOT part of an inventory
+// @Accept  json
+// @Produce  json
+// @Param Authorization header string true "JWT Bearer Token"
+// @Param device-details body handlers.AdHocScanDevice true "Device Details"
+// @Success 200 {object} handlers.ScanResults
+// @Failure 400 {string} string "unable to launch scan"
+// @Failure 404 {string} string "route requested does not exist"
+// @Failure 401 {string} string "user not authorized"
+// @Failure 413 {string} string "body size too large"
+// @Router /admin/on-demand-scan [post]
 func LaunchAdHocScan(c *gin.Context) {
 
 	jwtMapClaim := jwt.ExtractClaims(c)
@@ -151,7 +163,8 @@ func isUserVulscanoRoot(jwtMapClaim map[string]interface{}) bool {
 }
 
 // Ping is a health check status handler of the Vulscano API
-// @Summary Ping Health Check
+// @Summary Ping API Health Check
+// @Tags ping
 // @Description Verify the API is responding to HTTP requests
 // @Accept  json
 // @Produce  json
@@ -177,6 +190,18 @@ func GetCurrentlyScannedDevices(c *gin.Context) {
 
 }
 
+// GetAllUsers is a Gin Handler to return the list of all users provisioned
+// @Summary Get all users provisioned
+// @Tags admin
+// @Description Fetch all users details provisioned in application
+// @Accept  json
+// @Produce  json
+// @Param Authorization header string true "JWT Bearer Token"
+// @Success 200 {array} postgresdb.VulscanoDBUser
+// @Failure 400 {string} string "unable to fetch users"
+// @Failure 404 {string} string "route requested does not exist"
+// @Failure 401 {string} string "user not authorized"
+// @Router /admin/all-users [get]
 func GetAllUsers(c *gin.Context) {
 	users, err := postgresdb.DBInstance.FetchAllUsers()
 
@@ -185,9 +210,22 @@ func GetAllUsers(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"users": *users})
+	c.JSON(http.StatusOK, gin.H{"users": users})
 }
 
+// GetUser is a Gin handler to return a specific user
+// @Summary Get specific user details
+// @Tags admin
+// @Description Fetch user details specified in user-id param
+// @Accept  json
+// @Produce  json
+// @Param Authorization header string true "JWT Bearer Token"
+// @Param username path string true "Username in email format"
+// @Success 200 {object} postgresdb.VulscanoDBUser
+// @Failure 400 {string} string "unable to fetch requested user"
+// @Failure 404 {string} string "route requested does not exist"
+// @Failure 401 {string} string "user not authorized"
+// @Router /admin/user/{username} [get]
 func GetUser(c *gin.Context) {
 	userInput := c.Param("user-id")
 
@@ -201,6 +239,20 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"user": *userFound})
 }
 
+// CreateUser is a Gin handler to create a user
+// @Summary Create new user
+// @Tags admin
+// @Description Create new user to access Vulscano
+// @Accept  json
+// @Produce  json
+// @Param Authorization header string true "JWT Bearer Token"
+// @Param user body handlers.VulscanoUserCreate true "New user details"
+// @Success 200 {string} string "user successfully created"
+// @Failure 400 {string} string "unable to create requested user"
+// @Failure 404 {string} string "route requested does not exist"
+// @Failure 401 {string} string "user not authorized"
+// @Failure 413 {string} string "body size too large"
+// @Router /admin/user [post]
 func CreateUser(c *gin.Context) {
 
 	var newUser VulscanoUserCreate
@@ -244,6 +296,21 @@ func CreateUser(c *gin.Context) {
 
 }
 
+// UpdateUser is a Gin handler to update a user
+// @Summary Update an existing user
+// @Tags admin
+// @Description Update an existing user
+// @Accept  json
+// @Produce  json
+// @Param Authorization header string true "JWT Bearer Token"
+// @Param username path string true "Username in email format"
+// @Param user body handlers.VulscanoUserPatch true "Existing user details"
+// @Success 200 {string} string "user successfully updated"
+// @Failure 400 {string} string "unable to update requested user"
+// @Failure 404 {string} string "route requested does not exist"
+// @Failure 401 {string} string "user not authorized"
+// @Failure 413 {string} string "body size too large"
+// @Router /admin/user/{username} [patch]
 func UpdateUser(c *gin.Context) {
 
 	var updateUser VulscanoUserPatch
@@ -296,6 +363,20 @@ func UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": "user " + user + " successfully updated"})
 }
 
+// DeleteUser is a Gin handler to delete a user
+// @Summary Delete an existing user
+// @Tags admin
+// @Description Delete an existing user
+// @Accept  json
+// @Produce  json
+// @Param Authorization header string true "JWT Bearer Token"
+// @Param username path string true "Username in email format"
+// @Success 200 {string} string "user successfully deleted"
+// @Failure 400 {string} string "unable to update requested user"
+// @Failure 404 {string} string "route requested does not exist"
+// @Failure 401 {string} string "user not authorized"
+// @Failure 413 {string} string "body size too large"
+// @Router /admin/user/{username} [delete]
 func DeleteUser(c *gin.Context) {
 	user := c.Param("user-id")
 
@@ -428,22 +509,25 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 
 	for _, allPID := range ciscoSuggSWAPISlice {
 		for _, pid := range allPID.ProductList {
+			// Only parse IOS / IOSXE software as temporary workaround
+			// Cisco Suggested SW API returns multiple results for each product variant
+			if pid.Product.SoftwareType == "IOS XE Software" || pid.Product.SoftwareType == "IOS Software" {
+				var lastDate time.Time
+				for _, sug := range pid.Suggestions {
+					if sug.IsSuggested == "Y" {
+						tempDate, errParseDate := time.Parse("02 Jan 2006", sug.ReleaseDate)
 
-			var lastDate time.Time
-			for _, sug := range pid.Suggestions {
-				if sug.IsSuggested == "Y" {
-					tempDate, errParseDate := time.Parse("02 Jan 2006", sug.ReleaseDate)
+						if errParseDate != nil {
+							logging.VulscanoLog("warning",
+								"Unable to parse Date from Cisco Software Suggestion API: ", sug.ReleaseDate,
+							)
+							continue
+						}
 
-					if errParseDate != nil {
-						logging.VulscanoLog("warning",
-							"Unable to parse Date from Cisco Software Suggestion API: ", sug.ReleaseDate,
-						)
-						continue
-					}
-
-					if tempDate.After(lastDate) {
-						lastDate = tempDate
-						tempSoftMap[pid.Product.BasePID] = sug.ReleaseFormat2
+						if tempDate.After(lastDate) {
+							lastDate = tempDate
+							tempSoftMap[pid.Product.BasePID] = sug.ReleaseFormat2
+						}
 					}
 				}
 			}
