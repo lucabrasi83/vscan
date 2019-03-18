@@ -33,9 +33,9 @@ type ScanResults struct {
 
 // PingAPIResponse struct represents the JSON Body Response for API Health Check
 type PingAPIResponse struct {
-	ReplyBack       string `json:"pong"`
-	VulscanoVersion string `json:"version"`
-	GolangVersion   string `json:"golangRuntime"`
+	ReplyBack       string `json:"pong" example:"I'm Alive"`
+	VulscanoVersion string `json:"version" example:"0.2.1"`
+	GolangVersion   string `json:"golangRuntime" example:"1.11.5"`
 }
 
 // Scan ReportFile represents the JSON report file created for each device by Joval scan
@@ -59,12 +59,12 @@ type ScanReportFileResultIdentifier struct {
 
 // AdHocScanDevice represents the JSON payload to be sent to POST /api/v1/admin/on-demand-scan
 type AdHocScanDevice struct {
-	Hostname        string `json:"hostname" binding:"required"`
-	IPAddress       string `json:"ip" binding:"required"`
-	OSType          string `json:"osType" binding:"required"`
-	CredentialsName string `json:"credentialsName" binding:"required"`
-	OSVersion       string `json:"osVersion"`
-	SSHGateway      string `json:"sshGateway"`
+	Hostname        string `json:"hostname" binding:"required" example:"TCL-IN-MUMBAI-RTR-1"`
+	IPAddress       string `json:"ip" binding:"required" example:"10.1.1.1"`
+	OSType          string `json:"osType" binding:"required" example:"IOS-XE"`
+	CredentialsName string `json:"credentialsName" binding:"required" example:"MY-TACACS-CREDS"`
+	OSVersion       string `json:"osVersion" example:"16.06.04"`
+	SSHGateway      string `json:"sshGateway" example:"UKL78-SSH-GW"`
 }
 
 // AdHocBulkScan represents a slice of AdHocBulkScanDevice struct
@@ -168,18 +168,18 @@ type JwtClaim struct {
 // VulscanoUserCreate struct represents the JSON keys required to be passed by API consumer
 // in order to create a new user
 type VulscanoUserCreate struct {
-	Email      string `json:"email" binding:"required"`
-	Password   string `json:"password" binding:"required"`
-	Role       string `json:"role" binding:"required"`
-	Enterprise string `json:"enterpriseID" binding:"required"`
+	Email      string `json:"email" binding:"required" example:"john@vulscano.com"`
+	Password   string `json:"password" binding:"required" example:"!Mp0$$ible_2_ReMemBeR"`
+	Role       string `json:"role" binding:"required" example:"vulscanouser"`
+	Enterprise string `json:"enterpriseID" binding:"required" example:"TCL"`
 }
 
 // VulscanoUserUpdate struct represents the JSON keys required to be passed by API consumer
 // in order to PATCH an existing user
 type VulscanoUserPatch struct {
-	Password   string `json:"password"`
-	Role       string `json:"role"`
-	Enterprise string `json:"enterpriseID"`
+	Password   string `json:"password" example:"!Mp0$$ible_2_ReMemBeR"`
+	Role       string `json:"role" example:"vulscanouser"`
+	Enterprise string `json:"enterpriseID" example:"TCL"`
 }
 
 // UserSSHGateway struct represents the attributes of a user defined SSH Gateway

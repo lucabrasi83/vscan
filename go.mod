@@ -29,7 +29,8 @@ require (
 	github.com/labstack/echo v3.3.5+incompatible // indirect
 	github.com/labstack/gommon v0.2.8 // indirect
 	github.com/lib/pq v1.0.0 // indirect
-	github.com/mattn/go-colorable v0.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.1 // indirect
+	github.com/mattn/go-isatty v0.0.6 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
@@ -52,11 +53,11 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v0.0.0-20170224212429-dcecefd839c4 // indirect
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
-	golang.org/x/crypto v0.0.0-20190131182504-b8fe1690c613 // indirect
-	golang.org/x/net v0.0.0-20190125091013-d26f9f9a57f3 // indirect
+	golang.org/x/crypto v0.0.0-20190225124518-7f87c0fbb88b // indirect
+	golang.org/x/net v0.0.0-20190225153610-fe579d43d832 // indirect
 	golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4 // indirect
-	golang.org/x/sys v0.0.0-20190204203706-41f3e6584952 // indirect
-	golang.org/x/tools v0.0.0-20190205050122-7f7074d5bcfd // indirect
+	golang.org/x/sys v0.0.0-20190225065934-cc5685c2db12 // indirect
+	golang.org/x/tools v0.0.0-20190225234524-2dc4ef2775b8 // indirect
 	gopkg.in/appleboy/gofight.v2 v2.0.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
