@@ -8,7 +8,6 @@ import (
 	"github.com/appleboy/gin-jwt"
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vulscano/postgresdb"
-	gojwt "gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 const (
@@ -49,7 +48,8 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 			}
 			return jwt.MapClaims{}
 		},
-		IdentityHandler: func(claims gojwt.MapClaims) interface{} {
+		IdentityHandler: func(c *gin.Context) interface{} {
+			claims := jwt.ExtractClaims(c)
 			return claims["role"]
 		},
 		Authenticator: func(c *gin.Context) (interface{}, error) {

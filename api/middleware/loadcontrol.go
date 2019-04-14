@@ -27,7 +27,7 @@ func APILoadControl() gin.HandlerFunc {
 	// System Load averages for 1 minute, 5 minutes, 15 minutes
 	maxLoadAverages, _ := load.Avg()
 
-	// Current 1 minute System Load Average
+	// Current 5 minutes System Load Average
 	currentLoad := maxLoadAverages.Load5
 
 	// Maximum Load tolerated below must be below 0.7
@@ -38,7 +38,7 @@ func APILoadControl() gin.HandlerFunc {
 		if maxLoad >= maxLoadLimit {
 			logging.VulscanoLog("error",
 				"Request from "+c.ClientIP()+" rejected due to high system load.",
-				" Current 1 minute Average System Load at "+strconv.FormatFloat(currentLoad, 'f', 2, 64),
+				" Current 5 minutes Average System Load at "+strconv.FormatFloat(currentLoad, 'f', 2, 64),
 			)
 			c.Header("connection", "close")
 			c.JSON(http.StatusBadGateway, gin.H{"error": "system is currently under heavy load. Please retry later."})
