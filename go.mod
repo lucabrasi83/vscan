@@ -26,7 +26,6 @@ require (
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.3.0+incompatible
 	github.com/json-iterator/go v1.1.6 // indirect
-	github.com/kr/pty v1.1.4 // indirect
 	github.com/lib/pq v1.0.0 // indirect
 	github.com/mailru/easyjson v0.0.0-20190403194419-1ea4449da983 // indirect
 	github.com/mattn/go-isatty v0.0.7 // indirect
@@ -45,12 +44,13 @@ require (
 	github.com/stretchr/testify v1.3.0
 	github.com/swaggo/gin-swagger v1.1.0
 	github.com/swaggo/swag v1.4.1
-	github.com/ugorji/go v1.1.2-0.20180831062425-e253f1f20942 // indirect
+	github.com/ugorji/go v1.1.4 // indirect
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5 // indirect
 	golang.org/x/net v0.0.0-20190404232315-eb5bcb51f2a3 // indirect
 	golang.org/x/sys v0.0.0-20190405154228-4b34438f7a67 // indirect
 	golang.org/x/tools v0.0.0-20190408220357-e5b8258f4918 // indirect
-	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
 )
+
+replace github.com/ugorji/go v1.1.4 => github.com/ugorji/go/codec v0.0.0-20190204201341-e444a5086c43
