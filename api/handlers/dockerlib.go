@@ -152,8 +152,8 @@ func init() {
 // of any issue reported during interaction with Docker daemon
 func LaunchJovalDocker(jobID string) (err error) {
 
-	// Container should run for maximum 10 minutes
-	ctxContainerCancel, cancelContainerFunc := context.WithTimeout(ctx, 10*time.Minute)
+	// Container should run for maximum 15 minutes
+	ctxContainerCancel, cancelContainerFunc := context.WithTimeout(ctx, 15*time.Minute)
 
 	defer cancelContainerFunc()
 

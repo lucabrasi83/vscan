@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +26,7 @@ const (
 	userRole   = "vulscanouser"
 	ciscoIOSXE = "IOS-XE"
 	ciscoIOS   = "IOS"
+	bulkDevMaxLimit = 50
 )
 
 // LaunchAdHocScan handler is the API endpoint to trigger a single device ad-hoc VA scan.
@@ -582,8 +584,9 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 		return
 	}
 
-	if len(ads.Devices) > 30 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum of 30 devices allowed for Bulk Scan"})
+	if len(ads.Devices) > bulkDevMaxLimit {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum of " + strconv.Itoa(
+			bulkDevMaxLimit) + " devices allowed for Bulk Scan"})
 		return
 	}
 
@@ -638,8 +641,9 @@ func LaunchAnutaInventoryBulkScan(c *gin.Context) {
 		return
 	}
 
-	if len(invDevices.Devices) > 30 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum of 30 devices allowed for Bulk Scan"})
+	if len(invDevices.Devices) > bulkDevMaxLimit {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum of " + strconv.Itoa(
+			bulkDevMaxLimit) + " devices allowed for Bulk Scan"})
 		return
 	}
 
