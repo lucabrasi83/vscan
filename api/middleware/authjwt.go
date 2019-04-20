@@ -102,7 +102,23 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 		TokenHeadName: "Bearer",
 		TimeFunc:      time.Now,
 		SendCookie:    false,
+		RefreshResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			c.JSON(http.StatusOK, gin.H{
+				"code":   http.StatusOK,
+				"token":  token,
+				"expire": expire.Format(time.RFC3339),
+			})
+		},
+		HTTPStatusMessageFunc: func(e error, c *gin.Context) string {
 
+			return e.Error()
+		},
+		Unauthorized: func(c *gin.Context, code int, msg string) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code": code,
+				"error": msg,
+			})
+		},
 		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
 			c.JSON(http.StatusOK, gin.H{
 				"code":   http.StatusOK,
@@ -111,6 +127,7 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 			})
 		},
 	}
+
 	return authMiddleware
 }
 
