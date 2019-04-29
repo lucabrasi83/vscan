@@ -66,9 +66,6 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 		return nil, errHash
 	}
 
-	// Mutex for scannedDevices slice to prevent race condition
-	// var muScannedDevice sync.RWMutex
-
 	defer func() {
 		errJobInsertDB := scanJobReportDB(
 			jobID,
@@ -378,8 +375,6 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 	var wg sync.WaitGroup
 	wg.Add(devCount)
 
-	// var mu sync.RWMutex
-
 	anutaScannedDevList := make([]*AnutaDeviceInventory, 0)
 	var skippedScannedDevices []string
 
@@ -430,7 +425,6 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 				return
 			}
 
-			//mu.Lock()
 			anutaScannedDevList = append(anutaScannedDevList, &AnutaDeviceInventory{
 				DeviceName:    anutaDev.DeviceName,
 				MgmtIPAddress: net.ParseIP(anutaDev.MgmtIPAddress).To4(),
@@ -442,7 +436,6 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 				Hostname:      anutaDev.Hostname,
 				EnterpriseID:  strings.ToUpper(anutaDev.DeviceName[0:3]),
 			})
-			//mu.Unlock()
 
 		}(dev.DeviceID)
 	}

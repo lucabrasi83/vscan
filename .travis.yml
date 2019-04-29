@@ -1,9 +1,14 @@
+services:
+  - redis-server
+
 language: go
 
 env:
   global:
       - GO111MODULE=on
       - CODECOV_TOKEN="591bd614-fea0-4dd5-b816-6cbd5db6a834"
+      - VSCAN_REDIS_HOST=localhost
+      - VSCAN_REDIS_PASSWORD=
 
 go:
 

@@ -87,9 +87,6 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		return nil, errHash
 	}
 
-	// Mutex for scannedDevices slice to prevent race condition
-	// var muScannedDevice sync.RWMutex
-
 	defer func() {
 		errJobInsertDB := scanJobReportDB(
 			jobID,
@@ -109,10 +106,6 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 
 	// Check if ongoing VA for requested device. This is to avoid repeated VA for the same device
 	if deviceBeingScanned := isDeviceBeingScanned(dev.IPAddress); !deviceBeingScanned {
-
-		//muScannedDevice.Lock()
-		//scannedDevices = append(scannedDevices, dev.IPAddress)
-		//muScannedDevice.Unlock()
 
 		err := rediscache.CacheStore.LPushScannedDevicesIP(dev.IPAddress)
 		if err != nil {
@@ -561,17 +554,6 @@ func isDeviceBeingScanned(d string) bool {
 // The removal happens upon a call to Device VA Scan API endpoint and is executing after successful scan or
 // whenever an error is returned from the Scan() method
 func removeDevicefromScannedDeviceSlice(d string) {
-
-	// Mutex for scannedDevices slice to prevent race condition
-	//var muScannedDevices sync.RWMutex
-	//
-	//sort.Strings(scannedDevices)
-	//i := sort.Search(len(scannedDevices),
-	//	func(i int) bool { return scannedDevices[i] >= d })
-	//
-	//muScannedDevices.Lock()
-	//scannedDevices = append(scannedDevices[:i], scannedDevices[i+1:]...)
-	//muScannedDevices.Unlock()
 
 	rediscache.CacheStore.LRemScannedDevicesIP(d)
 
