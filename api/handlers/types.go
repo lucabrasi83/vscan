@@ -200,3 +200,29 @@ type UserDeviceCredentials struct {
 	IOSEnablePassword       string
 	PrivateKey              string
 }
+
+// UserDeviceCredentialsCreate struct represents the JSON keys to be passed in order to create a new device credential set
+type DeviceCredentialsCreate struct {
+	CredentialsName         string `json:"credentialsName" binding:"required"`
+	CredentialsDeviceVendor string `json:"credentialsDeviceVendor" binding:"required"`
+	Username                string `json:"username" binding:"required"`
+	Password                string `json:"password"`
+	IOSEnablePassword       string `json:"iosEnablePassword"`
+	PrivateKey              string `json:"privateKey"`
+}
+
+// UserDeviceCredentialsUpdate struct represents the JSON keys to be passed in order to update a new device credential set
+type DeviceCredentialsUpdate struct {
+	CredentialsName         string `json:"credentialsName"`
+	CredentialsDeviceVendor string `json:"credentialsDeviceVendor"`
+	Username                string `json:"username"`
+	Password                string `json:"password"`
+	IOSEnablePassword       string `json:"iosEnablePassword"`
+	PrivateKey              string `json:"privateKey"`
+}
+
+// EnterpriseCreate struct represents the JSON keys to be passed in order to create a new enterprise
+type EnterpriseCreate struct {
+	EnterpriseID   string `json:"enterpriseID" binding:"required"`
+	EnterpriseName string `json:"enterpriseName" binding:"required"`
+}

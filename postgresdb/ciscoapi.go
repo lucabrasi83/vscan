@@ -192,8 +192,7 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	// Set Query timeout
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), longQueryTimeout)
 
-	// SQL Statement to insert all Cisco advisories Metadata from openVuln API
-	// If Cisco Advisory ID already exists, we just update it with fields returned by Cisco openVuln API
+	// SQL Statement to update Cisco Suggested SW column for each device ID.
 	const sqlQuery = `UPDATE device_va_results SET suggested_sw = COALESCE($1, 'NA') WHERE device_id = $2`
 
 	defer cancelQuery()

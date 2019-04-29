@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/lucabrasi83/vulscano/initializer"
 	"github.com/lucabrasi83/vulscano/openvulnapi"
+	"github.com/lucabrasi83/vulscano/rediscache"
 
 	"github.com/appleboy/gin-jwt"
 
@@ -20,11 +22,12 @@ import (
 )
 
 const (
-	rootRole   = "vulscanoroot"
-	rootUser   = "root@vulscano.com"
-	userRole   = "vulscanouser"
-	ciscoIOSXE = "IOS-XE"
-	ciscoIOS   = "IOS"
+	rootRole        = "vulscanoroot"
+	rootUser        = "root@vulscano.com"
+	userRole        = "vulscanouser"
+	ciscoIOSXE      = "IOS-XE"
+	ciscoIOS        = "IOS"
+	bulkDevMaxLimit = 50
 )
 
 // LaunchAdHocScan handler is the API endpoint to trigger a single device ad-hoc VA scan.
@@ -183,25 +186,313 @@ func Ping(c *gin.Context) {
 
 func GetCurrentlyScannedDevices(c *gin.Context) {
 
+	cacheScannedDev, err := rediscache.CacheStore.LRangeScannedDevices()
+
+	if err != nil {
+
+		logging.VulscanoLog("error", "unable to get the list of current scanned device: ", err.Error())
+
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unable to get the list of current scanned device"})
+
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
-		"deviceCount": len(scannedDevices),
-		"devicesIP":   scannedDevices,
+		"deviceCount": len(cacheScannedDev),
+		"devicesIP":   cacheScannedDev,
 	})
 
 }
 
+func GetUserDeviceCredentials(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	// Declare User attributes from JSON Web Token Claim
+	jwtClaim := JwtClaim{
+		Enterprise: jwtMapClaim["enterprise"].(string),
+		UserID:     jwtMapClaim["userID"].(string),
+		Email:      jwtMapClaim["email"].(string),
+		Role:       jwtMapClaim["role"].(string),
+	}
+
+	userInput := c.Param("creds-name")
+
+	devCredsFound, err := postgresdb.DBInstance.FetchDeviceCredentials(jwtClaim.UserID, userInput)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot find requested device credentials"})
+		return
+	}
+
+	c.JSON(http.StatusOK, *devCredsFound)
+}
+func DeleteUserDeviceCredentials(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	// Declare User attributes from JSON Web Token Claim
+	jwtClaim := JwtClaim{
+		Enterprise: jwtMapClaim["enterprise"].(string),
+		UserID:     jwtMapClaim["userID"].(string),
+		Email:      jwtMapClaim["email"].(string),
+		Role:       jwtMapClaim["role"].(string),
+	}
+
+	userInput := c.Param("creds-name")
+
+	err := postgresdb.DBInstance.DeleteDeviceCredentials(jwtClaim.UserID, userInput)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete requested device credentials"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "deleted " + userInput + " device credentials"})
+}
+func GetAllUserDeviceCredentials(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	// Declare User attributes from JSON Web Token Claim
+	jwtClaim := JwtClaim{
+		Enterprise: jwtMapClaim["enterprise"].(string),
+		UserID:     jwtMapClaim["userID"].(string),
+		Email:      jwtMapClaim["email"].(string),
+		Role:       jwtMapClaim["role"].(string),
+	}
+
+	devCredsFound, err := postgresdb.DBInstance.FetchAllUserDeviceCredentials(jwtClaim.UserID)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot find requested device credentials"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"deviceCredentials": devCredsFound})
+}
+func CreateUserDeviceCredentials(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	// Declare User attributes from JSON Web Token Claim
+	jwtClaim := JwtClaim{
+		Enterprise: jwtMapClaim["enterprise"].(string),
+		UserID:     jwtMapClaim["userID"].(string),
+		Email:      jwtMapClaim["email"].(string),
+		Role:       jwtMapClaim["role"].(string),
+	}
+
+	var newDevCreds DeviceCredentialsCreate
+
+	if err := c.ShouldBindJSON(&newDevCreds); err != nil {
+		logging.VulscanoLog("error", "Device Credentials creation failed: ", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Temp to ensure only CISCO is used as vendor type while we add support for more vendors
+	if newDevCreds.CredentialsDeviceVendor != "CISCO" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "only CISCO supported as device vendor"})
+		return
+	}
+
+	err := postgresdb.DBInstance.InsertNewDeviceCredentials(
+		map[string]string{
+			"credsName":       newDevCreds.CredentialsName,
+			"credsVendor":     newDevCreds.CredentialsDeviceVendor,
+			"credsUsername":   newDevCreds.Username,
+			"credsPassword":   newDevCreds.Password,
+			"credsPrivateKey": newDevCreds.PrivateKey,
+			"credsIOSenable":  newDevCreds.IOSEnablePassword,
+			"credsuserID":     jwtClaim.UserID,
+		},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "device credentials created"})
+}
+func UpdateUserDeviceCredentials(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	// Declare User attributes from JSON Web Token Claim
+	jwtClaim := JwtClaim{
+		Enterprise: jwtMapClaim["enterprise"].(string),
+		UserID:     jwtMapClaim["userID"].(string),
+		Email:      jwtMapClaim["email"].(string),
+		Role:       jwtMapClaim["role"].(string),
+	}
+
+	userInput := c.Param("creds-name")
+
+	var updateDevCreds DeviceCredentialsUpdate
+
+	if err := c.ShouldBindJSON(&updateDevCreds); err != nil {
+		logging.VulscanoLog("error", "Device Credentials update failed: ", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Temp to ensure only CISCO is used as vendor type while we add support for more vendors
+	if updateDevCreds.CredentialsDeviceVendor != "" && updateDevCreds.CredentialsDeviceVendor != "CISCO" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "only CISCO supported as device vendor"})
+		return
+	}
+
+	err := postgresdb.DBInstance.UpdateDeviceCredentials(
+		map[string]string{
+			"credsCurrentName": userInput,
+			"credsVendor":      updateDevCreds.CredentialsDeviceVendor,
+			"credsUsername":    updateDevCreds.Username,
+			"credsPassword":    updateDevCreds.Password,
+			"credsPrivateKey":  updateDevCreds.PrivateKey,
+			"credsIOSenable":   updateDevCreds.IOSEnablePassword,
+			"credsuserID":      jwtClaim.UserID,
+			"credsNewName":     updateDevCreds.CredentialsName,
+		},
+	)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "device credentials updated"})
+}
+
+func GetUserSSHGateway(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	// Declare User attributes from JSON Web Token Claim
+	jwtClaim := JwtClaim{
+		Enterprise: jwtMapClaim["enterprise"].(string),
+		UserID:     jwtMapClaim["userID"].(string),
+		Email:      jwtMapClaim["email"].(string),
+		Role:       jwtMapClaim["role"].(string),
+	}
+
+	userInput := c.Param("gw-name")
+
+	sshgwFound, err := postgresdb.DBInstance.FetchUserSSHGateway(jwtClaim.Enterprise, userInput)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot find requested gateway"})
+		return
+	}
+
+	c.JSON(http.StatusOK, *sshgwFound)
+}
+func GetAllUserSSHGateway(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	// Declare User attributes from JSON Web Token Claim
+	jwtClaim := JwtClaim{
+		Enterprise: jwtMapClaim["enterprise"].(string),
+		UserID:     jwtMapClaim["userID"].(string),
+		Email:      jwtMapClaim["email"].(string),
+		Role:       jwtMapClaim["role"].(string),
+	}
+
+	sshgwFound, err := postgresdb.DBInstance.FetchAllUserSSHGateway(jwtClaim.Enterprise)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot find requested gateway"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"sshGateway": sshgwFound})
+}
+func DeleteUserSSHGateway(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	// Declare User attributes from JSON Web Token Claim
+	jwtClaim := JwtClaim{
+		Enterprise: jwtMapClaim["enterprise"].(string),
+		UserID:     jwtMapClaim["userID"].(string),
+		Email:      jwtMapClaim["email"].(string),
+		Role:       jwtMapClaim["role"].(string),
+	}
+
+	userInput := c.Param("gw-name")
+
+	err := postgresdb.DBInstance.DeleteUserSSHGateway(jwtClaim.Enterprise, userInput)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot find requested gateway"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "gateway " + userInput + " deleted"})
+}
+func GetAllEnterprises(c *gin.Context) {
+	ent, err := postgresdb.DBInstance.FetchAllEnterprises()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to fetch enterprises from database"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"enterprises": ent})
+}
+func GetEnterprise(c *gin.Context) {
+
+	userInput := strings.ToUpper(c.Param("enterprise-id"))
+
+	ent, err := postgresdb.DBInstance.FetchEnterprise(userInput)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to fetch enterprises from database"})
+		return
+	}
+
+	c.JSON(http.StatusOK, *ent)
+}
+func DeleteEnterprise(c *gin.Context) {
+
+	userInput := strings.ToUpper(c.Param("enterprise-id"))
+
+	err := postgresdb.DBInstance.DeleteEnterprise(userInput)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unable to delete enterprise: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "enterprise " + userInput + " successfully deleted"})
+}
+func CreateEnterprise(c *gin.Context) {
+
+	var newEnt EnterpriseCreate
+
+	if err := c.ShouldBindJSON(&newEnt); err != nil {
+		logging.VulscanoLog("error", "Enterprise creation failed: ", err.Error())
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := postgresdb.DBInstance.InsertNewEnterprise(
+		map[string]string{
+			"entID":   strings.ToUpper(newEnt.EnterpriseID),
+			"entName": newEnt.EnterpriseName,
+		},
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "enterprise successfully created"})
+}
+
 // GetAllUsers is a Gin Handler to return the list of all users provisioned
-// @Summary Get all users provisioned
-// @Tags admin
-// @Description Fetch all users details provisioned in application
-// @Accept  json
-// @Produce  json
-// @Param Authorization header string true "JWT Bearer Token"
-// @Success 200 {array} postgresdb.VulscanoDBUser
-// @Failure 400 {string} string "unable to fetch users"
-// @Failure 404 {string} string "route requested does not exist"
-// @Failure 401 {string} string "user not authorized"
-// @Router /admin/all-users [get]
 func GetAllUsers(c *gin.Context) {
 	users, err := postgresdb.DBInstance.FetchAllUsers()
 
@@ -214,18 +505,6 @@ func GetAllUsers(c *gin.Context) {
 }
 
 // GetUser is a Gin handler to return a specific user
-// @Summary Get specific user details
-// @Tags admin
-// @Description Fetch user details specified in user-id param
-// @Accept  json
-// @Produce  json
-// @Param Authorization header string true "JWT Bearer Token"
-// @Param username path string true "Username in email format"
-// @Success 200 {object} postgresdb.VulscanoDBUser
-// @Failure 400 {string} string "unable to fetch requested user"
-// @Failure 404 {string} string "route requested does not exist"
-// @Failure 401 {string} string "user not authorized"
-// @Router /admin/user/{username} [get]
 func GetUser(c *gin.Context) {
 	userInput := c.Param("user-id")
 
@@ -240,19 +519,6 @@ func GetUser(c *gin.Context) {
 }
 
 // CreateUser is a Gin handler to create a user
-// @Summary Create new user
-// @Tags admin
-// @Description Create new user to access Vulscano
-// @Accept  json
-// @Produce  json
-// @Param Authorization header string true "JWT Bearer Token"
-// @Param user body handlers.VulscanoUserCreate true "New user details"
-// @Success 200 {string} string "user successfully created"
-// @Failure 400 {string} string "unable to create requested user"
-// @Failure 404 {string} string "route requested does not exist"
-// @Failure 401 {string} string "user not authorized"
-// @Failure 413 {string} string "body size too large"
-// @Router /admin/user [post]
 func CreateUser(c *gin.Context) {
 
 	var newUser VulscanoUserCreate
@@ -297,20 +563,6 @@ func CreateUser(c *gin.Context) {
 }
 
 // UpdateUser is a Gin handler to update a user
-// @Summary Update an existing user
-// @Tags admin
-// @Description Update an existing user
-// @Accept  json
-// @Produce  json
-// @Param Authorization header string true "JWT Bearer Token"
-// @Param username path string true "Username in email format"
-// @Param user body handlers.VulscanoUserPatch true "Existing user details"
-// @Success 200 {string} string "user successfully updated"
-// @Failure 400 {string} string "unable to update requested user"
-// @Failure 404 {string} string "route requested does not exist"
-// @Failure 401 {string} string "user not authorized"
-// @Failure 413 {string} string "body size too large"
-// @Router /admin/user/{username} [patch]
 func UpdateUser(c *gin.Context) {
 
 	var updateUser VulscanoUserPatch
@@ -582,8 +834,9 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 		return
 	}
 
-	if len(ads.Devices) > 30 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum of 30 devices allowed for Bulk Scan"})
+	if len(ads.Devices) > bulkDevMaxLimit {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum of " + strconv.Itoa(
+			bulkDevMaxLimit) + " devices allowed for Bulk Scan"})
 		return
 	}
 
@@ -638,8 +891,9 @@ func LaunchAnutaInventoryBulkScan(c *gin.Context) {
 		return
 	}
 
-	if len(invDevices.Devices) > 30 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum of 30 devices allowed for Bulk Scan"})
+	if len(invDevices.Devices) > bulkDevMaxLimit {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Maximum of " + strconv.Itoa(
+			bulkDevMaxLimit) + " devices allowed for Bulk Scan"})
 		return
 	}
 

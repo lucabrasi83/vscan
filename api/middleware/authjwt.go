@@ -2,23 +2,23 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/appleboy/gin-jwt"
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vulscano/postgresdb"
-	gojwt "gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 const (
-	jwtKey    = "-7qXWYLjBN]f#M/C]s9F}bc!^fFs@dM"
 	realmName = "Vulscano"
 )
 
 var (
 	rootURL  = "/api/v1/admin"
 	rootRole = "vulscanoroot"
+	jwtKey   = os.Getenv("VSCAN_SECRET_KEY")
 )
 
 // Login is used to unmarshal a login in request so that we can parse it
@@ -49,7 +49,8 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 			}
 			return jwt.MapClaims{}
 		},
-		IdentityHandler: func(claims gojwt.MapClaims) interface{} {
+		IdentityHandler: func(c *gin.Context) interface{} {
+			claims := jwt.ExtractClaims(c)
 			return claims["role"]
 		},
 		Authenticator: func(c *gin.Context) (interface{}, error) {
@@ -102,7 +103,23 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 		TokenHeadName: "Bearer",
 		TimeFunc:      time.Now,
 		SendCookie:    false,
+		RefreshResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			c.JSON(http.StatusOK, gin.H{
+				"code":   http.StatusOK,
+				"token":  token,
+				"expire": expire.Format(time.RFC3339),
+			})
+		},
+		HTTPStatusMessageFunc: func(e error, c *gin.Context) string {
 
+			return e.Error()
+		},
+		Unauthorized: func(c *gin.Context, code int, msg string) {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"code":  code,
+				"error": msg,
+			})
+		},
 		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
 			c.JSON(http.StatusOK, gin.H{
 				"code":   http.StatusOK,
@@ -111,6 +128,7 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 			})
 		},
 	}
+
 	return authMiddleware
 }
 
