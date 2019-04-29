@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -11,13 +12,13 @@ import (
 )
 
 const (
-	jwtKey    = "-7qXWYLjBN]f#M/C]s9F}bc!^fFs@dM"
 	realmName = "Vulscano"
 )
 
 var (
 	rootURL  = "/api/v1/admin"
 	rootRole = "vulscanoroot"
+	jwtKey = os.Getenv("VSCAN_SECRET_KEY")
 )
 
 // Login is used to unmarshal a login in request so that we can parse it

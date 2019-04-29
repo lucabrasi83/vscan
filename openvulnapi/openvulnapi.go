@@ -54,7 +54,7 @@ type VulnMetadata struct {
 }
 
 type VulnMetadataList struct {
-	Advisories []*VulnMetadata `json:"advisories"`
+	Advisories []VulnMetadata `json:"advisories"`
 }
 
 type CiscoSnAPI struct {
@@ -134,7 +134,7 @@ func getOpenVulnToken() error {
 
 // GetAllVulnMetaData will fetch the all vulnerabilities metadata from Cisco openVuln API published by Cisco
 // It takes the Cisco Advisory ID as parameter and returns VulnMetadata struct or error
-func GetAllVulnMetaData() ([]*VulnMetadata, error) {
+func GetAllVulnMetaData() ([]VulnMetadata, error) {
 
 	url := baseAllVulnURL
 
@@ -183,7 +183,7 @@ func GetAllVulnMetaData() ([]*VulnMetadata, error) {
 // GetVulnFixedVersions will fetch the security advisories published for a particular IOS/IOS-XE version
 // from Cisco openVuln API
 // It will return a pointer to slice of type VulnMetadata which will contain the fixed versions for each advisory
-func GetVulnFixedVersions(url string, ver string) ([]*VulnMetadata, error) {
+func GetVulnFixedVersions(url string, ver string) ([]VulnMetadata, error) {
 
 	// Construct URL with Cisco IOS/IOS-XE Version requested
 	url += ver

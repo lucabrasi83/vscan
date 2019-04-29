@@ -3,6 +3,7 @@ package postgresdb
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx"
 	"github.com/lucabrasi83/vulscano/logging"
@@ -10,12 +11,12 @@ import (
 
 // UserDeviceCredentials struct represents the Device Credentials to connect to a scanned device
 type DeviceCredentialsDB struct {
-	CredentialsName         string
-	CredentialsDeviceVendor string
-	Username                string
-	Password                string
-	IOSEnablePassword       string
-	PrivateKey              string
+	CredentialsName         string `json:"credentialsName"`
+	CredentialsDeviceVendor string `json:"credentialsDeviceVendor"`
+	Username                string `json:"username"`
+	Password                string `json:"password"`
+	IOSEnablePassword       string `json:"iosEnablePassword"`
+	PrivateKey              string `json:"privateKey"`
 }
 
 func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCredentialsDB, error) {
@@ -65,4 +66,198 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 		return nil, fmt.Errorf("error while searching for Device Credentials %v: %v", cn, err.Error())
 	}
 
+}
+
+func (p *vulscanoDB) FetchAllUserDeviceCredentials(uid string) ([]DeviceCredentialsDB, error) {
+
+	var deviceCredentials []DeviceCredentialsDB
+
+	// Set Query timeout to 1 minute
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
+
+	const sqlQuery = `SELECT credentials_name,
+ 				      device_vendor,
+	                  device_username,
+	                  COALESCE(pgp_sym_decrypt(device_password, $1), ''), 
+	                  COALESCE(pgp_sym_decrypt(device_private_key, $1), ''), 
+	                  COALESCE(pgp_sym_decrypt(device_ios_enable_pwd, $1), '')
+                      FROM device_credentials_set
+					  WHERE user_id = $2`
+
+	defer cancelQuery()
+
+	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, uid)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"cannot fetch user device credentials from DB: ", err.Error(),
+		)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		devCred := DeviceCredentialsDB{}
+		err = rows.Scan(&devCred.CredentialsName,
+			&devCred.CredentialsDeviceVendor,
+			&devCred.Username,
+			&devCred.Password,
+			&devCred.PrivateKey,
+			&devCred.IOSEnablePassword,
+		)
+
+		if err != nil {
+			logging.VulscanoLog("error",
+				"error while scanning device_credentials_set table rows: ", err.Error())
+			return nil, err
+		}
+		deviceCredentials = append(deviceCredentials, devCred)
+	}
+	err = rows.Err()
+	if err != nil {
+		logging.VulscanoLog("error",
+			"error returned while iterating through device_credentials_set table: ", err.Error())
+		return nil, err
+	}
+
+	return deviceCredentials, nil
+
+}
+
+func (p *vulscanoDB) DeleteDeviceCredentials(uid string, cn string) error {
+
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
+
+	const sqlQuery = `DELETE FROM device_credentials_set
+					  WHERE user_id = $1 AND credentials_name = $2`
+
+	defer cancelQuery()
+
+	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, uid, cn)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"failed to delete device credentials: ", cn, " ", err.Error())
+
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+
+		logging.VulscanoLog("error",
+			"failed to delete device credentials: ", cn)
+		return fmt.Errorf("failed to delete device credentials %v", cn)
+	}
+
+	return nil
+}
+
+func (p *vulscanoDB) InsertNewDeviceCredentials(devCredsProps map[string]string) error {
+
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
+
+	const sqlQuery = `INSERT INTO device_credentials_set
+			          (credentials_name,
+ 				      device_vendor,
+	                  device_username,
+	                  device_password, 
+	                  device_private_key,
+	                  device_ios_enable_pwd,
+					  user_id )
+                      VALUES (
+						$2, $3, $4, 
+						COALESCE(pgp_sym_encrypt($5, $1, 'compress-algo=1, cipher-algo=aes256'),''),
+						COALESCE(pgp_sym_encrypt($6, $1, 'compress-algo=1, cipher-algo=aes256'),''),
+					    COALESCE(pgp_sym_encrypt($7, $1, 'compress-algo=1, cipher-algo=aes256'),''),
+						$8
+					   )`
+
+	defer cancelQuery()
+
+	cTag, err := p.db.ExecEx(
+		ctxTimeout,
+		sqlQuery,
+		nil,
+		pgpSymEncryptKey,
+		devCredsProps["credsName"],
+		devCredsProps["credsVendor"],
+		devCredsProps["credsUsername"],
+		devCredsProps["credsPassword"],
+		devCredsProps["credsPrivateKey"],
+		devCredsProps["credsIOSenable"],
+		devCredsProps["credsuserID"],
+	)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"failed to insert device credentials: ", devCredsProps["credsName"], " ", err.Error())
+
+		if strings.Contains(err.Error(), "23505") {
+			return fmt.Errorf("device credentials %v already exists", devCredsProps["credsName"])
+		}
+		if strings.Contains(err.Error(), "23503") {
+			return fmt.Errorf("user ID %v does not exist", devCredsProps["credsuserID"])
+		}
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+
+		logging.VulscanoLog("error",
+			"failed to insert device credentials: ", devCredsProps["credsName"])
+		return fmt.Errorf("failed to insert device credentials %v", devCredsProps["credsName"])
+	}
+
+	return nil
+}
+
+func (p *vulscanoDB) UpdateDeviceCredentials(devCredsProps map[string]string) error {
+
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
+
+	const sqlQuery = `UPDATE device_credentials_set SET
+					  credentials_name = COALESCE($9, credentials_name),
+				      device_vendor = COALESCE($3, device_vendor),
+					  device_username = COALESCE($4, device_username),
+					  device_password = COALESCE(pgp_sym_encrypt($5, $1, 'compress-algo=1, cipher-algo=aes256'), device_password),
+                      device_private_key = COALESCE(pgp_sym_encrypt($6, $1, 'compress-algo=1, cipher-algo=aes256'),device_private_key),
+					  device_ios_enable_pwd = COALESCE(pgp_sym_encrypt($7, $1, 'compress-algo=1,cipher-algo=aes256'),device_ios_enable_pwd)
+					  WHERE credentials_name = $2 AND user_id = $8
+					`
+
+	defer cancelQuery()
+
+	cTag, err := p.db.ExecEx(
+		ctxTimeout,
+		sqlQuery,
+		nil,
+		pgpSymEncryptKey,
+		devCredsProps["credsCurrentName"],
+		devCredsProps["credsVendor"],
+		devCredsProps["credsUsername"],
+		devCredsProps["credsPassword"],
+		devCredsProps["credsPrivateKey"],
+		devCredsProps["credsIOSenable"],
+		devCredsProps["credsuserID"],
+		devCredsProps["credsNewName"],
+	)
+
+	if err != nil {
+		logging.VulscanoLog("error",
+			"failed to update device credentials: ", devCredsProps["credsName"], " ", err.Error())
+
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+
+		logging.VulscanoLog("error",
+			"failed to update device credentials: ", devCredsProps["credsName"])
+		return fmt.Errorf("failed to update device credentials %v", devCredsProps["credsName"])
+	}
+
+	return nil
 }

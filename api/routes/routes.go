@@ -46,11 +46,11 @@ func LoadRoutes(routes *gin.Engine) {
 			admin.POST("/user", handlers.CreateUser)
 			admin.PATCH("/user/:user-id", handlers.UpdateUser)
 			admin.DELETE("/user/:user-id", handlers.DeleteUser)
-			admin.GET("/enterprise/:enterprise-id", tempHandler)
-			admin.GET("/all-enterprises", tempHandler)
-			admin.POST("/enterprise", tempHandler)
+			admin.GET("/enterprise/:enterprise-id", handlers.GetEnterprise)
+			admin.GET("/all-enterprises", handlers.GetAllEnterprises)
+			admin.POST("/enterprise", handlers.CreateEnterprise)
 			admin.PATCH("/enterprise/:enterprise-id", tempHandler)
-			admin.DELETE("/enterprise/:enterprise-id", tempHandler)
+			admin.DELETE("/enterprise/:enterprise-id", handlers.DeleteEnterprise)
 			admin.POST("/cisco-sw-suggested", handlers.AdminGetAnutaDeviceSuggestedSW)
 			admin.GET("/ongoing-scanned-devices", handlers.GetCurrentlyScannedDevices)
 		}
@@ -77,19 +77,19 @@ func LoadRoutes(routes *gin.Engine) {
 		}
 		sshgw := apiV1.Group("/ssh-gateways").Use(authWare())
 		{
-			sshgw.GET("/all", tempHandler)
-			sshgw.GET("/gateway/:gw-name", tempHandler)
+			sshgw.GET("/all", handlers.GetAllUserSSHGateway)
+			sshgw.GET("/gateway/:gw-name", handlers.GetUserSSHGateway)
 			sshgw.POST("/gateway", tempHandler)
 			sshgw.PATCH("/gateway/:gw-name", tempHandler)
-			sshgw.DELETE("/gateway/:gw-name", tempHandler)
+			sshgw.DELETE("/gateway/:gw-name", handlers.DeleteUserSSHGateway)
 		}
 		devcreds := apiV1.Group("/device-credentials").Use(authWare())
 		{
-			devcreds.GET("/all", tempHandler)
-			devcreds.GET("/credential/:creds-name", tempHandler)
-			devcreds.POST("/credential", tempHandler)
-			devcreds.PATCH("/credential/:creds-name", tempHandler)
-			devcreds.DELETE("/credential/:creds-name", tempHandler)
+			devcreds.GET("/all", handlers.GetAllUserDeviceCredentials)
+			devcreds.GET("/credential/:creds-name", handlers.GetUserDeviceCredentials)
+			devcreds.POST("/credential", handlers.CreateUserDeviceCredentials)
+			devcreds.PATCH("/credential/:creds-name", handlers.UpdateUserDeviceCredentials)
+			devcreds.DELETE("/credential/:creds-name", handlers.DeleteUserDeviceCredentials)
 		}
 
 	}

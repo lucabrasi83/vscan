@@ -175,7 +175,6 @@ func (p *vulscanoDB) FetchAllUsers() ([]*VulscanoDBUser, error) {
 	}
 
 	defer rows.Close()
-
 	for rows.Next() {
 		user := VulscanoDBUser{}
 		err = rows.Scan(&user.UserID, &user.Email, &user.EnterpriseID, &user.Role)

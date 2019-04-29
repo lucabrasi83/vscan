@@ -16,9 +16,10 @@ import (
 // db represents an instance of Postgres connection pool
 var ConnPool *pgx.ConnPool
 var DBInstance *vulscanoDB
+var pgpSymEncryptKey   = os.Getenv("VSCAN_SECRET_KEY")
 
 const (
-	pgpSymEncryptKey   = `2?wmrdF#V+&"<D3T`
+	//pgpSymEncryptKey   = `2?wmrdF#V+&"<D3T`
 	shortQueryTimeout  = 30 * time.Second
 	mediumQueryTimeout = 3 * time.Minute
 	longQueryTimeout   = 10 * time.Minute
@@ -50,6 +51,13 @@ func init() {
 		logging.VulscanoLog("fatal",
 			"Missing Environment Variable for PostgresDB Database Name ",
 			"(VULSCANO_DB_DATABASE_NAME")
+	}
+
+	// Check Environment Variables for Secret Key
+	if os.Getenv("VSCAN_SECRET_KEY") == "" {
+		logging.VulscanoLog("fatal",
+			"Missing Environment Variable for Data encryption secret key ",
+			"(VSCAN_SECRET_KEY")
 	}
 
 	var err error

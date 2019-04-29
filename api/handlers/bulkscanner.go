@@ -10,7 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/inventoryanuta"
+	"github.com/lucabrasi83/vulscano/inventorymgr"
+	"github.com/lucabrasi83/vulscano/rediscache"
 
 	"github.com/lucabrasi83/vulscano/postgresdb"
 
@@ -50,9 +51,9 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	var reportScanJobEndTime time.Time
-	successfulScannedDevName := make([]string, 0)
-	successfulScannedDevIP := make([]net.IP, 0)
-	currentJobOngoingScannedDevices := make([]string, 0)
+	successfulScannedDevName := make([]string, 0, bulkDevMaxLimit)
+	successfulScannedDevIP := make([]net.IP, 0, bulkDevMaxLimit)
+	currentJobOngoingScannedDevices := make([]string, 0, bulkDevMaxLimit)
 	var scanJobStatus string
 
 	// We Generate a Scan Job ID from HashGen library
@@ -66,7 +67,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	}
 
 	// Mutex for scannedDevices slice to prevent race condition
-	var muScannedDevice sync.RWMutex
+	// var muScannedDevice sync.RWMutex
 
 	defer func() {
 		errJobInsertDB := scanJobReportDB(
@@ -90,10 +91,15 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 		// Check if ongoing VA for requested device. This is to avoid repeated VA for the same device
 		if deviceBeingScanned := isDeviceBeingScanned(dv.IPAddress); !deviceBeingScanned {
 
-			muScannedDevice.Lock()
-			scannedDevices = append(scannedDevices, dv.IPAddress)
+			// muScannedDevice.Lock()
+			// scannedDevices = append(scannedDevices, dv.IPAddress)
+			err := rediscache.CacheStore.LPushScannedDevicesIP(dv.IPAddress)
+			if err != nil {
+				return nil, fmt.Errorf("not able to build cache list of devices for %v with IP %v",
+					dv.Hostname, dv.IPAddress)
+			}
 			currentJobOngoingScannedDevices = append(currentJobOngoingScannedDevices, dv.IPAddress)
-			muScannedDevice.Unlock()
+			// muScannedDevice.Unlock()
 		} else {
 
 			reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -132,7 +138,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	// Set the Scan Job Start Time
 	sr.ScanJobStartTime = reportScanJobStartTime
 
-	devList := make([]map[string]string, 0)
+	devList := make([]map[string]string, 0, bulkDevMaxLimit)
 
 	for _, dv := range dev.Devices {
 		device := map[string]string{
@@ -372,7 +378,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 	var wg sync.WaitGroup
 	wg.Add(devCount)
 
-	var mu sync.RWMutex
+	// var mu sync.RWMutex
 
 	anutaScannedDevList := make([]*AnutaDeviceInventory, 0)
 	var skippedScannedDevices []string
@@ -388,7 +394,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 
 			<-rateLimit.C
 
-			anutaDev, err := inventoryanuta.GetAnutaDevice(dv)
+			anutaDev, err := inventorymgr.GetAnutaDevice(dv)
 			if err != nil {
 				logging.VulscanoLog("error",
 					err.Error(),
@@ -424,7 +430,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 				return
 			}
 
-			mu.Lock()
+			//mu.Lock()
 			anutaScannedDevList = append(anutaScannedDevList, &AnutaDeviceInventory{
 				DeviceName:    anutaDev.DeviceName,
 				MgmtIPAddress: net.ParseIP(anutaDev.MgmtIPAddress).To4(),
@@ -436,7 +442,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 				Hostname:      anutaDev.Hostname,
 				EnterpriseID:  strings.ToUpper(anutaDev.DeviceName[0:3]),
 			})
-			mu.Unlock()
+			//mu.Unlock()
 
 		}(dev.DeviceID)
 	}
@@ -499,7 +505,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 
 }
 
-func normalizeAnutaBulkDeviceOS(osType *string, osVersion *string, adInv *inventoryanuta.AnutaAPIDeviceDetails) {
+func normalizeAnutaBulkDeviceOS(osType *string, osVersion *string, adInv *inventorymgr.AnutaAPIDeviceDetails) {
 
 	if adInv.OSType == "IOSXE" {
 

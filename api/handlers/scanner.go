@@ -11,7 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/inventoryanuta"
+	"github.com/lucabrasi83/vulscano/inventorymgr"
+	"github.com/lucabrasi83/vulscano/rediscache"
 
 	"github.com/lucabrasi83/vulscano/postgresdb"
 
@@ -24,7 +25,7 @@ import (
 
 // scannedDevices slice stores devices currently undergoing a Vulnerability Assessment
 // in order to avoid repeated VA request for the same device
-var scannedDevices = make([]string, 0)
+// var scannedDevices = make([]string, 0)
 
 // DeviceScanner interface provides abstraction for multi-vendor scan.
 // Implementation is for single device scan request
@@ -37,12 +38,12 @@ func NewCiscoScanDevice(os string) *CiscoScanDevice {
 	switch os {
 	case ciscoIOS:
 		return &CiscoScanDevice{
-			jovalURL:    "http://download.jovalcm.com/content/cisco.ios.cve.oval.xml",
+			jovalURL:    "http://download.jovalcm.com/content/jca/cisco.ios.cve.oval.xml",
 			openVulnURL: "https://api.cisco.com/security/advisories/ios.json?version=",
 		}
 	case ciscoIOSXE:
 		return &CiscoScanDevice{
-			jovalURL:    "http://download.jovalcm.com/content/cisco.iosxe.cve.oval.xml",
+			jovalURL:    "http://download.jovalcm.com/content/jca/cisco.iosxe.cve.oval.xml",
 			openVulnURL: "https://api.cisco.com/security/advisories/iosxe.json?version=",
 		}
 	}
@@ -87,7 +88,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	}
 
 	// Mutex for scannedDevices slice to prevent race condition
-	var muScannedDevice sync.RWMutex
+	// var muScannedDevice sync.RWMutex
 
 	defer func() {
 		errJobInsertDB := scanJobReportDB(
@@ -109,9 +110,15 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	// Check if ongoing VA for requested device. This is to avoid repeated VA for the same device
 	if deviceBeingScanned := isDeviceBeingScanned(dev.IPAddress); !deviceBeingScanned {
 
-		muScannedDevice.Lock()
-		scannedDevices = append(scannedDevices, dev.IPAddress)
-		muScannedDevice.Unlock()
+		//muScannedDevice.Lock()
+		//scannedDevices = append(scannedDevices, dev.IPAddress)
+		//muScannedDevice.Unlock()
+
+		err := rediscache.CacheStore.LPushScannedDevicesIP(dev.IPAddress)
+		if err != nil {
+			return nil, fmt.Errorf("not able to build cache list of devices for %v with IP %v",
+				dev.Hostname, dev.IPAddress)
+		}
 	} else {
 
 		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -307,7 +314,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 
 				// vulnMetaSlice is a slice of Cisco openVuln API vulnerabilities metadata
 				//var vulnMetaSlice []*openvulnapi.VulnMetadata
-				vulnMetaSlice := make([]*openvulnapi.VulnMetadata, 0)
+				vulnMetaSlice := make([]*openvulnapi.VulnMetadata, 0, 30)
 
 				// Declare WaitGroup to send requests to openVuln API in parallel
 				var wg sync.WaitGroup
@@ -387,7 +394,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 // AnutaInventoryScan is the main function to handle VA for devices part of Anuta NCX Inventory
 func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInventory, error) {
 
-	anutaDev, errAnuta := inventoryanuta.GetAnutaDevice(d.DeviceID)
+	anutaDev, errAnuta := inventorymgr.GetAnutaDevice(d.DeviceID)
 
 	if errAnuta != nil {
 		logging.VulscanoLog("error",
@@ -492,7 +499,7 @@ func scanJobReportDB(j string, st time.Time, et time.Time, dn []string, di []net
 // deviceVAReportDB handles DB interaction to persist VA Results when scanned is requested from an inventory source
 func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults) error {
 
-	vulnFound := make([]string, 0)
+	vulnFound := make([]string, 0, 20)
 
 	for _, vuln := range r.VulnerabilitiesFoundDetails {
 		vulnFound = append(vulnFound, vuln.AdvisoryID)
@@ -534,31 +541,40 @@ func deviceVAReportDB(d *AnutaDeviceInventory, r *ScanResults) error {
 // isDeviceBeingScanned check if the device is currently undergoing a Vulnerability assessment
 // It uses Sort package and binary search for efficiency
 func isDeviceBeingScanned(d string) bool {
-	sort.Strings(scannedDevices)
-	i := sort.Search(len(scannedDevices),
-		func(i int) bool { return scannedDevices[i] >= d })
+	cacheScannedDev, err := rediscache.CacheStore.LRangeScannedDevices()
 
-	if i < len(scannedDevices) && scannedDevices[i] == d {
+	if err != nil {
+		logging.VulscanoLog("error", "unable to get the list of current scanned device: ", err.Error())
+	}
+
+	sort.Strings(cacheScannedDev)
+	i := sort.Search(len(cacheScannedDev),
+		func(i int) bool { return cacheScannedDev[i] >= d })
+
+	if i < len(cacheScannedDev) && cacheScannedDev[i] == d {
 		return true
 	}
 	return false
 }
 
-// removeDeviceFromScannedDeviceSlice is a helper function to remove the device from scannedDevices slice
+// removeDeviceFromScannedDeviceSlice removes the device from scannedDevices slice
 // The removal happens upon a call to Device VA Scan API endpoint and is executing after successful scan or
 // whenever an error is returned from the Scan() method
 func removeDevicefromScannedDeviceSlice(d string) {
 
 	// Mutex for scannedDevices slice to prevent race condition
-	var muScannedDevices sync.RWMutex
+	//var muScannedDevices sync.RWMutex
+	//
+	//sort.Strings(scannedDevices)
+	//i := sort.Search(len(scannedDevices),
+	//	func(i int) bool { return scannedDevices[i] >= d })
+	//
+	//muScannedDevices.Lock()
+	//scannedDevices = append(scannedDevices[:i], scannedDevices[i+1:]...)
+	//muScannedDevices.Unlock()
 
-	sort.Strings(scannedDevices)
-	i := sort.Search(len(scannedDevices),
-		func(i int) bool { return scannedDevices[i] >= d })
+	rediscache.CacheStore.LRemScannedDevicesIP(d)
 
-	muScannedDevices.Lock()
-	scannedDevices = append(scannedDevices[:i], scannedDevices[i+1:]...)
-	muScannedDevices.Unlock()
 }
 
 // getUserSSHGatewayDetails will return the User SSH Gateway Details if one is specified
