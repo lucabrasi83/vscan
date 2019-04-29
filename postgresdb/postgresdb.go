@@ -16,7 +16,7 @@ import (
 // db represents an instance of Postgres connection pool
 var ConnPool *pgx.ConnPool
 var DBInstance *vulscanoDB
-var pgpSymEncryptKey   = os.Getenv("VSCAN_SECRET_KEY")
+var pgpSymEncryptKey = os.Getenv("VSCAN_SECRET_KEY")
 
 const (
 	//pgpSymEncryptKey   = `2?wmrdF#V+&"<D3T`

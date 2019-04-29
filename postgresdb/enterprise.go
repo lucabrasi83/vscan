@@ -26,7 +26,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]*EnterpriseDB, error) {
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil,)
+	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil)
 
 	if err != nil {
 		logging.VulscanoLog("error", "cannot fetch list of enterprises: ", err.Error())
@@ -40,14 +40,14 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]*EnterpriseDB, error) {
 		err = rows.Scan(
 			&ent.EnterpriseID,
 			&ent.EnterpriseName,
-			)
+		)
 
 		if err != nil {
 			logging.VulscanoLog("error",
 				"error while scanning enterprise table rows: ", err.Error())
 			return nil, err
 		}
-		enterprisesSLice  = append(enterprisesSLice , &ent)
+		enterprisesSLice = append(enterprisesSLice, &ent)
 	}
 	err = rows.Err()
 
@@ -80,7 +80,6 @@ func (p *vulscanoDB) FetchEnterprise(entid string) (*EnterpriseDB, error) {
 	err := row.Scan(
 		&ent.EnterpriseID,
 		&ent.EnterpriseName,
-
 	)
 	switch err {
 	case pgx.ErrNoRows:
@@ -136,7 +135,6 @@ func (p *vulscanoDB) InsertNewEnterprise(newEnt map[string]string) error {
 }
 
 func (p *vulscanoDB) DeleteEnterprise(entid string) error {
-
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)

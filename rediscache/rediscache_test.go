@@ -17,7 +17,13 @@ func helperRedisConn(t *testing.T) (*redis.Client, func() error) {
 func TestRedis(t *testing.T) {
 	redisConn, redisTeardown := helperRedisConn(t)
 
-	defer redisTeardown()
+	defer func() {
+		err := redisTeardown()
+
+		if err != nil {
+			t.Fatalf("cannot close redis connection with error %v", err)
+		}
+	}()
 
 	ping, err := redisConn.Ping().Result()
 

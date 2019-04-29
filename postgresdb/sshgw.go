@@ -121,7 +121,7 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]*SSHGatewayDB, erro
 
 }
 
-func(p *vulscanoDB) DeleteUserSSHGateway(entid string, gw string) error {
+func (p *vulscanoDB) DeleteUserSSHGateway(entid string, gw string) error {
 
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 

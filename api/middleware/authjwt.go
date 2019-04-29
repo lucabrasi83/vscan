@@ -18,7 +18,7 @@ const (
 var (
 	rootURL  = "/api/v1/admin"
 	rootRole = "vulscanoroot"
-	jwtKey = os.Getenv("VSCAN_SECRET_KEY")
+	jwtKey   = os.Getenv("VSCAN_SECRET_KEY")
 )
 
 // Login is used to unmarshal a login in request so that we can parse it
@@ -116,7 +116,7 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 		},
 		Unauthorized: func(c *gin.Context, code int, msg string) {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"code": code,
+				"code":  code,
 				"error": msg,
 			})
 		},
