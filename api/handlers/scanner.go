@@ -306,8 +306,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 				duplicateSAMap := map[string]bool{}
 
 				// vulnMetaSlice is a slice of Cisco openVuln API vulnerabilities metadata
-				//var vulnMetaSlice []*openvulnapi.VulnMetadata
-				vulnMetaSlice := make([]*openvulnapi.VulnMetadata, 0, 30)
+				vulnMetaSlice := make([]openvulnapi.VulnMetadata, 0, 30)
 
 				// Declare WaitGroup to send requests to openVuln API in parallel
 				var wg sync.WaitGroup
@@ -343,7 +342,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 					if ruleResult.RuleResult == jovalReportFoundTag &&
 						!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
 						duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
-						go func(r *ScanReportFileResult) {
+						go func(r ScanReportFileResult) {
 							defer wg.Done()
 							<-rateLimit.C
 
@@ -351,7 +350,7 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 
 							// Exclusive access to vulnMetaSlice to prevent race condition
 							mu.Lock()
-							vulnMetaSlice = append(vulnMetaSlice, vulnMeta)
+							vulnMetaSlice = append(vulnMetaSlice, *vulnMeta)
 							mu.Unlock()
 
 						}(ruleResult)
@@ -449,9 +448,9 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 	switch ads.OSType {
 	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
-		if devScanner == nil {
-			return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", ads.OSType)
-		}
+		//if devScanner == nil {
+		//	return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", ads.OSType)
+		//}
 	default:
 		return nil, fmt.Errorf("OS Type %v not supported for device %v",
 			anutaScannedDev.OSType, anutaScannedDev.DeviceName)

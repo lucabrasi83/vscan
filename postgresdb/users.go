@@ -154,9 +154,9 @@ func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent strin
 	return nil
 }
 
-func (p *vulscanoDB) FetchAllUsers() ([]*VulscanoDBUser, error) {
+func (p *vulscanoDB) FetchAllUsers() ([]VulscanoDBUser, error) {
 
-	var vulscanoUsers []*VulscanoDBUser
+	vulscanoUsers := make([]VulscanoDBUser, 0)
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
@@ -184,7 +184,7 @@ func (p *vulscanoDB) FetchAllUsers() ([]*VulscanoDBUser, error) {
 				"error while scanning vulscano_users table rows: ", err.Error())
 			return nil, err
 		}
-		vulscanoUsers = append(vulscanoUsers, &user)
+		vulscanoUsers = append(vulscanoUsers, user)
 	}
 	err = rows.Err()
 	if err != nil {

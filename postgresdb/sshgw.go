@@ -65,9 +65,9 @@ func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB
 
 }
 
-func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]*SSHGatewayDB, error) {
+func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error) {
 
-	var sshGatewaysSlice []*SSHGatewayDB
+	sshGatewaysSlice := make([]SSHGatewayDB, 0)
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
@@ -108,7 +108,7 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]*SSHGatewayDB, erro
 				"error while scanning ssh_gateway table rows: ", err.Error())
 			return nil, err
 		}
-		sshGatewaysSlice = append(sshGatewaysSlice, &sshGw)
+		sshGatewaysSlice = append(sshGatewaysSlice, sshGw)
 	}
 	err = rows.Err()
 	if err != nil {

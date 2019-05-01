@@ -95,11 +95,11 @@ func getOpenVulnToken() error {
 		"https://cloudsso.cisco.com/as/token.oauth2?grant_type="+grantType+"&client_id="+clientID+
 			"&client_secret="+clientSecret, nil)
 
-	tokenReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
 	if err != nil {
 		return fmt.Errorf("error while building request for Cisco openvulnAPI token: %v", err)
 	}
+
+	tokenReq.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 	// Set timeout to 5 seconds for HTTP requests
 	ctx, cancel := context.WithTimeout(tokenReq.Context(), shortHTTPReqTimeout)

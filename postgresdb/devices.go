@@ -21,9 +21,9 @@ type DeviceVADB struct {
 	TotalVulnScanned int       `json:"totalVulnScanned"`
 }
 
-func (p *vulscanoDB) FetchAllDevices() ([]*DeviceVADB, error) {
+func (p *vulscanoDB) FetchAllDevices() ([]DeviceVADB, error) {
 
-	vulscanoDevices := make([]*DeviceVADB, 0)
+	vulscanoDevices := make([]DeviceVADB, 0)
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
@@ -52,7 +52,7 @@ func (p *vulscanoDB) FetchAllDevices() ([]*DeviceVADB, error) {
 				"error while scanning device_va_results table rows: ", err.Error())
 			return nil, err
 		}
-		vulscanoDevices = append(vulscanoDevices, &dev)
+		vulscanoDevices = append(vulscanoDevices, dev)
 	}
 	err = rows.Err()
 	if err != nil {
@@ -65,9 +65,9 @@ func (p *vulscanoDB) FetchAllDevices() ([]*DeviceVADB, error) {
 
 }
 
-func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) ([]*DeviceVADB, error) {
+func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) ([]DeviceVADB, error) {
 
-	devSlice := make([]*DeviceVADB, 0)
+	devSlice := make([]DeviceVADB, 0)
 
 	pEnt := normalizeString(ent)
 
@@ -116,7 +116,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) ([]*Devic
 				"error while scanning device_va_results table rows: ", err.Error())
 			return nil, err
 		}
-		devSlice = append(devSlice, &dev)
+		devSlice = append(devSlice, dev)
 	}
 	err = rows.Err()
 	if err != nil {
@@ -127,9 +127,9 @@ func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) ([]*Devic
 
 	return devSlice, nil
 }
-func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) ([]*DeviceVADB, error) {
+func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) ([]DeviceVADB, error) {
 
-	devSlice := make([]*DeviceVADB, 0)
+	devSlice := make([]DeviceVADB, 0)
 
 	// Normalize ent to Postgres NULL type if empty
 	pEnt := normalizeString(ent)
@@ -181,7 +181,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) ([]*Devic
 				"error while scanning device_va_results table rows: ", err.Error())
 			return nil, err
 		}
-		devSlice = append(devSlice, &dev)
+		devSlice = append(devSlice, dev)
 	}
 	err = rows.Err()
 	if err != nil {
@@ -193,9 +193,9 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) ([]*Devic
 	return devSlice, nil
 }
 
-func (p *vulscanoDB) UserGetDevVAResultsByCVE(cve string, ent string) ([]*DeviceVADB, error) {
+func (p *vulscanoDB) UserGetDevVAResultsByCVE(cve string, ent string) ([]DeviceVADB, error) {
 
-	devSlice := make([]*DeviceVADB, 0)
+	devSlice := make([]DeviceVADB, 0)
 
 	// Set Query timeout
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
@@ -244,7 +244,7 @@ func (p *vulscanoDB) UserGetDevVAResultsByCVE(cve string, ent string) ([]*Device
 				"error while scanning device_va_results table rows: ", err.Error())
 			return nil, err
 		}
-		devSlice = append(devSlice, &dev)
+		devSlice = append(devSlice, dev)
 	}
 	err = rows.Err()
 	if err != nil {

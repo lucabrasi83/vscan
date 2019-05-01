@@ -280,7 +280,7 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 					duplicateSAMap := map[string]bool{}
 
 					// vulnMetaSlice is a slice of Cisco openVuln API vulnerabilities metadata
-					vulnMetaSlice := make([]*openvulnapi.VulnMetadata, 0)
+					vulnMetaSlice := make([]openvulnapi.VulnMetadata, 0)
 
 					// Declare WaitGroup to send requests to openVuln API in parallel
 					var wg sync.WaitGroup
@@ -316,7 +316,7 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 						if ruleResult.RuleResult == jovalReportFoundTag &&
 							!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
 							duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
-							go func(r *ScanReportFileResult) {
+							go func(r ScanReportFileResult) {
 								defer wg.Done()
 								<-rateLimit.C
 
@@ -324,7 +324,7 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 
 								// Exclusive access to vulnMetaSlice to prevent race condition
 								mu.Lock()
-								vulnMetaSlice = append(vulnMetaSlice, vulnMeta)
+								vulnMetaSlice = append(vulnMetaSlice, *vulnMeta)
 								mu.Unlock()
 
 							}(ruleResult)
@@ -338,7 +338,7 @@ func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
 					deviceScanStartTime, _ := time.Parse(time.RFC3339, scanReport.ScanStartTime)
 					deviceScanEndTime, _ := time.Parse(time.RFC3339, scanReport.ScanEndTime)
 
-					vulnFound := &BulkScanVulnFound{
+					vulnFound := BulkScanVulnFound{
 						DeviceName:                  scanReport.DeviceName,
 						ScanDeviceMeanTime:          int(deviceScanEndTime.Sub(deviceScanStartTime).Seconds() * 1000),
 						VulnerabilitiesFoundDetails: vulnMetaSlice,
@@ -375,7 +375,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 	var wg sync.WaitGroup
 	wg.Add(devCount)
 
-	anutaScannedDevList := make([]*AnutaDeviceInventory, 0)
+	anutaScannedDevList := make([]AnutaDeviceInventory, 0)
 	var skippedScannedDevices []string
 
 	// We set a rate limit to throttle Goroutines querying Anuta.
@@ -425,7 +425,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 				return
 			}
 
-			anutaScannedDevList = append(anutaScannedDevList, &AnutaDeviceInventory{
+			anutaScannedDevList = append(anutaScannedDevList, AnutaDeviceInventory{
 				DeviceName:    anutaDev.DeviceName,
 				MgmtIPAddress: net.ParseIP(anutaDev.MgmtIPAddress).To4(),
 				Status:        anutaDev.Status,
@@ -446,10 +446,10 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 		return nil, fmt.Errorf("error: unable to find eligible device to scan from the ones provided")
 	}
 
-	adBulkScanList := make([]*AdHocBulkScanDevice, 0)
+	adBulkScanList := make([]AdHocBulkScanDevice, 0)
 
 	for _, d := range anutaScannedDevList {
-		adBulkScanList = append(adBulkScanList, &AdHocBulkScanDevice{
+		adBulkScanList = append(adBulkScanList, AdHocBulkScanDevice{
 			Hostname:  d.DeviceName,
 			IPAddress: d.MgmtIPAddress.String(),
 		})
@@ -469,9 +469,9 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 	switch d.OSType {
 	case ciscoIOSXE, ciscoIOS:
 		devBulkScanner = NewCiscoScanDevice(d.OSType)
-		if devBulkScanner == nil {
-			return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", d.OSType)
-		}
+		//if devBulkScanner == nil {
+		//	return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", d.OSType)
+		//}
 	default:
 		return nil, fmt.Errorf("OS Type %v not supported", d.OSType)
 	}
@@ -520,7 +520,7 @@ func normalizeAnutaBulkDeviceOS(osType *string, osVersion *string, adInv *invent
 
 }
 
-func mergeAnutaBulkScanResults(r *BulkScanResults, d []*AnutaDeviceInventory, s []string) *AnutaBulkScanResults {
+func mergeAnutaBulkScanResults(r *BulkScanResults, d []AnutaDeviceInventory, s []string) *AnutaBulkScanResults {
 
 	var anutaBulkRes AnutaBulkScanResults
 
@@ -542,7 +542,7 @@ func mergeAnutaBulkScanResults(r *BulkScanResults, d []*AnutaDeviceInventory, s 
 			if dev.DeviceName == res.DeviceName {
 				anutaBulkRes.DevicesScanResults = append(
 					anutaBulkRes.DevicesScanResults,
-					&AnutaBulkScanResultsChild{
+					AnutaBulkScanResultsChild{
 						DeviceName:                  dev.DeviceName,
 						MgmtIPAddress:               dev.MgmtIPAddress,
 						Status:                      dev.Status,
