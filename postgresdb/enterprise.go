@@ -14,9 +14,9 @@ type EnterpriseDB struct {
 	EnterpriseName string `json:"enterpriseName"`
 }
 
-func (p *vulscanoDB) FetchAllEnterprises() ([]*EnterpriseDB, error) {
+func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 
-	var enterprisesSLice []*EnterpriseDB
+	enterprisesSLice := make([]EnterpriseDB, 0)
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
@@ -47,7 +47,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]*EnterpriseDB, error) {
 				"error while scanning enterprise table rows: ", err.Error())
 			return nil, err
 		}
-		enterprisesSLice = append(enterprisesSLice, &ent)
+		enterprisesSLice = append(enterprisesSLice, ent)
 	}
 	err = rows.Err()
 

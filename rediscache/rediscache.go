@@ -47,13 +47,6 @@ func init() {
 
 	logging.VulscanoLog("info", "Redis Cache Store connection pool successfully established")
 
-	// Build Devices Inventory in cache during startup
-	// err = CacheStore.BuildDeviceInventoryCache()
-
-	//if err != nil {
-	//	logging.VulscanoLog("error", err)
-	//}
-
 }
 
 func newCacheStore(c *redis.Client) *vscanCache {

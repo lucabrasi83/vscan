@@ -71,13 +71,13 @@ func LaunchAdHocScan(c *gin.Context) {
 	switch ads.OSType {
 	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
-		if devScanner == nil {
-			logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Failed to instantiate Device with given OS Type",
-			})
-			return
-		}
+		//if devScanner == nil {
+		//	logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
+		//	c.JSON(http.StatusBadRequest, gin.H{
+		//		"error": "Failed to instantiate Device with given OS Type",
+		//	})
+		//	return
+		//}
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -843,13 +843,13 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 	switch ads.OSType {
 	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
-		if devScanner == nil {
-			logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Failed to instantiate Device with given OS Type",
-			})
-			return
-		}
+		//if devScanner == nil {
+		//	logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
+		//	c.JSON(http.StatusBadRequest, gin.H{
+		//		"error": "Failed to instantiate Device with given OS Type",
+		//	})
+		//	return
+		//}
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -964,7 +964,7 @@ func validatePassword(p string) bool {
 }
 
 // buildCiscoSNList is a helper function to fetch the Product ID's for each device passed in slice
-func buildCiscoSNList(snSlice []string) []*openvulnapi.CiscoSnAPI {
+func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 
 	// Get the Cisco Product ID for each Serial Number
 	// snIncrement will pass 10 serial numbers per API call until the snSlice exhausts
@@ -983,7 +983,7 @@ func buildCiscoSNList(snSlice []string) []*openvulnapi.CiscoSnAPI {
 	var wgSn sync.WaitGroup
 	var muSn sync.RWMutex
 
-	ciscoSNAPISlice := make([]*openvulnapi.CiscoSnAPI, 0)
+	ciscoSNAPISlice := make([]openvulnapi.CiscoSnAPI, 0)
 
 	for snCount := 0; snCount+snIncrement < len(snSlice); snCount += snIncrement {
 		snGuard <- struct{}{}
@@ -1005,7 +1005,7 @@ func buildCiscoSNList(snSlice []string) []*openvulnapi.CiscoSnAPI {
 			}
 
 			muSn.Lock()
-			ciscoSNAPISlice = append(ciscoSNAPISlice, pid)
+			ciscoSNAPISlice = append(ciscoSNAPISlice, *pid)
 			snTotalCountProc = count
 			muSn.Unlock()
 
@@ -1025,13 +1025,13 @@ func buildCiscoSNList(snSlice []string) []*openvulnapi.CiscoSnAPI {
 		logging.VulscanoLog("error",
 			err.Error())
 	} else {
-		ciscoSNAPISlice = append(ciscoSNAPISlice, pidLast)
+		ciscoSNAPISlice = append(ciscoSNAPISlice, *pidLast)
 	}
 	return ciscoSNAPISlice
 }
 
 // buildCiscoSuggSWList is a helper function to fetch the Cisco suggested Software for each PID passed
-func buildCiscoSuggSWList(snPID []string) []*openvulnapi.CiscoSWSuggestionAPI {
+func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 
 	// Get the Cisco SuggestedSW for each PID
 	// snIncrement will pass 10 PID's per API call until the snSlice exhausts
@@ -1050,7 +1050,7 @@ func buildCiscoSuggSWList(snPID []string) []*openvulnapi.CiscoSWSuggestionAPI {
 	var wgSn sync.WaitGroup
 	var muSn sync.RWMutex
 
-	ciscoSuggSWSlice := make([]*openvulnapi.CiscoSWSuggestionAPI, 0)
+	ciscoSuggSWSlice := make([]openvulnapi.CiscoSWSuggestionAPI, 0)
 
 	for snCount := 0; snCount+pidIncrement < len(snPID); snCount += pidIncrement {
 		pidGuard <- struct{}{}
@@ -1072,7 +1072,7 @@ func buildCiscoSuggSWList(snPID []string) []*openvulnapi.CiscoSWSuggestionAPI {
 			}
 
 			muSn.Lock()
-			ciscoSuggSWSlice = append(ciscoSuggSWSlice, sw)
+			ciscoSuggSWSlice = append(ciscoSuggSWSlice, *sw)
 			pidTotalCountProc = count
 			muSn.Unlock()
 
@@ -1092,7 +1092,7 @@ func buildCiscoSuggSWList(snPID []string) []*openvulnapi.CiscoSWSuggestionAPI {
 		logging.VulscanoLog("error",
 			err.Error())
 	} else {
-		ciscoSuggSWSlice = append(ciscoSuggSWSlice, swLast)
+		ciscoSuggSWSlice = append(ciscoSuggSWSlice, *swLast)
 	}
 	return ciscoSuggSWSlice
 }

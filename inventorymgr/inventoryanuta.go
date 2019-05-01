@@ -36,7 +36,7 @@ type AnutaAPIDeviceParent struct {
 }
 
 type AnutaAPIAllDevices struct {
-	Devices []*AnutaAPIDeviceDetails `json:"device"`
+	Devices []AnutaAPIDeviceDetails `json:"device"`
 }
 
 type AnutaAPIAllDevicesParent struct {
@@ -157,7 +157,7 @@ func GetAnutaDevice(dev string) (*AnutaAPIDeviceDetails, error) {
 
 }
 
-func getAllAnutaInventoryDevices() ([]*AnutaAPIDeviceDetails, error) {
+func getAllAnutaInventoryDevices() ([]AnutaAPIDeviceDetails, error) {
 
 	// Construct API Call URL to query device details
 	url := strings.Join([]string{
@@ -226,7 +226,7 @@ func buildAnutaInventoryCache() error {
 		wg.Add(len(devList))
 
 		for _, d := range devList {
-			go func(dev *AnutaAPIDeviceDetails) {
+			go func(dev AnutaAPIDeviceDetails) {
 				err := rediscache.CacheStore.HashMapSetDevicesInventory(dev.DeviceName, map[string]interface{}{
 					"mgmtIPAddress":    dev.MgmtIPAddress,
 					"status":           dev.Status,
