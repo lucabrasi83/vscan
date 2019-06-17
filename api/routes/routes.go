@@ -40,7 +40,6 @@ func LoadRoutes(routes *gin.Engine) {
 		{
 			admin.POST("/on-demand-scan", handlers.LaunchAdHocScan)
 			admin.POST("/bulk-on-demand-scan", handlers.LaunchBulkAdHocScan)
-			admin.POST("/update-all-cisco-sa", handlers.UpdateCiscoOpenVulnSAAll)
 			admin.GET("/user/:user-id", handlers.GetUser)
 			admin.GET("/all-users", handlers.GetAllUsers)
 			admin.POST("/user", handlers.CreateUser)
@@ -51,8 +50,16 @@ func LoadRoutes(routes *gin.Engine) {
 			admin.POST("/enterprise", handlers.CreateEnterprise)
 			admin.PATCH("/enterprise/:enterprise-id", tempHandler)
 			admin.DELETE("/enterprise/:enterprise-id", handlers.DeleteEnterprise)
-			admin.POST("/cisco-sw-suggested", handlers.AdminGetAnutaDeviceSuggestedSW)
+
 			admin.GET("/ongoing-scanned-devices", handlers.GetCurrentlyScannedDevices)
+		}
+
+		batchAdmin := apiV1.Group("/admin/batch").Use(authWare())
+		{
+			batchAdmin.POST("/update-all-cisco-sa", handlers.UpdateCiscoOpenVulnSAAll)
+			batchAdmin.POST("/cisco-sw-suggested", handlers.AdminGetAnutaDeviceSuggestedSW)
+			batchAdmin.POST("/update-smartnet-coverage", tempHandler)
+			batchAdmin.POST("/refresh-inventory-cache", tempHandler)
 		}
 
 		vulnAdmin := apiV1.Group("/admin/vulnerabilities").Use(authWare())

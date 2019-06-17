@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/lucabrasi83/vulscano/postgresdb"
 
-	"github.com/gin-gonic/gin/json"
 	"github.com/lucabrasi83/vulscano/datadiros"
 	"github.com/lucabrasi83/vulscano/hashgen"
 	"github.com/lucabrasi83/vulscano/logging"
@@ -318,30 +318,40 @@ func parseScanReport(res *ScanResults, jobID string) (err error) {
 
 				// Count number of found vulnerabilities in report to determine Wait Group length
 				// Update duplicateSAMap to find duplicated Cisco SA in Joval Report
-				for _, ruleResult := range scanReport.RuleResults {
-
-					if ruleResult.RuleResult == jovalReportFoundTag &&
-						!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
-						duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
-						vulnCount++
-					}
-				}
+				//for _, ruleResult := range scanReport.RuleResults {
+				//
+				//	if ruleResult.RuleResult == jovalReportFoundTag &&
+				//		!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
+				//		duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
+				//		vulnCount++
+				//	}
+				//}
 
 				// Add the number of found of vulnerabilities to match the number of goroutines we're launching
-				wg.Add(vulnCount)
+				//wg.Add(vulnCount)
 
 				// Declare Mutex to prevent Race condition on vulnMetaSlice slice
 				var mu sync.RWMutex
 
 				// Reset duplicateSAMap
-				duplicateSAMap = make(map[string]bool)
+				//duplicateSAMap = make(map[string]bool)
 
 				// Loop to search for found vulnerabilities in the scan report and fetch metadata for each
 				// vulnerability in a goroutine
 				for _, ruleResult := range scanReport.RuleResults {
+
+					// Count number of found vulnerabilities in report to determine Wait Group length
+					// Update duplicateSAMap to find duplicated Cisco SA in Joval Report
 					if ruleResult.RuleResult == jovalReportFoundTag &&
 						!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
 						duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
+
+						// Update count of vulnerabilities found
+						vulnCount++
+
+						// Increment WaitGroup by 1 before launching goroutine
+						wg.Add(1)
+
 						go func(r ScanReportFileResult) {
 							defer wg.Done()
 							<-rateLimit.C

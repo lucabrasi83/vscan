@@ -23,10 +23,11 @@ func init() {
 }
 
 const (
-	baseAllVulnURL = "https://api.cisco.com/security/advisories/all.json"
-	grantType      = "client_credentials"
-	snToPIDBaseURL = "https://api.cisco.com/sn2info/v2/identifiers/orderable/serial_numbers/"
-	SWSugBaseURL   = "https://api.cisco.com/software/suggestion/v2/suggestions/releases/productIds/"
+	baseAllVulnURL  = "https://api.cisco.com/security/advisories/all.json"
+	grantType       = "client_credentials"
+	snToPIDBaseURL  = "https://api.cisco.com/sn2info/v2/identifiers/orderable/serial_numbers/"
+	SWSugBaseURL    = "https://api.cisco.com/software/suggestion/v2/suggestions/releases/productIds/"
+	snSmartCoverURL = "https://api.cisco.com/sn2info/v2/coverage/summary/serial_numbers/"
 )
 
 var (
@@ -87,6 +88,48 @@ type BearerToken struct {
 	Token     string `json:"access_token"`
 	TokenType string `json:"token_type"`
 	ExpiresIn int    `json:"expires_in"`
+}
+
+type SmartNetCoverage struct {
+	PaginationResponseRecord PaginationResponseRecord `json:"pagination_response_record"`
+	SerialNumbers            []SerialNumbers          `json:"serial_numbers"`
+}
+type PaginationResponseRecord struct {
+	LastIndex    int    `json:"last_index"`
+	PageIndex    int    `json:"page_index"`
+	PageRecords  int    `json:"page_records"`
+	SelfLink     string `json:"self_link"`
+	Title        string `json:"title"`
+	TotalRecords int    `json:"total_records"`
+}
+type BasePidList struct {
+	BasePid string `json:"base_pid"`
+}
+type OrderablePidList struct {
+	ItemDescription string `json:"item_description"`
+	ItemPosition    string `json:"item_position"`
+	ItemType        string `json:"item_type"`
+	OrderablePid    string `json:"orderable_pid"`
+	PillarCode      string `json:"pillar_code"`
+}
+type SerialNumbers struct {
+	BasePidList               []BasePidList      `json:"base_pid_list"`
+	ContractSiteCustomerName  string             `json:"contract_site_customer_name"`
+	ContractSiteAddress1      string             `json:"contract_site_address1"`
+	ContractSiteCity          string             `json:"contract_site_city"`
+	ContractSiteStateProvince string             `json:"contract_site_state_province"`
+	ContractSiteCountry       string             `json:"contract_site_country"`
+	CoveredProductLineEndDate string             `json:"covered_product_line_end_date"`
+	ID                        string             `json:"id"`
+	IsCovered                 string             `json:"is_covered"`
+	OrderablePidList          []OrderablePidList `json:"orderable_pid_list"`
+	ParentSrNo                string             `json:"parent_sr_no"`
+	ServiceContractNumber     string             `json:"service_contract_number"`
+	ServiceLineDescr          string             `json:"service_line_descr"`
+	SrNo                      string             `json:"sr_no"`
+	WarrantyEndDate           string             `json:"warranty_end_date"`
+	WarrantyType              string             `json:"warranty_type"`
+	WarrantyTypeDescription   string             `json:"warranty_type_description"`
 }
 
 func getOpenVulnToken() error {
@@ -322,6 +365,53 @@ func GetCiscoSWSuggestion(pid ...string) (*CiscoSWSuggestionAPI, error) {
 	defer SWRes.Body.Close()
 
 	return &s, nil
+
+}
+
+// GetSmartNetCoverage will return the SmartNet Contract coverage status from Cisco sn2info API
+func GetSmartNetCoverage(sn ...string) (*SmartNetCoverage, error) {
+
+	err := checkTokenValidity(time.Now())
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Bearer token from Cisco openVulnAPI: %v", err)
+	}
+
+	snJoined := strings.Join(sn, ",")
+
+	CoverReq, err := http.NewRequest("GET", snSmartCoverURL+snJoined, nil)
+
+	if err != nil {
+		return nil, fmt.Errorf("cannot fetch Cisco SmartNetCoverage from sn2info API: %v", err)
+	}
+
+	CoverReq.Header.Add("Content-Type", "application/json")
+	CoverReq.Header.Add("Authorization", "Bearer "+ciscoAPIToken)
+
+	ctx, cancel := context.WithTimeout(CoverReq.Context(), longHTTPReqTimeout)
+	defer cancel()
+
+	CoverReq = CoverReq.WithContext(ctx)
+
+	CoverRes, err := http.DefaultClient.Do(CoverReq)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while contacting Cisco API: %v", err)
+	}
+
+	if CoverRes.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("sn2info API responded with error code: %v", http.StatusText(CoverRes.StatusCode))
+	}
+
+	var p SmartNetCoverage
+
+	if err := json.NewDecoder(CoverRes.Body).Decode(&p); err != nil {
+		return nil, fmt.Errorf("error while serializing into JSON body into struct: %v", err)
+	}
+
+	defer CoverRes.Body.Close()
+
+	return &p, nil
 
 }
 

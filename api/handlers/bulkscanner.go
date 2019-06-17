@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
@@ -15,7 +16,6 @@ import (
 
 	"github.com/lucabrasi83/vulscano/postgresdb"
 
-	"github.com/gin-gonic/gin/json"
 	"github.com/lucabrasi83/vulscano/datadiros"
 	"github.com/lucabrasi83/vulscano/hashgen"
 	"github.com/lucabrasi83/vulscano/logging"

@@ -21,7 +21,8 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	exitCode := m.Run()
 
-	// testCacheStore.CloseCacheConn()
+	// Close Redis connection after tests are done
+	testCacheStore.CloseCacheConn()
 
 	os.Exit(exitCode)
 
@@ -116,8 +117,6 @@ func TestCloseCacheStoreConn(t *testing.T) {
 
 	testCacheStore.CloseCacheConn()
 	ping, err := testCacheStore.cacheStoreClient.Ping().Result()
-
-	t.Logf("ping value is %q and err value is %v", ping, err)
 
 	t.Run("Check ping value is empty", func(t *testing.T) {
 

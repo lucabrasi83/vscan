@@ -937,8 +937,7 @@ func LaunchAnutaInventoryBulkScan(c *gin.Context) {
 // validateEmail is a helper function to validate email address format during user creation
 func validateEmail(e string) bool {
 
-	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,
-		61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`)
+	emailRegex := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 	return emailRegex.MatchString(e)
 }
@@ -1034,7 +1033,7 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 
 	// Get the Cisco SuggestedSW for each PID
-	// snIncrement will pass 10 PID's per API call until the snSlice exhausts
+	// snIncrement will pass 10 PID's per API call until the snPID exhausts
 	// snTotalCountProc will keep track of the number of PID's processed in snPID
 	// snGuard will allow 2 concurrent API calls as per Cisco API limits
 	pidIncrement := 10
@@ -1095,4 +1094,8 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 		ciscoSuggSWSlice = append(ciscoSuggSWSlice, *swLast)
 	}
 	return ciscoSuggSWSlice
+}
+
+func fetchCiscoAMCStatus(sn []string) *openvulnapi.SmartNetCoverage {
+
 }
