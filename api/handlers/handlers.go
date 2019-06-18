@@ -10,15 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/initializer"
-	"github.com/lucabrasi83/vulscano/openvulnapi"
-	"github.com/lucabrasi83/vulscano/rediscache"
-
 	"github.com/appleboy/gin-jwt"
-
 	"github.com/gin-gonic/gin"
+	"github.com/lucabrasi83/vulscano/initializer"
 	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/lucabrasi83/vulscano/openvulnapi"
 	"github.com/lucabrasi83/vulscano/postgresdb"
+	"github.com/lucabrasi83/vulscano/rediscache"
 )
 
 const (
@@ -1096,6 +1094,173 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 	return ciscoSuggSWSlice
 }
 
-func fetchCiscoAMCStatus(sn []string) *openvulnapi.SmartNetCoverage {
+// FetchCiscoAMCStatus is the function that will interact with Cisco SN2INFO API and update Cisco CPE inventories
+// with their Maintenance Contract Status
+func AdminFetchCiscoAMCStatus(c *gin.Context) {
 
+	// Maximum Serial Number per API call
+	const maxSN = 50
+
+	devList, err := postgresdb.DBInstance.FetchAllDevices()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot fetch devices list from DB"})
+		return
+	}
+
+	// sn stores the Serial Number of devices within the inventory
+	var sn []string
+
+	for _, dev := range devList {
+		if dev.SerialNumber != "NA" {
+			sn = append(sn, dev.SerialNumber)
+
+		}
+	}
+
+	if len(sn) <= maxSN {
+
+		logging.VulscanoLog("info",
+			"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn)
+
+		snAMCMap, err := getCiscoAMC(sn...)
+
+		if err != nil {
+
+			c.JSON(http.StatusBadRequest,
+				gin.H{"error": "failed to retrieve SmartNet Coverage from Cisco SN2INFO: " + err.Error()})
+
+			return
+		}
+
+		err = postgresdb.DBInstance.UpdateSmartNetCoverage(snAMCMap)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot insert Cisco SmartNet Coverage in DB"})
+			return
+		}
+
+	} else if len(sn) > maxSN {
+
+		// Keeps track of how many Serial Numbers left for request
+		currentCountSn := len(sn)
+
+		// Channel Guard for maximum 5 concurrent API calls
+		const maxConcurAPICalls = 5
+		guard := make(chan struct{}, maxConcurAPICalls)
+
+		// Wait Group for concurrent requests to Cisco SN2INFO API
+		var wg sync.WaitGroup
+
+		// Mutex to avoid race condition
+		var mu sync.Mutex
+
+		// Merged slice of all Serial Numbers / Coverage status retrieved from Cisco
+		var snAMCMapParent []map[string]string
+
+		for i := 0; currentCountSn >= maxSN; i++ {
+
+			guard <- struct{}{}
+			wg.Add(1)
+
+			// We don't decrement the current count on the first loop iteration
+			if i != 0 {
+
+				currentCountSn -= maxSN
+
+			}
+
+			go func(count int) {
+
+				defer wg.Done()
+
+				// Once count - maxSN returns a negative number, we know we're at the end of the sn Slice
+				// Therefore we just take the current index until what's left
+				if len(sn)-(count-maxSN) > len(sn) {
+
+					logging.VulscanoLog("info",
+						"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn[len(sn)-count:])
+
+					snAMCMapChild, err := getCiscoAMC(sn[len(sn)-count:]...)
+
+					if err != nil {
+						<-guard
+						return
+					}
+
+					mu.Lock()
+					snAMCMapParent = append(snAMCMapParent, snAMCMapChild...)
+					mu.Unlock()
+
+				} else {
+
+					logging.VulscanoLog("info",
+						"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn[len(sn)-count:len(sn)-(count-maxSN)])
+
+					// For each iteration, we take the starting index length of slice - current count
+					// Ending index length of slice - (current count - maximum serial numbers in single API call)
+					snAMCMapChild, err := getCiscoAMC(sn[len(sn)-count : len(sn)-(count-maxSN)]...)
+
+					if err != nil {
+						<-guard
+						return
+					}
+
+					mu.Lock()
+					snAMCMapParent = append(snAMCMapParent, snAMCMapChild...)
+					mu.Unlock()
+
+				}
+				// Decrement the number of serial numbers left to request
+
+				<-guard
+			}(currentCountSn)
+		}
+
+		wg.Wait()
+
+		if len(snAMCMapParent) == 0 {
+			c.JSON(http.StatusBadRequest,
+				gin.H{"error": "failed to retrieve SmartNet Coverage from Cisco SN2INFO"})
+
+			return
+		}
+
+		err = postgresdb.DBInstance.UpdateSmartNetCoverage(snAMCMapParent)
+
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot insert Cisco SmartNet Coverage in DB"})
+			return
+		}
+
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "Cisco AMC contract details successfully retrieved."})
+
+}
+
+func getCiscoAMC(sn ...string) ([]map[string]string, error) {
+
+	resp, err := openvulnapi.GetSmartNetCoverage(sn...)
+
+	if err != nil {
+		logging.VulscanoLog("error", "failed to retrieve SmartNet Coverage from Cisco SN2INFO: ", err)
+
+		return nil, err
+	}
+
+	var snAMCMap []map[string]string
+	for _, res := range resp.SerialNumbers {
+		snAMCMap = append(snAMCMap, map[string]string{
+			"serialNumber":               res.SrNo,
+			"productID":                  res.OrderablePidList[0].OrderablePid,
+			"serviceContractAssociated":  res.IsCovered,
+			"serviceContractDescription": res.ServiceLineDescr,
+			"serviceContractNumber":      res.ServiceContractNumber,
+			"serviceContractEndDate":     res.CoveredProductLineEndDate,
+			"serviceContractSiteCountry": res.ContractSiteCountry,
+		})
+	}
+
+	return snAMCMap, nil
 }

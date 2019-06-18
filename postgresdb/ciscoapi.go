@@ -244,3 +244,81 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	}
 	return nil
 }
+
+func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
+
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), longQueryTimeout)
+
+	// SQL Statement to update Cisco Suggested SW column for each device ID.
+	const sqlQuery = `UPDATE device_va_results SET 
+					  product_id = COALESCE($2, 'NA'),
+				      service_contract_associated = $3,
+					  service_contract_description = COALESCE($4, 'NA'),
+                      service_contract_number = COALESCE($5, 'NA'),
+                      service_contract_end_date = $6,
+				      service_contract_site_country = COALESCE($7, 'UNKNOWN')
+					  WHERE serial_number = $1`
+
+	defer cancelQuery()
+
+	// Prepare SQL Statement in DB for Batch
+	_, err := p.db.Prepare("update_device_amc_coverage", sqlQuery)
+
+	if err != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to prepare Batch statement: ",
+			err.Error())
+		return err
+	}
+
+	b := p.db.BeginBatch()
+
+	// Map to convert coverage status "YES" / "NO" to boolean
+	strToBoolMap := map[string]bool{
+		"YES": true,
+		"NO":  false,
+	}
+
+	for _, d := range devAMC {
+
+		t, _ := time.Parse("2006-01-02", d["serviceContractEndDate"])
+
+		b.Queue("update_device_amc_coverage",
+			[]interface{}{
+				d["serialNumber"],
+				d["productID"],
+				strToBoolMap[d["serviceContractAssociated"]],
+				d["serviceContractDescription"],
+				d["serviceContractNumber"],
+				t,
+				d["serviceContractSiteCountry"],
+			},
+			nil, nil)
+	}
+
+	// Send Batch SQL Query
+	errSendBatch := b.Send(ctxTimeout, nil)
+	if errSendBatch != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to send Batch query: ",
+			errSendBatch.Error())
+
+		return errSendBatch
+
+	}
+
+	// Execute Batch SQL Query
+	errExecBatch := b.Close()
+	if errExecBatch != nil {
+		logging.VulscanoLog(
+			"error",
+			"Failed to execute Batch query: ",
+			errExecBatch.Error())
+
+		return errExecBatch
+	}
+	return nil
+}
