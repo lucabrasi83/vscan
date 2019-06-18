@@ -59,7 +59,7 @@ func LoadRoutes(routes *gin.Engine) {
 			batchAdmin.POST("/update-all-cisco-sa", handlers.UpdateCiscoOpenVulnSAAll)
 			batchAdmin.POST("/cisco-sw-suggested", handlers.AdminGetAnutaDeviceSuggestedSW)
 			batchAdmin.POST("/update-smartnet-coverage", handlers.AdminFetchCiscoAMCStatus)
-			batchAdmin.POST("/refresh-inventory-cache", tempHandler)
+			batchAdmin.POST("/refresh-inventory-cache", handlers.RefreshInventoryCache)
 		}
 
 		vulnAdmin := apiV1.Group("/admin/vulnerabilities").Use(authWare())

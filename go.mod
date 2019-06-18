@@ -7,7 +7,6 @@ require (
 	github.com/PuerkitoBio/purell v1.1.1 // indirect
 	github.com/StackExchange/wmi v0.0.0-20181212234831-e0a55b97c705 // indirect
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc
-	github.com/appleboy/gin-jwt v2.5.0+incompatible
 	github.com/appleboy/gin-jwt/v2 v2.6.2
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect

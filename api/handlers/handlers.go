@@ -10,9 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appleboy/gin-jwt"
+	"github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vulscano/initializer"
+	"github.com/lucabrasi83/vulscano/inventorymgr"
 	"github.com/lucabrasi83/vulscano/logging"
 	"github.com/lucabrasi83/vulscano/openvulnapi"
 	"github.com/lucabrasi83/vulscano/postgresdb"
@@ -1092,6 +1093,12 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 		ciscoSuggSWSlice = append(ciscoSuggSWSlice, *swLast)
 	}
 	return ciscoSuggSWSlice
+}
+
+// RefreshInventoryCache is going to update the Redis cache with inventory information pulled from the different
+// integrations
+func RefreshInventoryCache(c *gin.Context) {
+	inventorymgr.BuildDevicesInventory()
 }
 
 // FetchCiscoAMCStatus is the function that will interact with Cisco SN2INFO API and update Cisco CPE inventories
