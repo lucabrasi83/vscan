@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appleboy/gin-jwt"
+	"github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vulscano/postgresdb"
 )
