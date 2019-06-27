@@ -16,10 +16,10 @@ import (
 // db represents an instance of Postgres connection pool
 var ConnPool *pgx.ConnPool
 var DBInstance *vulscanoDB
+var connPoolConfig pgx.ConnPoolConfig
 var pgpSymEncryptKey = os.Getenv("VSCAN_SECRET_KEY")
 
 const (
-	//pgpSymEncryptKey   = `2?wmrdF#V+&"<D3T`
 	shortQueryTimeout  = 30 * time.Second
 	mediumQueryTimeout = 3 * time.Minute
 	longQueryTimeout   = 10 * time.Minute
@@ -62,7 +62,7 @@ func init() {
 
 	var err error
 
-	connPoolConfig := pgx.ConnPoolConfig{
+	connPoolConfig = pgx.ConnPoolConfig{
 		ConnConfig: pgx.ConnConfig{
 			Host: os.Getenv("VULSCANO_DB_HOST"),
 			TLSConfig: &tls.Config{
@@ -92,6 +92,8 @@ func init() {
 	postgresVersion := DBInstance.displayPostgresVersion()
 
 	logging.VulscanoLog("info", "Postgres SQL Version: ", postgresVersion)
+
+	refreshCredentials()
 
 }
 
@@ -130,4 +132,23 @@ func normalizeString(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+func refreshCredentials() {
+
+	// Test refresh credentials
+	connPoolConfig.Password = "test"
+
+	ConnPool, _ = pgx.NewConnPool(connPoolConfig)
+
+	// Instantiate DB object after successful connection
+	DBInstance = newDBPool(ConnPool)
+
+	h, err := DBInstance.FetchAllUserSSHGateway("TCL")
+
+	if err != nil {
+		logging.VulscanoLog("error", err)
+	} else {
+		logging.VulscanoLog("info", h[0].GatewayUsername)
+	}
 }

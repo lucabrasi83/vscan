@@ -288,12 +288,12 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 		b.Queue("update_device_amc_coverage",
 			[]interface{}{
 				d["serialNumber"],
-				d["productID"],
+				normalizeString(d["productID"]),
 				strToBoolMap[d["serviceContractAssociated"]],
-				d["serviceContractDescription"],
-				d["serviceContractNumber"],
+				normalizeString(d["serviceContractDescription"]),
+				normalizeString(d["serviceContractNumber"]),
 				t,
-				d["serviceContractSiteCountry"],
+				normalizeString(d["serviceContractSiteCountry"]),
 			},
 			nil, nil)
 	}

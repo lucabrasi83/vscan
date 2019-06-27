@@ -25,6 +25,7 @@ type ScanResults struct {
 	ScanJobID                   string                     `json:"scanJobID"`
 	ScanJobStartTime            time.Time                  `json:"scanJobStartTime"`
 	ScanJobEndTime              time.Time                  `json:"scanJobEndTime"`
+	ScanJobExecutingAgent       string                     `json:"scanJobAgent"`
 	ScanDeviceMeanTime          int                        `json:"scanDeviceMeanTimeMsec"`
 	TotalVulnerabilitiesFound   int                        `json:"totalVulnerabilitiesFound"`
 	TotalVulnerabilitiesScanned int                        `json:"totalVulnerabilitiesScanned"`
@@ -143,6 +144,7 @@ type BulkScanResults struct {
 	ScanJobID             string              `json:"scanJobID"`
 	ScanJobStartTime      time.Time           `json:"scanJobStartTime"`
 	ScanJobEndTime        time.Time           `json:"scanJobEndTime"`
+	ScanJobExecutingAgent string              `json:"scanJobAgent"`
 	DevicesScannedSuccess []string            `json:"devicesScannedSuccess"`
 	DevicesScannedFailure []string            `json:"devicesScannedFailure"`
 	VulnerabilitiesFound  []BulkScanVulnFound `json:"vulnFoundDetails"`

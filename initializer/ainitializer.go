@@ -56,7 +56,7 @@ func printBanner() {
 // printReleaseDetails is called as part of init() function and display Vulscano release details such as
 // Git Commit, Git tag, build date,...
 func printReleaseDetails() {
-	fmt.Println(logging.UnderlineText("Vulscano Release:"), logging.InfoMessage(Version))
+	fmt.Println(logging.UnderlineText("VSCAN Controller Release:"), logging.InfoMessage(Version))
 	fmt.Println(logging.UnderlineText("Github Commit:"), logging.InfoMessage(Commit))
 
 	fmt.Println(logging.UnderlineText(

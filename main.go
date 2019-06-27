@@ -91,7 +91,7 @@ func main() {
 	// and we were able to load Gin settings.
 	logging.VulscanoLog(
 		"info",
-		"All pre-checks passed. Vulscano is now READY to accept requests!")
+		"All pre-checks passed. VSCAN Controller is now READY to accept requests!")
 	// Start Web API service in goroutine to handle graceful shutdown
 	go func() {
 
@@ -110,7 +110,7 @@ func main() {
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	logging.VulscanoLog("info",
-		"Shutting Down Vulscano Server Gracefully...",
+		"Shutting Down VSCAN Controller Gracefully...",
 	)
 	// Purge cacheStoreClient when shutting down server
 	err = rediscache.CacheStore.PurgeScannedDevices()
@@ -126,11 +126,11 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		logging.VulscanoLog("fatal",
-			"Failed to gracefully shutdown Vulscano server ", err.Error(),
+			"Failed to gracefully shutdown VSCAN Controller ", err.Error(),
 		)
 	}
 	logging.VulscanoLog("info",
-		"Vulscano Server Gracefully Shutdown",
+		"VSCAN Controller Gracefully Shutdown",
 	)
 
 	// TODO: Use Let's Encrypt issued certificate and auto-renewal
