@@ -22,7 +22,7 @@ type DeviceBulkScanner interface {
 	BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanResults, error)
 }
 
-// LaunchAbstractVendorBulkScan will launch vendor agnostic bulk scan. abs type must satisfy DeviceScanner interface
+// LaunchAbstractVendorBulkScan will launch vendor agnostic bulk scan. abs type must satisfy DeviceBulkScanner interface
 func LaunchAbstractVendorBulkScan(abs DeviceBulkScanner, dev *AdHocBulkScan, j *JwtClaim) (*BulkScanResults, error) {
 	scanRes, err := abs.BulkScan(dev, j)
 	if err != nil {
@@ -43,7 +43,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	const scanJobSuccessRes = "SUCCESS"
 
 	// Struct holding the scan job results
-	var sr BulkScanResults
+	var bsr BulkScanResults
 
 	// Set Initial Job Start/End time type
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
@@ -66,8 +66,8 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 
 	defer func() {
 
-		if sr.ScanJobExecutingAgent == "" {
-			sr.ScanJobExecutingAgent = "NA"
+		if bsr.ScanJobExecutingAgent == "" {
+			bsr.ScanJobExecutingAgent = "NA"
 		}
 
 		errJobInsertDB := scanJobReportDB(
@@ -78,7 +78,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 			successfulScannedDevIP,
 			scanJobStatus,
 			j,
-			sr.ScanJobExecutingAgent,
+			bsr.ScanJobExecutingAgent,
 		)
 
 		if errJobInsertDB != nil {
@@ -133,10 +133,10 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	}()
 
 	// Set the Scan Job ID in ScanResults struct
-	sr.ScanJobID = jobID
+	bsr.ScanJobID = jobID
 
 	// Set the Scan Job Start Time
-	sr.ScanJobStartTime = reportScanJobStartTime
+	bsr.ScanJobStartTime = reportScanJobStartTime
 
 	devList := make([]map[string]string, 0, bulkDevMaxLimit)
 
@@ -154,6 +154,11 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 		sshGatewayDB, errSSHGw := getUserSSHGatewayDetails(j.Enterprise, dev.SSHGateway)
 
 		if errSSHGw != nil {
+
+			reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+
+			scanJobStatus = scanJobFailedRes
+
 			return nil, errSSHGw
 		}
 
@@ -171,10 +176,15 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	devCreds, errDevCredsDB := getUserDeviceCredentialsDetails(j.UserID, dev.CredentialsName)
 
 	if errDevCredsDB != nil {
+
+		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+
+		scanJobStatus = scanJobFailedRes
+
 		return nil, errDevCredsDB
 	}
 
-	err := sendAgentScanRequest(jobID, devList, d.jovalURL, &sshGateway, devCreds, nil, &sr)
+	err := sendAgentScanRequest(jobID, devList, d.jovalURL, &sshGateway, devCreds, nil, &bsr)
 
 	if err != nil {
 
@@ -187,15 +197,15 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 
 	// Set Scan Job End Time
 	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	sr.ScanJobEndTime = reportScanJobEndTime
+	bsr.ScanJobEndTime = reportScanJobEndTime
 
-	// Set Scan Job Report data if successful. This is will picked by the defer anonymous function
+	// Set Scan Job Report data if successful. This will picked up by the defer anonymous function
 	scanJobStatus = scanJobSuccessRes
 
 	// Parse Scan Results to populate slices of devices successfully scanned Hostname and IP
-	for _, dv := range sr.VulnerabilitiesFound {
+	for _, dv := range bsr.VulnerabilitiesFound {
 		successfulScannedDevName = append(successfulScannedDevName, dv.DeviceName)
-		sr.DevicesScannedSuccess = append(sr.DevicesScannedSuccess, dv.DeviceName)
+		bsr.DevicesScannedSuccess = append(bsr.DevicesScannedSuccess, dv.DeviceName)
 		for _, ip := range dev.Devices {
 			if dv.DeviceName == ip.Hostname {
 				successfulScannedDevIP = append(successfulScannedDevIP, net.ParseIP(ip.IPAddress).To4())
@@ -203,7 +213,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 		}
 	}
 
-	return &sr, nil
+	return &bsr, nil
 }
 
 // AnutaInventoryBulkScan is the main function to handle VA for multiple devices part of Anuta NCX Inventory

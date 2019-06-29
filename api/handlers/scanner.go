@@ -153,6 +153,11 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		sshGatewayDB, errSSHGw := getUserSSHGatewayDetails(j.Enterprise, dev.SSHGateway)
 
 		if errSSHGw != nil {
+
+			reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+
+			scanJobStatus = scanJobFailedRes
+
 			return nil, errSSHGw
 		}
 
@@ -170,6 +175,10 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	devCreds, errDevCredsDB := getUserDeviceCredentialsDetails(j.UserID, dev.CredentialsName)
 
 	if errDevCredsDB != nil {
+		reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+
+		scanJobStatus = scanJobFailedRes
+
 		return nil, errDevCredsDB
 	}
 
