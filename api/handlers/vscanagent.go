@@ -167,8 +167,8 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 		}
 
 		logging.VulscanoLog("info",
-			fmt.Sprintf("Scan Job ID %v - received file stream from VSCAN Agent %v for device %v\n", jobID,
-				resStream.GetVscanAgentName(), resStream.GetDeviceName()))
+			fmt.Sprintf("Agent %v - Scan Job ID %v - received file stream for device %v\n",
+				resStream.GetVscanAgentName(), jobID, resStream.GetDeviceName()))
 
 		// If more than one device requested for scan, handle it as a Bulk Scan
 		if len(devices) > 0 && bsr != nil {
@@ -285,8 +285,9 @@ func parseGRPCScanReport(res *ScanResults, jobID string, scanFileRes []byte) err
 		res.ScanDeviceMeanTime = int(deviceScanEndTime.Sub(deviceScanStartTime).Seconds() * 1000)
 
 	} else {
-		return fmt.Errorf("scan job ID %v - unable to scan the device requested. "+
-			"make sure the parameters provided are correct and verify network connectivity", jobID)
+		return fmt.Errorf("agent %v - scan job ID %v - unable to scan the device requested. "+
+			"Make sure the parameters provided are correct and verify network connectivity",
+			res.ScanJobExecutingAgent, jobID)
 	}
 	return nil
 
