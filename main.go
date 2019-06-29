@@ -49,7 +49,7 @@ func main() {
 
 	// Set Gin Logging to file and StdOut.
 	ginLogFile, err := os.OpenFile(
-		filepath.FromSlash(datadiros.GetDataDir()+"/logs/gingonic.log"),
+		filepath.FromSlash(datadiros.GetDataDir()+"/gingonic.log"),
 		os.O_WRONLY|os.O_CREATE|os.O_APPEND,
 		0644)
 	if err != nil {

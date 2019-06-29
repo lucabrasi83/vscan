@@ -15,7 +15,6 @@ services:
             - VULSCANO_HTTPS_PORT=${VULSCANO_HTTPS_PORT}
             - VULSCANO_OPENVULN_CLIENT_ID=${VULSCANO_OPENVULN_CLIENT_ID}
             - VULSCANO_OPENVULN_CLIENT_SECRET=${VULSCANO_OPENVULN_CLIENT_SECRET}
-            - VULSCANO_DOCKER_VOLUME_NAME=${VULSCANO_DOCKER_VOLUME_NAME}
             - VSCAN_AGENT_HOST=${VSCAN_AGENT_HOST}
             - VSCAN_AGENT_PORT=${VSCAN_AGENT_PORT}
             - VULSCANO_DB_USERNAME=${VULSCANO_DB_USERNAME}
@@ -31,7 +30,7 @@ services:
      #        - vulscanovol:/opt/vulscano/data
 
        network_mode: host
-    
+
 
     # Vulscano Postgres DB
     vulscano-db:
@@ -48,7 +47,7 @@ services:
             - PGDATA=/var/lib/postgresql/data/vulscanodata
 
        network_mode: host
-    
+
        volumes:
             - postgres_db_data_vol:/var/lib/postgresql/data/vulscanodata
             - postgres_db_conf_vol:/etc/postgresql/conf
@@ -77,14 +76,18 @@ services:
        hostname: vscan-cache
        ports:
             - "6379:6379"
+       sysctls:
+            - net.core.somaxconn: 1024
        networks:
             - vulscano-net
-     
+
      # VSCAN Agent
     vscan-agent:
        image: tatacomm/vscan-agent:beta
        restart: always
        hostname: vscan-agent
+       stdin_open: true
+       tty: true
        ports:
             - "${VSCAN_AGENT_BIND_PORT}:${VSCAN_AGENT_BIND_PORT}"
        environment:

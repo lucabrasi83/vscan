@@ -3,3 +3,4 @@ logs/jobs/*/*
 reports/*/*
 jobconfig/*/*
 !*.sample
+gingonic.log
