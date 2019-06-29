@@ -16,8 +16,8 @@ func (p *vulscanoDB) PersistScanJobReport(args ...interface{}) error {
 	const sqlQueryJobReport = `INSERT INTO scan_jobs_history
 							   (job_id, start_time, end_time, 
 							    devices_scanned_name, devices_scanned_ip, 
-								job_result, user_id_scan_request)
-						       VALUES ($1, $2, $3, COALESCE($4, '{}'::text[]), COALESCE($5, '{}'::inet[]), $6, $7)
+								job_result, user_id_scan_request, scan_exec_agent)
+						       VALUES ($1, $2, $3, COALESCE($4, '{}'::text[]), COALESCE($5, '{}'::inet[]), $6, $7, $8)
 							  `
 
 	defer cancelQuery()

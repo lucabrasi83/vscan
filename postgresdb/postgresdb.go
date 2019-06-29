@@ -4,6 +4,7 @@ package postgresdb
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"os"
 	"time"
 
@@ -43,22 +44,25 @@ func init() {
 	if os.Getenv("VULSCANO_DB_HOST") == "" {
 		logging.VulscanoLog("fatal",
 			"Missing Environment Variable for PostgresDB Hostname ",
-			"(VULSCANO_DB_HOST")
+			"VULSCANO_DB_HOST")
 	}
 
 	// Check Environment Variables for Postgres Database Name
 	if os.Getenv("VULSCANO_DB_DATABASE_NAME") == "" {
 		logging.VulscanoLog("fatal",
 			"Missing Environment Variable for PostgresDB Database Name ",
-			"(VULSCANO_DB_DATABASE_NAME")
+			"VULSCANO_DB_DATABASE_NAME")
 	}
 
 	// Check Environment Variables for Secret Key
 	if os.Getenv("VSCAN_SECRET_KEY") == "" {
 		logging.VulscanoLog("fatal",
 			"Missing Environment Variable for Data encryption secret key ",
-			"(VSCAN_SECRET_KEY")
+			"VSCAN_SECRET_KEY")
 	}
+
+	// Create a certificate pool from the system certificate authority
+	certPool, _ := x509.SystemCertPool()
 
 	var err error
 
@@ -66,7 +70,8 @@ func init() {
 		ConnConfig: pgx.ConnConfig{
 			Host: os.Getenv("VULSCANO_DB_HOST"),
 			TLSConfig: &tls.Config{
-				InsecureSkipVerify: true,
+				ServerName: os.Getenv("VULSCANO_DB_HOST"),
+				RootCAs:    certPool,
 			},
 			User:     os.Getenv("VULSCANO_DB_USERNAME"),
 			Password: os.Getenv("VULSCANO_DB_PASSWORD"),
@@ -92,8 +97,6 @@ func init() {
 	postgresVersion := DBInstance.displayPostgresVersion()
 
 	logging.VulscanoLog("info", "Postgres SQL Version: ", postgresVersion)
-
-	refreshCredentials()
 
 }
 
@@ -132,23 +135,4 @@ func normalizeString(s string) *string {
 		return nil
 	}
 	return &s
-}
-
-func refreshCredentials() {
-
-	// Test refresh credentials
-	connPoolConfig.Password = "test"
-
-	ConnPool, _ = pgx.NewConnPool(connPoolConfig)
-
-	// Instantiate DB object after successful connection
-	DBInstance = newDBPool(ConnPool)
-
-	h, err := DBInstance.FetchAllUserSSHGateway("TCL")
-
-	if err != nil {
-		logging.VulscanoLog("error", err)
-	} else {
-		logging.VulscanoLog("info", h[0].GatewayUsername)
-	}
 }

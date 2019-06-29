@@ -2,18 +2,25 @@ package handlers
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	agentpb "github.com/lucabrasi83/vulscano/api/proto"
+	"github.com/lucabrasi83/vulscano/datadiros"
 	"github.com/lucabrasi83/vulscano/logging"
 	"github.com/lucabrasi83/vulscano/openvulnapi"
 	"github.com/lucabrasi83/vulscano/postgresdb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/grpc/status"
 )
@@ -21,6 +28,15 @@ import (
 var conn *grpc.ClientConn
 
 var vscanAgentPort = "50051"
+
+const (
+
+	// singleDevScanTimeout represents the default 300 seconds scan timeout for a single device scan
+	singleDevScanTimeout = 300
+
+	// bulkDevScanTimeout represents the default 900 seconds scan timeout for a bulk scan
+	bulkDevScanTimeout = 900
+)
 
 func agentConnection() (agentpb.VscanAgentServiceClient, error) {
 
@@ -32,15 +48,19 @@ func agentConnection() (agentpb.VscanAgentServiceClient, error) {
 		vscanAgentPort = os.Getenv("VSCAN_AGENT_PORT")
 	}
 
+	tlsCredentials, errTLSCredentials := clientCertLoad()
+
+	if errTLSCredentials != nil {
+		return nil, errTLSCredentials
+	}
+
 	var err error
 
-	conn, err = grpc.Dial(os.Getenv("VSCAN_AGENT_HOST")+":"+vscanAgentPort, grpc.WithInsecure())
+	conn, err = grpc.Dial(os.Getenv("VSCAN_AGENT_HOST")+":"+vscanAgentPort, grpc.WithTransportCredentials(tlsCredentials))
 
 	if err != nil {
 		logging.VulscanoLog("fatal", "unable to dial VSCAN Agent GRPC server: ", err)
 	}
-
-	// defer conn.Close()
 
 	c := agentpb.NewVscanAgentServiceClient(conn)
 
@@ -55,13 +75,22 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 
 	if err != nil {
 
-		return fmt.Errorf("error while establishing connection to VSCAN Agent %v\n", err)
+		return fmt.Errorf("error while establishing connection to VSCAN agent %v", err)
 	}
 
 	// Closing GRPC client connection at the end of scan job
 	defer conn.Close()
 
 	var devices []*agentpb.Device
+
+	// Set the Scan Timeout to be sent to the agent depending on number of devices scanned
+	var scanTimeout int
+
+	if len(dev) > 1 {
+		scanTimeout = bulkDevScanTimeout
+	} else {
+		scanTimeout = singleDevScanTimeout
+	}
 
 	for _, d := range dev {
 		devices = append(devices, &agentpb.Device{DeviceName: d["hostname"], IpAddress: d["ip"]})
@@ -83,24 +112,34 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 			GatewayPassword:   sshGW.GatewayPassword,
 			GatewayUsername:   sshGW.GatewayUsername,
 		},
+		ScanTimeoutSeconds: int64(scanTimeout),
 	}
 
+	// Setting timeout context for scan requests
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), time.Duration(scanTimeout)*time.Second)
+
+	defer cancel()
+
 	// Send Scan Request
-	stream, err := cc.BuildScanConfig(context.Background(), req, grpc.UseCompressor(gzip.Name))
+	stream, err := cc.BuildScanConfig(ctxTimeout, req, grpc.UseCompressor(gzip.Name))
 
 	if err != nil {
 		respErr, ok := status.FromError(err)
 
 		if ok {
 
-			return fmt.Errorf("VSCAN Agent is unable to proceed with scan request for job ID %v with error: %v\n",
+			if respErr.Code() == codes.DeadlineExceeded {
+				return fmt.Errorf("VSCAN agent is unable to complete the request within the %v minutes timeout",
+					scanTimeout)
+			}
+
+			return fmt.Errorf("VSCAN agent is unable to proceed with scan request for job ID %v with error: %v",
 				jobID, respErr.Message())
 
-		} else {
-
-			return fmt.Errorf("VSCAN Agent is unable to proceed with scan request for job ID %v with error: %v\n",
-				jobID, err)
 		}
+
+		return fmt.Errorf("VSCAN agent is unable to proceed with scan request for job ID %v with error: %v",
+			jobID, err)
 
 	}
 
@@ -118,12 +157,12 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 
 			if ok {
 
-				return fmt.Errorf("error while receiving response stream from VSCAN agent for job ID %v : %v\n",
+				return fmt.Errorf("error while receiving response stream from VSCAN agent for job ID %v : %v",
 					jobID, respErr.Message())
 
 			}
 
-			return fmt.Errorf("error while receiving response stream from VSCAN agent for job ID %v : %v\n",
+			return fmt.Errorf("error while receiving response stream from VSCAN agent for job ID %v : %v",
 				jobID, err)
 		}
 
@@ -133,6 +172,9 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 
 		// If more than one device requested for scan, handle it as a Bulk Scan
 		if len(devices) > 0 && bsr != nil {
+
+			// Add Agent Name in scan results
+			bsr.ScanJobExecutingAgent = resStream.VscanAgentName
 
 			err = parseGRPCBulkScanReport(bsr, jobID, resStream.GetScanResultsJson())
 
@@ -145,6 +187,10 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 			}
 
 		} else {
+
+			// Add Agent Name in scan results
+			sr.ScanJobExecutingAgent = resStream.VscanAgentName
+
 			err = parseGRPCScanReport(sr, jobID, resStream.GetScanResultsJson())
 
 			if err != nil {
@@ -239,8 +285,8 @@ func parseGRPCScanReport(res *ScanResults, jobID string, scanFileRes []byte) err
 		res.ScanDeviceMeanTime = int(deviceScanEndTime.Sub(deviceScanStartTime).Seconds() * 1000)
 
 	} else {
-		return fmt.Errorf("Scan job ID %v - unable to scan the device requested. "+
-			"Make sure the parameters provided are correct and verify network connectivity\n", jobID)
+		return fmt.Errorf("scan job ID %v - unable to scan the device requested. "+
+			"make sure the parameters provided are correct and verify network connectivity", jobID)
 	}
 	return nil
 
@@ -337,5 +383,38 @@ func parseGRPCBulkScanReport(res *BulkScanResults, jobID string, scanFileRes []b
 	}
 
 	return nil
+
+}
+
+func clientCertLoad() (credentials.TransportCredentials, error) {
+
+	// Load the certificates from disk
+
+	certificate, errCert := tls.LoadX509KeyPair(
+		filepath.FromSlash(datadiros.GetDataDir()+"/certs/vulscano.pem"),
+		filepath.FromSlash(datadiros.GetDataDir()+"/certs/vulscano.key"))
+
+	if errCert != nil {
+		return nil, fmt.Errorf("error while loading VSCAN agent client certificate: %v", errCert)
+	}
+
+	// Create a certificate pool from the certificate authority
+	certPool := x509.NewCertPool()
+
+	ca, errCert := ioutil.ReadFile(datadiros.GetDataDir() + "/certs/TCL-ENT-CA.pem")
+	if errCert != nil {
+		return nil, fmt.Errorf("error while loading VSCAN agent root Certificate Authority %v", errCert)
+	}
+
+	// Append the client certificates from the CA
+	if ok := certPool.AppendCertsFromPEM(ca); !ok {
+		return nil, fmt.Errorf("failed to append Root CA %v certs", ca)
+	}
+
+	return credentials.NewTLS(&tls.Config{
+		ServerName:   os.Getenv("VSCAN_AGENT_HOST"),
+		Certificates: []tls.Certificate{certificate},
+		RootCAs:      certPool,
+	}), nil
 
 }

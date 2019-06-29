@@ -16,10 +16,8 @@ services:
             - VULSCANO_OPENVULN_CLIENT_ID=${VULSCANO_OPENVULN_CLIENT_ID}
             - VULSCANO_OPENVULN_CLIENT_SECRET=${VULSCANO_OPENVULN_CLIENT_SECRET}
             - VULSCANO_DOCKER_VOLUME_NAME=${VULSCANO_DOCKER_VOLUME_NAME}
-            - VULSCANO_DOCKER_JOVAL_IMAGE=${VULSCANO_DOCKER_JOVAL_IMAGE}
-            - DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME}
-            - DOCKER_HUB_PASSWORD=${DOCKER_HUB_PASSWORD}
-            - DOCKER_HUB_EMAIL=${DOCKER_HUB_EMAIL}
+            - VSCAN_AGENT_HOST=${VSCAN_AGENT_HOST}
+            - VSCAN_AGENT_PORT=${VSCAN_AGENT_PORT}
             - VULSCANO_DB_USERNAME=${VULSCANO_DB_USERNAME}
             - VULSCANO_DB_PASSWORD=${VULSCANO_DB_PASSWORD}
             - VULSCANO_DB_DATABASE_NAME=${VULSCANO_DB_DATABASE_NAME}
@@ -29,15 +27,11 @@ services:
             - VSCAN_REDIS_HOST=${VSCAN_REDIS_HOST}
             - VSCAN_REDIS_PASSWORD=${VSCAN_REDIS_PASSWORD}
             - VSCAN_SECRET_KEY=${VSCAN_SECRET_KEY}
-       volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-            - vulscanovol:/opt/vulscano/data
+     #   volumes:
+     #        - vulscanovol:/opt/vulscano/data
 
        network_mode: host
-     #   ports:
-     #        - "${VULSCANO_HTTPS_PORT}:8443"
-     #   networks:
-     #        - vulscano-net
+    
 
     # Vulscano Postgres DB
     vulscano-db:
@@ -54,10 +48,7 @@ services:
             - PGDATA=/var/lib/postgresql/data/vulscanodata
 
        network_mode: host
-     #   ports:
-     #        - "5432:5432"
-     #   networks:
-     #        - vulscano-net
+    
        volumes:
             - postgres_db_data_vol:/var/lib/postgresql/data/vulscanodata
             - postgres_db_conf_vol:/etc/postgresql/conf
@@ -88,13 +79,26 @@ services:
             - "6379:6379"
        networks:
             - vulscano-net
+     
+     # VSCAN Agent
+    vscan-agent:
+       image: tatacomm/vscan-agent:beta
+       restart: always
+       hostname: vscan-agent
+       ports:
+            - "${VSCAN_AGENT_BIND_PORT}:${VSCAN_AGENT_BIND_PORT}"
+       environment:
+            - VSCAN_AGENT_BIND_PORT=50051
+            - JAVA_TOOL_OPTIONS="-XX:+UnlockExperimentalVMOptions -Xms2g -Xmx2g -XX:+UseZGC -XX:+UseNUMA -XX:+UseLargePages"
+       networks:
+            - vulscano-net
 
 networks:
    vulscano-net:
        driver: bridge
 volumes:
-  vulscanovol:
-       external: true
+#   vulscanovol:
+#        external: true
   postgres_db_data_vol:
        external: true
   postgres_db_conf_vol:

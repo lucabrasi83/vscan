@@ -42,6 +42,7 @@ message ScanRequest {
     SSHGateway ssh_gateway = 3;
     UserDeviceCredentials user_device_credentials = 4;
     string oval_source_url = 5;
+    int64  scan_timeout_seconds = 6;
 
 }
 

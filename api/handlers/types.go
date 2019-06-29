@@ -117,6 +117,7 @@ type AnutaBulkScanResults struct {
 	ScanJobID             string                      `json:"scanJobID"`
 	ScanJobStartTime      time.Time                   `json:"scanJobStartTime"`
 	ScanJobEndTime        time.Time                   `json:"scanJobEndTime"`
+	ScanJobExecutingAgent string                      `json:"scanJobAgent"`
 	DevicesScannedSuccess []string                    `json:"devicesScannedSuccess"`
 	DevicesScannedSkipped []string                    `json:"devicesScannedSkipped"`
 	DevicesScannedFailure []string                    `json:"devicesScannedFailure"`

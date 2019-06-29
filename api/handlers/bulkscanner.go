@@ -42,6 +42,9 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	const scanJobFailedRes = "FAILED"
 	const scanJobSuccessRes = "SUCCESS"
 
+	// Struct holding the scan job results
+	var sr BulkScanResults
+
 	// Set Initial Job Start/End time type
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
@@ -62,6 +65,11 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	}
 
 	defer func() {
+
+		if sr.ScanJobExecutingAgent == "" {
+			sr.ScanJobExecutingAgent = "NA"
+		}
+
 		errJobInsertDB := scanJobReportDB(
 			jobID,
 			reportScanJobStartTime,
@@ -69,7 +77,9 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 			successfulScannedDevName,
 			successfulScannedDevIP,
 			scanJobStatus,
-			j)
+			j,
+			sr.ScanJobExecutingAgent,
+		)
 
 		if errJobInsertDB != nil {
 			logging.VulscanoLog(
@@ -122,8 +132,6 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 		}
 	}()
 
-	var sr BulkScanResults
-
 	// Set the Scan Job ID in ScanResults struct
 	sr.ScanJobID = jobID
 
@@ -166,44 +174,6 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 		return nil, errDevCredsDB
 	}
 
-	//if errIniBuilder := BuildIni(jobID, devList, d.jovalURL, &sshGateway, devCreds); errIniBuilder != nil {
-	//
-	//	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	//
-	//	scanJobStatus = scanJobFailedRes
-	//
-	//	return nil, errIniBuilder
-	//}
-
-	//err := LaunchJovalDocker(jobID)
-	//
-	//if err != nil {
-	//
-	//	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	//
-	//	scanJobStatus = scanJobFailedRes
-	//
-	//	switch err {
-	//	case context.DeadlineExceeded:
-	//		return nil, fmt.Errorf("scan job %s did not complete within the timeout", jobID)
-	//	default:
-	//		return nil, err
-	//	}
-	//
-	//}
-	//
-	//err = parseBulkScanReport(&sr, jobID)
-	//if err != nil {
-	//
-	//	logging.VulscanoLog("error", err.Error())
-	//
-	//	reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-	//
-	//	scanJobStatus = scanJobFailedRes
-	//
-	//	return nil, err
-	//}
-
 	err := sendAgentScanRequest(jobID, devList, d.jovalURL, &sshGateway, devCreds, nil, &sr)
 
 	if err != nil {
@@ -235,135 +205,6 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 
 	return &sr, nil
 }
-
-// parseScanReport handles parsing reports/JobID folder after a VA scan is done.
-// It will look for .json files and parse the content for each to report found vulnerabilities
-//func parseBulkScanReport(res *BulkScanResults, jobID string) (err error) {
-//
-//	const jovalReportFoundTag = "fail"
-//
-//	reportDir := filepath.FromSlash(datadiros.GetDataDir() + "/reports/" + jobID)
-//	var scanReport ScanReportFile
-//
-//	if _, err := os.Stat(reportDir); !os.IsNotExist(err) {
-//
-//		err = filepath.Walk(reportDir, func(path string, info os.FileInfo, err error) error {
-//			if err != nil {
-//				logging.VulscanoLog("error",
-//					"unable to access Joval reports directory: ", path, "error: ", err,
-//				)
-//				return err
-//			}
-//			if !info.IsDir() {
-//				reportFile, err := os.Open(path)
-//
-//				if err != nil {
-//					return fmt.Errorf("error while reading report file %v: %v", path, err)
-//				}
-//				// Defer Named return when closing report JSON file to capture any error
-//				defer func() {
-//					if errCloseReportFile := reportFile.Close(); err != nil {
-//						err = errCloseReportFile
-//					}
-//				}()
-//
-//				err = json.NewDecoder(reportFile).Decode(&scanReport)
-//
-//				if err != nil {
-//					return fmt.Errorf("error while parsing JSON report file %v for Job ID %v: %v", path, jobID, err)
-//				}
-//				// vulnCount determines the number of vulnerabilities found in the report
-//				var vulnCount int
-//
-//				// vulnTotal determines the number of total vulnerabilities scanned
-//				vulnTotal := len(scanReport.RuleResults)
-//
-//				// Verify that Joval JSON report rule_results array contains elements
-//				if vulnTotal > 0 {
-//
-//					// duplicateSAMap tracks duplicates SA found in Joval Scan Report
-//					duplicateSAMap := map[string]bool{}
-//
-//					// vulnMetaSlice is a slice of Cisco openVuln API vulnerabilities metadata
-//					vulnMetaSlice := make([]openvulnapi.VulnMetadata, 0)
-//
-//					// Declare WaitGroup to send requests to openVuln API in parallel
-//					var wg sync.WaitGroup
-//
-//					// We set a rate limit to throttle Goroutines querying DB for Vulnerabilities metadata.
-//					rateLimit := time.NewTicker(20 * time.Millisecond)
-//
-//					defer rateLimit.Stop()
-//
-//					// Declare Mutex to prevent Race condition on vulnMetaSlice slice
-//					var mu sync.RWMutex
-//
-//					// Loop to search for found vulnerabilities in the scan report and fetch metadata for each
-//					// vulnerability in a goroutine
-//					for _, ruleResult := range scanReport.RuleResults {
-//
-//						// Count number of found vulnerabilities in report to determine Wait Group length
-//						// Update duplicateSAMap to find duplicated Cisco SA in Joval Report
-//						if ruleResult.RuleResult == jovalReportFoundTag &&
-//							!duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] {
-//							duplicateSAMap[ruleResult.RuleIdentifier[0].ResultCiscoSA] = true
-//
-//							// Update count of vulnerabilities found
-//							vulnCount++
-//
-//							// Increment WaitGroup by 1 before launching goroutine
-//							wg.Add(1)
-//
-//							go func(r ScanReportFileResult) {
-//								defer wg.Done()
-//								<-rateLimit.C
-//
-//								vulnMeta := postgresdb.DBInstance.FetchCiscoSAMeta(r.RuleIdentifier[0].ResultCiscoSA)
-//
-//								// Exclusive access to vulnMetaSlice to prevent race condition
-//								mu.Lock()
-//								vulnMetaSlice = append(vulnMetaSlice, *vulnMeta)
-//								mu.Unlock()
-//
-//							}(ruleResult)
-//
-//						}
-//
-//					}
-//					wg.Wait()
-//
-//					// Format in type Time the Device Scan Mean Time from Joval JSON Report
-//					deviceScanStartTime, _ := time.Parse(time.RFC3339, scanReport.ScanStartTime)
-//					deviceScanEndTime, _ := time.Parse(time.RFC3339, scanReport.ScanEndTime)
-//
-//					vulnFound := BulkScanVulnFound{
-//						DeviceName:                  scanReport.DeviceName,
-//						ScanDeviceMeanTime:          int(deviceScanEndTime.Sub(deviceScanStartTime).Seconds() * 1000),
-//						VulnerabilitiesFoundDetails: vulnMetaSlice,
-//						TotalVulnerabilitiesScanned: vulnTotal,
-//						TotalVulnerabilitiesFound:   vulnCount,
-//					}
-//					// Start mapping Report File into BulkScanResults struct
-//					res.VulnerabilitiesFound = append(res.VulnerabilitiesFound, vulnFound)
-//				} else {
-//					// Devices with empty rule_results JSON array were not successfully scanned
-//					// Append to the DevicesScannedFailure slice
-//					res.DevicesScannedFailure = append(res.DevicesScannedFailure, scanReport.DeviceName)
-//				}
-//			}
-//
-//			return nil
-//		})
-//
-//		if err != nil {
-//			return fmt.Errorf("error while parsing Joval Reports folder for Job ID %v recursively: %v", jobID, err)
-//		}
-//
-//		return nil
-//	}
-//	return fmt.Errorf("directory %v not found in Reports directory", jobID)
-//
-//}
 
 // AnutaInventoryBulkScan is the main function to handle VA for multiple devices part of Anuta NCX Inventory
 func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaBulkScanResults, error) {
@@ -467,9 +308,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 	switch d.OSType {
 	case ciscoIOSXE, ciscoIOS:
 		devBulkScanner = NewCiscoScanDevice(d.OSType)
-		//if devBulkScanner == nil {
-		//	return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", d.OSType)
-		//}
+
 	default:
 		return nil, fmt.Errorf("OS Type %v not supported", d.OSType)
 	}
@@ -526,6 +365,7 @@ func mergeAnutaBulkScanResults(r *BulkScanResults, d []AnutaDeviceInventory, s [
 	anutaBulkRes.ScanJobID = r.ScanJobID
 	anutaBulkRes.ScanJobStartTime = r.ScanJobStartTime
 	anutaBulkRes.ScanJobEndTime = r.ScanJobEndTime
+	anutaBulkRes.ScanJobExecutingAgent = r.ScanJobExecutingAgent
 	anutaBulkRes.DevicesScannedFailure = r.DevicesScannedFailure
 	anutaBulkRes.DevicesScannedSuccess = r.DevicesScannedSuccess
 
