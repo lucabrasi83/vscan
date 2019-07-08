@@ -129,7 +129,7 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 		if ok {
 
 			if respErr.Code() == codes.DeadlineExceeded {
-				return fmt.Errorf("VSCAN agent is unable to complete the request within the %v minutes timeout",
+				return fmt.Errorf("VSCAN agent is unable to complete the request within the %v seconds timeout",
 					scanTimeout)
 			}
 
@@ -157,8 +157,8 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 
 			if ok {
 
-				return fmt.Errorf("error while receiving response stream from VSCAN agent for job ID %v : %v",
-					jobID, respErr.Message())
+				return fmt.Errorf("error while receiving response stream from VSCAN agent for job ID %v : %v"+
+					"GRPC error code %v", jobID, respErr.Message(), respErr.Code())
 
 			}
 

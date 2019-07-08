@@ -9,17 +9,27 @@ import (
 	"github.com/lucabrasi83/vulscano/api/middleware"
 	"github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
+	ginprometheus "github.com/zsais/go-gin-prometheus"
 )
 
 func LoadRoutes(routes *gin.Engine) {
 
 	// Set Default Middleware
-	routes.Use(middleware.RequestSizeLimiter(10240), middleware.RequestsLogger(), middleware.APILoadControl())
+	routes.Use(
+		middleware.RequestSizeLimiter(10240),
+		middleware.RequestsLogger(),
+		middleware.APILoadControl(),
+	)
 
 	// Set up default handler for no routes found
 	routes.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "404 - PAGE_NOT_FOUND", "message": "Requested route does not exist"})
 	})
+
+	// Prometheus Metrics Collection middleware
+	p := ginprometheus.NewPrometheus("gin")
+	p.MetricsPath = "/api/v1/metrics"
+	p.Use(routes)
 
 	// /api/v1 Routes group and associated handlers
 
