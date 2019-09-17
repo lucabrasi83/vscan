@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    run: vscan-cache
+  name: vscan-cache
+  namespace: vscan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: vscan-cache
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: vscan-cache
+    spec:
+      initContainers:
+        - name: init-sysctl
+          image: busybox
+          command:
+            - sysctl
+            - -w
+            - net.core.somaxconn=1024
+          securityContext:
+            privileged: true
+
+      containers:
+        - image: tatacomm/vscan-cache:beta
+          name: vscan-cache
+          ports:
+            - containerPort: 6379
+          resources: {}
+status: {}

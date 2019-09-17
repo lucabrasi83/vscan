@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: vscan-agent
+  name: vscan-agent
+  namespace: vscan
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: vscan-agent
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: vscan-agent
+    spec:
+      containers:
+      - image: tatacomm/vscan-agent:beta
+        name: vscan-agent
+        stdin: true 
+        tty: true
+        ports:
+        - containerPort: 50051
+        resources:
+          limits:
+            cpu: "4"
+            memory: 2Gi
+          requests:
+            cpu: "2"
+            memory: 2Gi
+      imagePullSecrets:
+        - name: docker-secret
+status: {}
