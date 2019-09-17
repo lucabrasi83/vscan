@@ -5,19 +5,21 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
+	"net"
 	"os"
 	"time"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lucabrasi83/vulscano/initializer" // Import for correct init functions order
 	"github.com/lucabrasi83/vulscano/logging"
 )
 
 // ConnPool represents the Connection Pool instance
 // db represents an instance of Postgres connection pool
-var ConnPool *pgx.ConnPool
+var ConnPool *pgxpool.Pool
 var DBInstance *vulscanoDB
-var connPoolConfig pgx.ConnPoolConfig
+var connPoolConfig pgxpool.Config
 var pgpSymEncryptKey = os.Getenv("VSCAN_SECRET_KEY")
 
 const (
@@ -27,7 +29,7 @@ const (
 )
 
 type vulscanoDB struct {
-	db *pgx.ConnPool
+	db *pgxpool.Pool
 }
 
 // init() function will establish DB connection pool while package is being loaded.
@@ -66,21 +68,59 @@ func init() {
 
 	var err error
 
-	connPoolConfig = pgx.ConnPoolConfig{
-		ConnConfig: pgx.ConnConfig{
-			Host: os.Getenv("VULSCANO_DB_HOST"),
-			TLSConfig: &tls.Config{
-				ServerName: os.Getenv("VULSCANO_DB_HOST"),
-				RootCAs:    certPool,
-			},
-			User:     os.Getenv("VULSCANO_DB_USERNAME"),
-			Password: os.Getenv("VULSCANO_DB_PASSWORD"),
-			Database: os.Getenv("VULSCANO_DB_DATABASE_NAME"),
-		},
-		MaxConnections: 20,
+	//dbConnectConfig := pgconn.Config{
+	//	Host: os.Getenv("VULSCANO_DB_HOST"),
+	//	TLSConfig: &tls.Config{
+	//		ServerName: os.Getenv("VULSCANO_DB_HOST"),
+	//		RootCAs:    certPool,
+	//	},
+	//	User:     os.Getenv("VULSCANO_DB_USERNAME"),
+	//	Password: os.Getenv("VULSCANO_DB_PASSWORD"),
+	//	Database: os.Getenv("VULSCANO_DB_DATABASE_NAME"),
+	//	DialFunc: (&net.Dialer{
+	//		KeepAlive: 30 * time.Second,
+	//		Timeout:   10 * time.Second,
+	//	}).DialContext,
+	//	// TargetSessionAttrs: "read-write",
+	//}
+
+	// pgx v4 requires config struct to be generated using ParseConfig method
+	poolConfig, errParsePool := pgxpool.ParseConfig("")
+
+	if errParsePool != nil {
+		logging.VulscanoLog("fatal", fmt.Sprintf("failed to parse DB pool config %v", errParsePool))
 	}
 
-	ConnPool, err = pgx.NewConnPool(connPoolConfig)
+	//connPoolConfig = pgxpool.Config{
+	//	ConnConfig: &pgx.ConnConfig{
+	//		Config: dbConnectConfig,
+	//	},
+	//	MaxConns: 50,
+	//}
+
+	// Set Connection Parameters
+	poolConfig.MaxConns = 50
+	poolConfig.HealthCheckPeriod = 1 * time.Second
+	poolConfig.ConnConfig.Host = os.Getenv("VULSCANO_DB_HOST")
+	poolConfig.ConnConfig.User = os.Getenv("VULSCANO_DB_USERNAME")
+	poolConfig.ConnConfig.Password = os.Getenv("VULSCANO_DB_PASSWORD")
+	poolConfig.ConnConfig.Database = os.Getenv("VULSCANO_DB_DATABASE_NAME")
+
+	poolConfig.ConnConfig.TLSConfig =
+		&tls.Config{
+			ServerName: os.Getenv("VULSCANO_DB_HOST"),
+			RootCAs:    certPool,
+		}
+
+	poolConfig.ConnConfig.DialFunc =
+		(&net.Dialer{
+			KeepAlive: 30 * time.Second,
+			Timeout:   10 * time.Second,
+		}).DialContext
+
+	// poolConfig.ConnConfig = &pgx.ConnConfig{Config: dbConnectConfig}
+
+	ConnPool, err = pgxpool.ConnectConfig(context.Background(), poolConfig)
 
 	if err != nil {
 		logging.VulscanoLog(
@@ -100,7 +140,7 @@ func init() {
 
 }
 
-func newDBPool(pool *pgx.ConnPool) *vulscanoDB {
+func newDBPool(pool *pgxpool.Pool) *vulscanoDB {
 
 	return &vulscanoDB{
 		db: pool,
@@ -115,7 +155,7 @@ func (p *vulscanoDB) displayPostgresVersion() string {
 
 	defer cancelQuery()
 
-	err := p.db.QueryRowEx(ctxTimeout, "SELECT version()", nil).Scan(&version)
+	err := p.db.QueryRow(ctxTimeout, "SELECT version()").Scan(&version)
 
 	if err != nil {
 		logging.VulscanoLog(

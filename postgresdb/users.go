@@ -30,7 +30,7 @@ func (p *vulscanoDB) FetchUser(u string) (*VulscanoDBUser, error) {
 
 	defer cancelQuery()
 
-	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, u)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, u)
 
 	err := row.Scan(&user.UserID, &user.Email, &user.EnterpriseID, &user.Role)
 
@@ -60,7 +60,7 @@ func (p *vulscanoDB) InsertNewUser(email string, pass string, ent string, role s
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, email, pass, ent, role)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, email, pass, ent, role)
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -95,7 +95,7 @@ func (p *vulscanoDB) DeleteUser(email string) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, email)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, email)
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -132,7 +132,7 @@ func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent strin
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil,
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery,
 		pPassword,
 		pEnterprise,
 		pRole,
@@ -165,7 +165,7 @@ func (p *vulscanoDB) FetchAllUsers() ([]VulscanoDBUser, error) {
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery)
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -212,7 +212,7 @@ func (p *vulscanoDB) AuthenticateUser(user string, pass string) (*VulscanoDBUser
 
 	defer cancelQuery()
 
-	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, user, pass)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, user, pass)
 
 	err := row.Scan(
 		&uDB.UserID,
@@ -235,7 +235,8 @@ func (p *vulscanoDB) AuthenticateUser(user string, pass string) (*VulscanoDBUser
 
 	default:
 		logging.VulscanoLog(
-			"error", "Error while authenticating user: ", user, err.Error())
+			"error",
+			fmt.Sprintf("error while authenticating user: %v error: %v", user, err.Error()))
 
 		return nil, fmt.Errorf("authentication failed for user %v", user)
 	}
@@ -256,7 +257,7 @@ func (p *vulscanoDB) AssertUserExists(id interface{}) bool {
 
 	defer cancelQuery()
 
-	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, id)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, id)
 
 	err := row.Scan(&u)
 

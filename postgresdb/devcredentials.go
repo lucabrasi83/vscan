@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 	"github.com/lucabrasi83/vulscano/logging"
 )
 
@@ -38,7 +38,7 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 
 	defer cancelQuery()
 
-	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, uid, cn)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, uid, cn)
 
 	err := row.Scan(
 		&deviceCreds.CredentialsName,
@@ -86,7 +86,7 @@ func (p *vulscanoDB) FetchAllUserDeviceCredentials(uid string) ([]DeviceCredenti
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, uid)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, uid)
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -134,7 +134,7 @@ func (p *vulscanoDB) DeleteDeviceCredentials(uid string, cn string) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, uid, cn)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, nil, uid, cn)
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -176,7 +176,7 @@ func (p *vulscanoDB) InsertNewDeviceCredentials(devCredsProps map[string]string)
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(
+	cTag, err := p.db.Exec(
 		ctxTimeout,
 		sqlQuery,
 		nil,
@@ -230,7 +230,7 @@ func (p *vulscanoDB) UpdateDeviceCredentials(devCredsProps map[string]string) er
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(
+	cTag, err := p.db.Exec(
 		ctxTimeout,
 		sqlQuery,
 		nil,

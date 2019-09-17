@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 	"github.com/lucabrasi83/vulscano/logging"
 )
 
@@ -36,7 +36,7 @@ func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB
 
 	defer cancelQuery()
 
-	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, entid, gw)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, pgpSymEncryptKey, entid, gw)
 
 	err := row.Scan(
 		&sshGw.GatewayName,
@@ -82,7 +82,7 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, entid)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, pgpSymEncryptKey, entid)
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -130,7 +130,7 @@ func (p *vulscanoDB) DeleteUserSSHGateway(entid string, gw string) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, entid, gw)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, entid, gw)
 
 	if err != nil {
 		logging.VulscanoLog("error",

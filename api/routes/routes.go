@@ -29,9 +29,7 @@ func LoadRoutes(routes *gin.Engine) {
 	// Prometheus Metrics Collection middleware
 	p := ginprometheus.NewPrometheus("gin")
 	p.MetricsPath = "/api/v1/metrics"
-	p.Use(routes)
-
-	// /api/v1 Routes group and associated handlers
+	p.UseWithAuth(routes, gin.Accounts{"metrics_admin": "metrics_admin"})
 
 	// Register JSON Web Token Middleware
 	jwtMiddleware := middleware.JwtConfigGenerate()
@@ -39,6 +37,7 @@ func LoadRoutes(routes *gin.Engine) {
 	// Short hand declaration for JWT Middleware
 	authWare := jwtMiddleware.MiddlewareFunc
 
+	// /api/v1 Routes group and associated handlers
 	apiV1 := routes.Group("/api/v1")
 	{
 		apiV1.POST("/login", jwtMiddleware.LoginHandler)

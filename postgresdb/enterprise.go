@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 	"github.com/lucabrasi83/vulscano/logging"
 )
 
@@ -26,7 +26,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery)
 
 	if err != nil {
 		logging.VulscanoLog("error", "cannot fetch list of enterprises: ", err.Error())
@@ -75,7 +75,7 @@ func (p *vulscanoDB) FetchEnterprise(entid string) (*EnterpriseDB, error) {
 
 	defer cancelQuery()
 
-	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, entid)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, entid)
 
 	err := row.Scan(
 		&ent.EnterpriseID,
@@ -111,7 +111,7 @@ func (p *vulscanoDB) InsertNewEnterprise(newEnt map[string]string) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, newEnt["entID"], newEnt["entName"])
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, newEnt["entID"], newEnt["entName"])
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -146,7 +146,7 @@ func (p *vulscanoDB) DeleteEnterprise(entid string) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, entid)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, entid)
 
 	if err != nil {
 		logging.VulscanoLog("error",

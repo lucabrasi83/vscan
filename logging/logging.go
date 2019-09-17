@@ -2,7 +2,6 @@
 package logging
 
 import (
-	"os"
 	"time"
 
 	"github.com/fatih/color"
@@ -25,8 +24,11 @@ var (
 //)
 
 func logToStdOut(level string, fields ...interface{}) {
+
 	var log = logrus.New()
-	log.Out = os.Stdout
+
+	log.SetReportCaller(true)
+
 	localTimezone, _ := time.Now().In(time.Local).Zone()
 
 	formatter := &prefixed.TextFormatter{

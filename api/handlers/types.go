@@ -34,7 +34,7 @@ type ScanResults struct {
 
 // PingAPIResponse struct represents the JSON Body Response for API Health Check
 type PingAPIResponse struct {
-	ReplyBack       string `json:"pong" example:"I'm Alive"`
+	ReplyBack       string `json:"ping" example:"I'm Alive"`
 	VulscanoVersion string `json:"version" example:"0.2.1"`
 	GolangVersion   string `json:"golangRuntime" example:"1.11.5"`
 }

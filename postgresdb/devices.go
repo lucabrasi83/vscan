@@ -32,7 +32,7 @@ func (p *vulscanoDB) FetchAllDevices() ([]DeviceVADB, error) {
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery)
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -84,7 +84,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) ([]Device
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, vuln, pEnt)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, vuln, pEnt)
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -149,7 +149,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) ([]Device
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, cve, pEnt)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, cve, pEnt)
 
 	if err != nil {
 		logging.VulscanoLog("error",
@@ -212,7 +212,7 @@ func (p *vulscanoDB) UserGetDevVAResultsByCVE(cve string, ent string) ([]DeviceV
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, cve, ent)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, cve, ent)
 
 	if err != nil {
 		logging.VulscanoLog("error",

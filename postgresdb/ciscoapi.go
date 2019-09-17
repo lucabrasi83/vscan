@@ -2,11 +2,12 @@ package postgresdb
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx"
+	"github.com/jackc/pgx/v4"
 	"github.com/lucabrasi83/vulscano/logging"
 	"github.com/lucabrasi83/vulscano/openvulnapi"
 )
@@ -32,7 +33,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	}
 
 	// Set Query timeout
-	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), longQueryTimeout)
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
 	// SQL Statement to insert all Cisco advisories Metadata from openVuln API
 	// If Cisco Advisory ID already exists, we just update it with fields returned by Cisco openVuln API
@@ -54,17 +55,19 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	defer cancelQuery()
 
 	// Prepare SQL Statement in DB for Batch
-	_, err = p.db.Prepare("insert_all_cisco_advisories", sqlQuery)
+	//_, err = p.db.Prepare("insert_all_cisco_advisories", sqlQuery)
+	//
+	//if err != nil {
+	//	logging.VulscanoLog(
+	//		"error",
+	//		"Failed to prepare Batch statement: ",
+	//		err.Error())
+	//	return err
+	//}
 
-	if err != nil {
-		logging.VulscanoLog(
-			"error",
-			"Failed to prepare Batch statement: ",
-			err.Error())
-		return err
-	}
+	b := &pgx.Batch{}
 
-	b := p.db.BeginBatch()
+	// b := p.db.BeginBatch()
 
 	for _, adv := range allSA {
 
@@ -94,22 +97,23 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 		// Convert openVuln API Time string to type Time
 		timeStamps, _ := time.Parse(time.RFC3339, formattedTime)
 
-		b.Queue("insert_all_cisco_advisories",
-			[]interface{}{
-				strings.TrimSpace(adv.AdvisoryID),
-				adv.AdvisoryTitle,
-				timeStamps,
-				adv.BugID,
-				adv.CVE,
-				adv.SecurityImpactRating,
-				cvssScoreFloat,
-				adv.PublicationURL,
-			},
-			nil, nil)
+		b.Queue(sqlQuery,
+			strings.TrimSpace(adv.AdvisoryID),
+			adv.AdvisoryTitle,
+			timeStamps,
+			adv.BugID,
+			adv.CVE,
+			adv.SecurityImpactRating,
+			cvssScoreFloat,
+			adv.PublicationURL,
+		)
 	}
 
 	// Send Batch SQL Query
-	errSendBatch := b.Send(ctxTimeout, nil)
+	// errSendBatch := b.Send(ctxTimeout, nil)
+	r := p.db.SendBatch(ctxTimeout, b)
+	c, errSendBatch := r.Exec()
+
 	if errSendBatch != nil {
 		logging.VulscanoLog(
 			"error",
@@ -120,8 +124,12 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 
 	}
 
+	if c.RowsAffected() < 1 {
+		return fmt.Errorf("no insertion of row while executing query %v", sqlQuery)
+	}
+
 	// Execute Batch SQL Query
-	errExecBatch := b.Close()
+	errExecBatch := r.Close()
 	if errExecBatch != nil {
 		logging.VulscanoLog(
 			"error",
@@ -151,7 +159,7 @@ func (p *vulscanoDB) FetchCiscoSAMeta(sa string) *openvulnapi.VulnMetadata {
 
 	defer cancelQuery()
 
-	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, sa)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, sa)
 
 	err := row.Scan(
 		&saMetaDB.AdvisoryTitle,
@@ -198,30 +206,31 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	defer cancelQuery()
 
 	// Prepare SQL Statement in DB for Batch
-	_, err := p.db.Prepare("update_device_suggested_sw", sqlQuery)
+	//_, err := p.db.Prepare("update_device_suggested_sw", sqlQuery)
+	//if err != nil {
+	//	logging.VulscanoLog(
+	//		"error",
+	//		"Failed to prepare Batch statement: ",
+	//		err.Error())
+	//	return err
+	//}
 
-	if err != nil {
-		logging.VulscanoLog(
-			"error",
-			"Failed to prepare Batch statement: ",
-			err.Error())
-		return err
-	}
-
-	b := p.db.BeginBatch()
-
+	// b := p.db.BeginBatch()
+	b := &pgx.Batch{}
 	for _, d := range devSW {
 
-		b.Queue("update_device_suggested_sw",
-			[]interface{}{
-				d["suggestedVersion"],
-				d["deviceID"],
-			},
-			nil, nil)
+		b.Queue(sqlQuery,
+			d["suggestedVersion"],
+			d["deviceID"],
+		)
 	}
 
 	// Send Batch SQL Query
-	errSendBatch := b.Send(ctxTimeout, nil)
+
+	r := p.db.SendBatch(ctxTimeout, b)
+	_, errSendBatch := r.Exec()
+
+	//errSendBatch := b.Send(ctxTimeout, nil)
 	if errSendBatch != nil {
 		logging.VulscanoLog(
 			"error",
@@ -233,7 +242,8 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	}
 
 	// Execute Batch SQL Query
-	errExecBatch := b.Close()
+
+	errExecBatch := r.Close()
 	if errExecBatch != nil {
 		logging.VulscanoLog(
 			"error",
@@ -263,17 +273,19 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 	defer cancelQuery()
 
 	// Prepare SQL Statement in DB for Batch
-	_, err := p.db.Prepare("update_device_amc_coverage", sqlQuery)
+	//_, err := p.db.Prepare("update_device_amc_coverage", sqlQuery)
+	//
+	//if err != nil {
+	//	logging.VulscanoLog(
+	//		"error",
+	//		"Failed to prepare Batch statement: ",
+	//		err.Error())
+	//	return err
+	//}
 
-	if err != nil {
-		logging.VulscanoLog(
-			"error",
-			"Failed to prepare Batch statement: ",
-			err.Error())
-		return err
-	}
+	// b := p.db.BeginBatch()
 
-	b := p.db.BeginBatch()
+	b := &pgx.Batch{}
 
 	// Map to convert coverage status "YES" / "NO" to boolean
 	strToBoolMap := map[string]bool{
@@ -285,21 +297,22 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 
 		t, _ := time.Parse("2006-01-02", d["serviceContractEndDate"])
 
-		b.Queue("update_device_amc_coverage",
-			[]interface{}{
-				d["serialNumber"],
-				normalizeString(d["productID"]),
-				strToBoolMap[d["serviceContractAssociated"]],
-				normalizeString(d["serviceContractDescription"]),
-				normalizeString(d["serviceContractNumber"]),
-				t,
-				normalizeString(d["serviceContractSiteCountry"]),
-			},
-			nil, nil)
+		b.Queue(sqlQuery,
+			d["serialNumber"],
+			normalizeString(d["productID"]),
+			strToBoolMap[d["serviceContractAssociated"]],
+			normalizeString(d["serviceContractDescription"]),
+			normalizeString(d["serviceContractNumber"]),
+			t,
+			normalizeString(d["serviceContractSiteCountry"]),
+		)
 	}
 
 	// Send Batch SQL Query
-	errSendBatch := b.Send(ctxTimeout, nil)
+	// errSendBatch := b.Send(ctxTimeout, nil)
+	r := p.db.SendBatch(ctxTimeout, b)
+	c, errSendBatch := r.Exec()
+
 	if errSendBatch != nil {
 		logging.VulscanoLog(
 			"error",
@@ -310,8 +323,12 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 
 	}
 
+	if c.RowsAffected() < 1 {
+		return fmt.Errorf("no insertion of row while executing query %v", sqlQuery)
+	}
+
 	// Execute Batch SQL Query
-	errExecBatch := b.Close()
+	errExecBatch := r.Close()
 	if errExecBatch != nil {
 		logging.VulscanoLog(
 			"error",
