@@ -15,9 +15,6 @@ require (
 	github.com/go-redis/redis v6.15.2+incompatible
 	github.com/gogo/protobuf v1.1.1
 	github.com/golang/protobuf v1.3.2 // indirect
-	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
-	github.com/jackc/pgconn v1.0.0
-	github.com/jackc/pgx v3.3.0+incompatible
 	github.com/jackc/pgx/v4 v4.0.0
 	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect

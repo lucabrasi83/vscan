@@ -1099,6 +1099,8 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 // integrations
 func RefreshInventoryCache(c *gin.Context) {
 	inventorymgr.BuildDevicesInventory()
+
+	c.JSON(http.StatusOK, gin.H{"reply": "request to rebuild inventory cache submitted."})
 }
 
 // FetchCiscoAMCStatus is the function that will interact with Cisco SN2INFO API and update Cisco CPE inventories
