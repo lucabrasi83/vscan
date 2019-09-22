@@ -1,4 +1,4 @@
-# Vulscano
+# VSCAN
 
 
 [![Build Status](https://travis-ci.com/lucabrasi83/vulscano.svg?token=Rjzx1thyrVmqNDLuUZ1P&branch=master)](https://travis-ci.com/lucabrasi83/vulscano)
@@ -6,18 +6,22 @@
 [![Docker Automated](https://img.shields.io/docker/automated/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/)
 [![Docker Build](https://img.shields.io/docker/build/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/builds/)
 [![Microbadger](https://img.shields.io/microbadger/image-size/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/tags/)
-[![GolangCI](https://golangci.com/badges/github.com/lucabrasi83/vulscano.svg)](https://golangci.com/r/github.com/lucabrasi83/vulscano)
-[![godoc](https://docstand.rocro.com/badges/github.com/lucabrasi83/vulscano/documentation/godoc?token=xwzHrjcWq5_ajaRHXPPzhY1agb3ZF1Sx-12hCBRUJAc&branch=master)](https://docstand.rocro.com/docs/github.com/lucabrasi83/vulscano/branch/master/godoc/github.com/lucabrasi83/vulscano/)
+[![GolangCI](https://golangci.com/badges/github.com/lucabrasi83/vscan.svg)](https://golangci.com/r/github.com/lucabrasi83/vscan)
+[![godoc](https://docstand.rocro.com/badges/github.com/lucabrasi83/vscan/documentation/godoc?token
+=xwzHrjcWq5_ajaRHXPPzhY1agb3ZF1Sx-12hCBRUJAc&branch=master)](https://docstand.rocro.com/docs/github.com/lucabrasi83
+/vscan
+/branch/master/godoc/github.com/lucabrasi83/vscan/)
 
 #   
 
 <p align="center">
-<img align="center" src ="https://github.com/lucabrasi83/vulscano/blob/master/logo/vulscano_logo.png?raw=true" />
+<img align="center" src ="https://github.com/lucabrasi83/vscan/blob/master/logo/vulscano_logo.png?raw=true" />
 </p>
 
 #   
 
-Vulscano is a TATA Communications developed application that handles Vulnerability Scanning and Reporting for Cisco IOS/IOS-XE devices.
+VSCAN is a TATA Communications developed application that handles Vulnerability Scanning and Reporting for Cisco IOS/IOS
+-XE devices.
 
 It allows you to request on-demand Vulnerability Assessment on a particular device through a simple API.
 
@@ -50,7 +54,7 @@ Container is the core of Vulscano infrastructure and therefore following softwar
 
 1. Clone the repo: 
 ```sh
-$ git clone https://github.com/lucabrasi83/vulscano.git
+$ git clone https://github.com/lucabrasi83/vscan.git
 ```
 2. Navigate to the repo:
 ```sh

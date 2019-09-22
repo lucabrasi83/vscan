@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 func (p *vulscanoDB) PersistScanJobReport(args ...interface{}) error {
@@ -140,7 +140,7 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 	//_, err := p.db.Prepare("insert_device_va_report", sqlQueryDeviceReport)
 	//
 	//if err != nil {
-	//	logging.VulscanoLog(
+	//	logging.VSCANLog(
 	//		"error",
 	//		"Failed to prepare Batch statement: ",
 	//		err.Error())
@@ -175,7 +175,7 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 	c, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to send Batch query: ",
 			errSendBatch.Error())
@@ -191,7 +191,7 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 	// Execute Batch SQL Query
 	errExecBatch := r.Close()
 	if errExecBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to execute Batch query: ",
 			errExecBatch.Error())
@@ -229,7 +229,7 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 	c, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to send Batch query: ",
 			errSendBatch.Error())
@@ -245,7 +245,7 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 	// Execute Batch SQL Query
 	errExecBatch := r.Close()
 	if errExecBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to execute Batch query: ",
 			errExecBatch.Error())

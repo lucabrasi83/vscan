@@ -3,8 +3,8 @@ package handlers
 import (
 	"time"
 
-	"github.com/lucabrasi83/vulscano/inventorymgr"
-	"github.com/lucabrasi83/vulscano/postgresdb"
+	"github.com/lucabrasi83/vscan/inventorymgr"
+	"github.com/lucabrasi83/vscan/postgresdb"
 )
 
 // SchedulerBatchJobs will execute batch jobs at the specifier ticker interval

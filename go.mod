@@ -1,4 +1,4 @@
-module github.com/lucabrasi83/vulscano
+module github.com/lucabrasi83/vscan
 
 go 1.12
 

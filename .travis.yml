@@ -19,10 +19,10 @@ install: true
 
 script:
   - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 
-    go build -a -ldflags="-X github.com/lucabrasi83/vulscano/initializer.Commit=$(git rev-parse --short HEAD) 
-    -X github.com/lucabrasi83/vulscano/initializer.Version=$(git describe --tags) 
-    -X github.com/lucabrasi83/vulscano/initializer.BuiltAt=$(date +%FT%T%z) 
-    -X github.com/lucabrasi83/vulscano/initializer.BuiltOn=$(hostname)" -o vulscano
+    go build -a -ldflags="-X github.com/lucabrasi83/vscan/initializer.Commit=$(git rev-parse --short HEAD)
+    -X github.com/lucabrasi83/vscan/initializer.Version=$(git describe --tags)
+    -X github.com/lucabrasi83/vscan/initializer.BuiltAt=$(date +%FT%T%z)
+    -X github.com/lucabrasi83/vscan/initializer.BuiltOn=$(hostname)" -o vscan
 
   - go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 

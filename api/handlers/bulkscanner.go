@@ -7,13 +7,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/inventorymgr"
-	"github.com/lucabrasi83/vulscano/rediscache"
+	"github.com/lucabrasi83/vscan/inventorymgr"
+	"github.com/lucabrasi83/vscan/rediscache"
 
-	"github.com/lucabrasi83/vulscano/postgresdb"
+	"github.com/lucabrasi83/vscan/postgresdb"
 
-	"github.com/lucabrasi83/vulscano/hashgen"
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/lucabrasi83/vscan/hashgen"
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 // DeviceScanner interface provides abstraction for multi-vendor scan.
@@ -57,7 +57,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	// We Generate a Scan Job ID from HashGen library
 	jobID, errHash := hashgen.GenHash()
 	if errHash != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Error when generating hash: ", errHash.Error())
 
@@ -82,7 +82,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 		)
 
 		if errJobInsertDB != nil {
-			logging.VulscanoLog(
+			logging.VSCANLog(
 				"error",
 				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
 		}
@@ -240,7 +240,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 
 			anutaDev, err := inventorymgr.GetAnutaDevice(dv)
 			if err != nil {
-				logging.VulscanoLog("error",
+				logging.VSCANLog("error",
 					err.Error(),
 				)
 				skippedScannedDevices = append(skippedScannedDevices, dv)
@@ -249,7 +249,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 
 			// Don't waste resources trying to scan an offline device
 			if anutaDev.Status != "ONLINE" {
-				logging.VulscanoLog("warning",
+				logging.VSCANLog("warning",
 					"Skipping Anuta device "+anutaDev.DeviceName+" Scan Request as it is currently offline",
 				)
 				skippedScannedDevices = append(skippedScannedDevices, anutaDev.DeviceName)
@@ -265,7 +265,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 			// Filter Devices if OS Type Requested is different than Device
 			// This is to avoid false positive VA results and load the right OVAL definitions
 			if osType != d.OSType {
-				logging.VulscanoLog("warning",
+				logging.VSCANLog("warning",
 					"Skipping Anuta device "+anutaDev.DeviceName+" Scan Request as OSType requested "+d.
 						OSType+" does not match with device "+dv)
 
@@ -336,7 +336,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 	err = deviceBulkVAReportDB(VABulkRes)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"Error while inserting Device VA Report into DB: ", err.Error())
 		return nil, err
 	}

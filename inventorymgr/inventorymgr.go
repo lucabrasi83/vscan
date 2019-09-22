@@ -1,7 +1,7 @@
 // Package inventorymgr contains functions to interact with different device inventories supported by VSCAN
 package inventorymgr
 
-import "github.com/lucabrasi83/vulscano/logging"
+import "github.com/lucabrasi83/vscan/logging"
 
 // BuildDeviceInventoryCache is going to create a Hash Map Key for each device in the integrated inventories
 func BuildDevicesInventory() {
@@ -9,10 +9,10 @@ func BuildDevicesInventory() {
 	err := buildAnutaInventoryCache()
 
 	if err != nil {
-		logging.VulscanoLog("failed to build cache for Anuta NCX devices inventory", err)
+		logging.VSCANLog("failed to build cache for Anuta NCX devices inventory", err)
 		return
 	}
-	logging.VulscanoLog("info",
+	logging.VSCANLog("info",
 		"Synchronization task of Devices Inventory backend with VSCAN cache has completed")
 
 }

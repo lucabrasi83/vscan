@@ -13,11 +13,11 @@ import (
 	"sync"
 	"time"
 
-	agentpb "github.com/lucabrasi83/vulscano/api/proto"
-	"github.com/lucabrasi83/vulscano/datadiros"
-	"github.com/lucabrasi83/vulscano/logging"
-	"github.com/lucabrasi83/vulscano/openvulnapi"
-	"github.com/lucabrasi83/vulscano/postgresdb"
+	agentpb "github.com/lucabrasi83/vscan/api/proto"
+	"github.com/lucabrasi83/vscan/datadiros"
+	"github.com/lucabrasi83/vscan/logging"
+	"github.com/lucabrasi83/vscan/openvulnapi"
+	"github.com/lucabrasi83/vscan/postgresdb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -59,7 +59,7 @@ func agentConnection() (agentpb.VscanAgentServiceClient, error) {
 	conn, err = grpc.Dial(os.Getenv("VSCAN_AGENT_HOST")+":"+vscanAgentPort, grpc.WithTransportCredentials(tlsCredentials))
 
 	if err != nil {
-		logging.VulscanoLog("fatal", "unable to dial VSCAN Agent GRPC server: ", err)
+		logging.VSCANLog("fatal", "unable to dial VSCAN Agent GRPC server: ", err)
 	}
 
 	c := agentpb.NewVscanAgentServiceClient(conn)
@@ -166,7 +166,7 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 				jobID, err)
 		}
 
-		logging.VulscanoLog("info",
+		logging.VSCANLog("info",
 			fmt.Sprintf("Agent %v - Scan Job ID %v - received file stream for device %v\n",
 				resStream.GetVscanAgentName(), jobID, resStream.GetDeviceName()))
 
@@ -179,7 +179,7 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 			err = parseGRPCBulkScanReport(bsr, jobID, resStream.GetScanResultsJson())
 
 			if err != nil {
-				logging.VulscanoLog(
+				logging.VSCANLog(
 
 					"error",
 					"unable to parse scan results for device ", resStream.GetDeviceName(), " during Job ID ", jobID,
@@ -392,8 +392,8 @@ func clientCertLoad() (credentials.TransportCredentials, error) {
 	// Load the certificates from disk
 
 	certificate, errCert := tls.LoadX509KeyPair(
-		filepath.FromSlash(datadiros.GetDataDir()+"/certs/vulscano.pem"),
-		filepath.FromSlash(datadiros.GetDataDir()+"/certs/vulscano.key"))
+		filepath.FromSlash(datadiros.GetDataDir()+"/certs/vscan.pem"),
+		filepath.FromSlash(datadiros.GetDataDir()+"/certs/vscan.key"))
 
 	if errCert != nil {
 		return nil, fmt.Errorf("error while loading VSCAN agent client certificate: %v", errCert)

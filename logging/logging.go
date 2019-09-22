@@ -1,4 +1,4 @@
-// Package logging handles logging to StdOut and Writer vulscano.log
+// Package logging handles logging to StdOut and Writer vscan.log
 package logging
 
 import (
@@ -61,7 +61,7 @@ func logToStdOut(level string, fields ...interface{}) {
 	}
 
 }
-func VulscanoLog(level string, fields ...interface{}) {
+func VSCANLog(level string, fields ...interface{}) {
 
 	logToStdOut(level, fields...)
 }

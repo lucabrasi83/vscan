@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lucabrasi83/vulscano/api/handlers"
-	"github.com/lucabrasi83/vulscano/api/middleware"
+	"github.com/lucabrasi83/vscan/api/handlers"
+	"github.com/lucabrasi83/vscan/api/middleware"
 	"github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	ginprometheus "github.com/zsais/go-gin-prometheus"

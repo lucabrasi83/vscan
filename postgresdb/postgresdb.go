@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
-	_ "github.com/lucabrasi83/vulscano/initializer" // Import for correct init functions order
-	"github.com/lucabrasi83/vulscano/logging"
+	_ "github.com/lucabrasi83/vscan/initializer" // Import for correct init functions order
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 // ConnPool represents the Connection Pool instance
@@ -37,28 +37,28 @@ func init() {
 
 	// Check Environment Variables for Postgres DB Credentials
 	if os.Getenv("VULSCANO_DB_USERNAME") == "" || os.Getenv("VULSCANO_DB_PASSWORD") == "" {
-		logging.VulscanoLog("fatal",
+		logging.VSCANLog("fatal",
 			"Missing Environment Variable(s) for PostgresDB Connection not set ",
 			"(VULSCANO_DB_USERNAME / VULSCANO_DB_PASSWORD)")
 	}
 
 	// Check Environment Variables for Postgres Hostname
 	if os.Getenv("VULSCANO_DB_HOST") == "" {
-		logging.VulscanoLog("fatal",
+		logging.VSCANLog("fatal",
 			"Missing Environment Variable for PostgresDB Hostname ",
 			"VULSCANO_DB_HOST")
 	}
 
 	// Check Environment Variables for Postgres Database Name
 	if os.Getenv("VULSCANO_DB_DATABASE_NAME") == "" {
-		logging.VulscanoLog("fatal",
+		logging.VSCANLog("fatal",
 			"Missing Environment Variable for PostgresDB Database Name ",
 			"VULSCANO_DB_DATABASE_NAME")
 	}
 
 	// Check Environment Variables for Secret Key
 	if os.Getenv("VSCAN_SECRET_KEY") == "" {
-		logging.VulscanoLog("fatal",
+		logging.VSCANLog("fatal",
 			"Missing Environment Variable for Data encryption secret key ",
 			"VSCAN_SECRET_KEY")
 	}
@@ -88,7 +88,7 @@ func init() {
 	poolConfig, errParsePool := pgxpool.ParseConfig("")
 
 	if errParsePool != nil {
-		logging.VulscanoLog("fatal", fmt.Sprintf("failed to parse DB pool config %v", errParsePool))
+		logging.VSCANLog("fatal", fmt.Sprintf("failed to parse DB pool config %v", errParsePool))
 	}
 
 	//connPoolConfig = pgxpool.Config{
@@ -123,12 +123,12 @@ func init() {
 	ConnPool, err = pgxpool.ConnectConfig(context.Background(), poolConfig)
 
 	if err != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"fatal",
 			"Unable to Create Postgres Connection Pool: ",
 			err.Error())
 	} else {
-		logging.VulscanoLog("info", "Database Connection Pool successfully created")
+		logging.VSCANLog("info", "Database Connection Pool successfully created")
 	}
 
 	// Instantiate DB object after successful connection
@@ -136,7 +136,7 @@ func init() {
 
 	postgresVersion := DBInstance.displayPostgresVersion()
 
-	logging.VulscanoLog("info", "Postgres SQL Version: ", postgresVersion)
+	logging.VSCANLog("info", "Postgres SQL Version: ", postgresVersion)
 
 }
 
@@ -158,7 +158,7 @@ func (p *vulscanoDB) displayPostgresVersion() string {
 	err := p.db.QueryRow(ctxTimeout, "SELECT version()").Scan(&version)
 
 	if err != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to retrieve Postgres Version: ",
 			err.Error())

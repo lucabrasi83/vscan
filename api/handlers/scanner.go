@@ -8,14 +8,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/inventorymgr"
-	"github.com/lucabrasi83/vulscano/rediscache"
+	"github.com/lucabrasi83/vscan/inventorymgr"
+	"github.com/lucabrasi83/vscan/rediscache"
 
-	"github.com/lucabrasi83/vulscano/postgresdb"
+	"github.com/lucabrasi83/vscan/postgresdb"
 
-	"github.com/lucabrasi83/vulscano/hashgen"
-	"github.com/lucabrasi83/vulscano/logging"
-	"github.com/lucabrasi83/vulscano/openvulnapi"
+	"github.com/lucabrasi83/vscan/hashgen"
+	"github.com/lucabrasi83/vscan/logging"
+	"github.com/lucabrasi83/vscan/openvulnapi"
 )
 
 // scannedDevices slice stores devices currently undergoing a Vulnerability Assessment
@@ -78,7 +78,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	// We Generate a Scan Job ID from HashGen library
 	jobID, errHash := hashgen.GenHash()
 	if errHash != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Error when generating hash: ", errHash.Error())
 
@@ -104,7 +104,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		)
 
 		if errJobInsertDB != nil {
-			logging.VulscanoLog(
+			logging.VSCANLog(
 				"error",
 				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
 		}
@@ -211,7 +211,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		)
 
 		if err != nil {
-			logging.VulscanoLog(
+			logging.VSCANLog(
 				"error",
 				"Failed to fetch vulnerability fixed versions from openVulnAPI for Version: ",
 				dev.OSVersion,
@@ -251,7 +251,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 	anutaDev, errAnuta := inventorymgr.GetAnutaDevice(d.DeviceID)
 
 	if errAnuta != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"Error while fetching device inventory details from Anuta NCX: ", errAnuta.Error())
 		return nil, errAnuta
 
@@ -259,7 +259,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 
 	// Don't waste resources trying to scan an offline device
 	if anutaDev.Status != "ONLINE" {
-		logging.VulscanoLog("error", "Anuta device "+anutaDev.DeviceName+
+		logging.VSCANLog("error", "Anuta device "+anutaDev.DeviceName+
 			" scan request aborted as device is currently marked as offline")
 
 		return nil, fmt.Errorf("device %v currently marked as offline in Anuta inventory", anutaDev.DeviceName)
@@ -331,7 +331,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 	err = deviceVAReportDB(&anutaScannedDev, scanRes)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"Error while inserting Device VA Report into DB: ", err.Error())
 		return nil, err
 	}
@@ -406,7 +406,7 @@ func isDeviceBeingScanned(d string) bool {
 	cacheScannedDev, err := rediscache.CacheStore.LRangeScannedDevices()
 
 	if err != nil {
-		logging.VulscanoLog("error", "unable to get the list of current scanned device: ", err.Error())
+		logging.VSCANLog("error", "unable to get the list of current scanned device: ", err.Error())
 	}
 
 	sort.Strings(cacheScannedDev)

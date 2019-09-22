@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/lucabrasi83/vscan/logging"
 	"github.com/shirou/gopsutil/load"
 )
 
@@ -36,7 +36,7 @@ func APILoadControl() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		if maxLoad >= maxLoadLimit {
-			logging.VulscanoLog("error",
+			logging.VSCANLog("error",
 				"Request from "+c.ClientIP()+" rejected due to high system load.",
 				" Current 5 minutes Average System Load at "+strconv.FormatFloat(currentLoad, 'f', 2, 64),
 			)

@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 type DeviceVADB struct {
@@ -35,7 +35,7 @@ func (p *vulscanoDB) FetchAllDevices() ([]DeviceVADB, error) {
 	rows, err := p.db.Query(ctxTimeout, sqlQuery)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"cannot fetch Devices from DB: ", err.Error(),
 		)
 		return nil, err
@@ -48,7 +48,7 @@ func (p *vulscanoDB) FetchAllDevices() ([]DeviceVADB, error) {
 		err = rows.Scan(&dev.DeviceID, &dev.SerialNumber)
 
 		if err != nil {
-			logging.VulscanoLog("error",
+			logging.VSCANLog("error",
 				"error while scanning device_va_results table rows: ", err.Error())
 			return nil, err
 		}
@@ -56,7 +56,7 @@ func (p *vulscanoDB) FetchAllDevices() ([]DeviceVADB, error) {
 	}
 	err = rows.Err()
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"error returned while iterating through device_va_results table: ", err.Error())
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) ([]Device
 	rows, err := p.db.Query(ctxTimeout, sqlQuery, vuln, pEnt)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"cannot fetch Vulnerabilities affecting device from DB: ", err.Error(),
 		)
 		return nil, err
@@ -112,7 +112,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) ([]Device
 		)
 
 		if err != nil {
-			logging.VulscanoLog("error",
+			logging.VSCANLog("error",
 				"error while scanning device_va_results table rows: ", err.Error())
 			return nil, err
 		}
@@ -120,7 +120,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsBySA(vuln string, ent string) ([]Device
 	}
 	err = rows.Err()
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"error returned while fetching vulnerabilities affecting device: ", err.Error())
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) ([]Device
 	rows, err := p.db.Query(ctxTimeout, sqlQuery, cve, pEnt)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"cannot fetch Vulnerabilities affecting device from DB: ", err.Error(),
 		)
 		return nil, err
@@ -177,7 +177,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) ([]Device
 		)
 
 		if err != nil {
-			logging.VulscanoLog("error",
+			logging.VSCANLog("error",
 				"error while scanning device_va_results table rows: ", err.Error())
 			return nil, err
 		}
@@ -185,7 +185,7 @@ func (p *vulscanoDB) AdminGetDevVAResultsByCVE(cve string, ent string) ([]Device
 	}
 	err = rows.Err()
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"error returned while fetching vulnerabilities affecting device: ", err.Error())
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (p *vulscanoDB) UserGetDevVAResultsByCVE(cve string, ent string) ([]DeviceV
 	rows, err := p.db.Query(ctxTimeout, sqlQuery, cve, ent)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"cannot fetch Vulnerabilities affecting device from DB: ", err.Error(),
 		)
 		return nil, err
@@ -240,7 +240,7 @@ func (p *vulscanoDB) UserGetDevVAResultsByCVE(cve string, ent string) ([]DeviceV
 		)
 
 		if err != nil {
-			logging.VulscanoLog("error",
+			logging.VSCANLog("error",
 				"error while scanning device_va_results table rows: ", err.Error())
 			return nil, err
 		}
@@ -248,7 +248,7 @@ func (p *vulscanoDB) UserGetDevVAResultsByCVE(cve string, ent string) ([]DeviceV
 	}
 	err = rows.Err()
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"error returned while fetching vulnerabilities affecting device: ", err.Error())
 		return nil, err
 	}

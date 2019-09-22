@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/go-redis/redis"
-	_ "github.com/lucabrasi83/vulscano/initializer" // Import for correct init functions order
-	"github.com/lucabrasi83/vulscano/logging"
+	_ "github.com/lucabrasi83/vscan/initializer" // Import for correct init functions order
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 type vscanCache struct {
@@ -23,7 +23,7 @@ const (
 func init() {
 
 	if os.Getenv("VSCAN_REDIS_HOST") == "" {
-		logging.VulscanoLog("fatal", "Environment Variable VSCAN_REDIS_HOST not set")
+		logging.VSCANLog("fatal", "Environment Variable VSCAN_REDIS_HOST not set")
 	}
 
 	// Set Redis Client options
@@ -41,11 +41,11 @@ func init() {
 	// Verify Redis is UP and Running
 	_, err := CacheStore.cacheStoreClient.Ping().Result()
 	if err != nil {
-		logging.VulscanoLog("fatal",
+		logging.VSCANLog("fatal",
 			"Failed to connect to Redis instance ", err.Error())
 	}
 
-	logging.VulscanoLog("info", "Redis Cache Store connection pool successfully established")
+	logging.VSCANLog("info", "Redis Cache Store connection pool successfully established")
 
 }
 
@@ -59,7 +59,7 @@ func (p *vscanCache) CloseCacheConn() {
 	err := p.cacheStoreClient.Close()
 
 	if err != nil {
-		logging.VulscanoLog("error", "failed to close Redis Cache Store connection: ", err)
+		logging.VSCANLog("error", "failed to close Redis Cache Store connection: ", err)
 	}
 }
 func (p *vscanCache) LPushScannedDevicesIP(dev ...string) error {
@@ -74,7 +74,7 @@ func (p *vscanCache) LRemScannedDevicesIP(dev ...string) {
 		err := p.cacheStoreClient.LRem(ongoingScannedDevicesKey, 0, d).Err()
 
 		if err != nil {
-			logging.VulscanoLog("error", "failed to remove device with IP "+d+"from cacheStoreClient list")
+			logging.VSCANLog("error", "failed to remove device with IP "+d+"from cacheStoreClient list")
 		}
 	}
 }
@@ -95,7 +95,7 @@ func (p *vscanCache) CheckCacheEntryExists(dev string) (bool, error) {
 	entry, err := p.cacheStoreClient.HGetAll(dev).Result()
 
 	if err != nil {
-		logging.VulscanoLog("error", "failed to check cache entry for device ", dev, err)
+		logging.VSCANLog("error", "failed to check cache entry for device ", dev, err)
 
 		return false, err
 	}

@@ -8,21 +8,21 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v4"
-	"github.com/lucabrasi83/vulscano/logging"
-	"github.com/lucabrasi83/vulscano/openvulnapi"
+	"github.com/lucabrasi83/vscan/logging"
+	"github.com/lucabrasi83/vscan/openvulnapi"
 )
 
 // insertAllCiscoAdvisories will fetch all Cisco published security advisories and store them in the DB
 func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 
-	logging.VulscanoLog(
+	logging.VSCANLog(
 		"info",
 		"Fetching all published Cisco Security Advisories...")
 
 	allSA, err := openvulnapi.GetAllVulnMetaData()
 
 	if err != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to retrieve all Cisco Advisories from openVuln API: ",
 			err.Error())
@@ -64,7 +64,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 			cvssScoreFloat, errFloatConver = strconv.ParseFloat(adv.CVSSBaseScore, 2)
 
 			if errFloatConver != nil {
-				logging.VulscanoLog(
+				logging.VSCANLog(
 					"error",
 					"Failed to Convert CVSS Score String to Float for advisory: ",
 					adv.AdvisoryID,
@@ -99,7 +99,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	c, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to send Batch query: ",
 			errSendBatch.Error())
@@ -115,14 +115,14 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	// Execute Batch SQL Query
 	errExecBatch := r.Close()
 	if errExecBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to execute Batch query: ",
 			errExecBatch.Error())
 
 		return errExecBatch
 	}
-	logging.VulscanoLog("info", "Successfully synchronized Cisco openVuln API with local vulnerabilities database")
+	logging.VSCANLog("info", "Successfully synchronized Cisco openVuln API with local vulnerabilities database")
 	return nil
 }
 
@@ -157,7 +157,7 @@ func (p *vulscanoDB) FetchCiscoSAMeta(sa string) *openvulnapi.VulnMetadata {
 
 	switch err {
 	case pgx.ErrNoRows:
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"No entries found for Cisco Security Advisory ", sa)
 
@@ -172,7 +172,7 @@ func (p *vulscanoDB) FetchCiscoSAMeta(sa string) *openvulnapi.VulnMetadata {
 		return &saMetaDB
 
 	default:
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error", "Error while fetching Cisco SA metadata for ", sa, err.Error())
 	}
 
@@ -205,7 +205,7 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	_, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to send Batch query: ",
 			errSendBatch.Error())
@@ -218,7 +218,7 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 
 	errExecBatch := r.Close()
 	if errExecBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to execute Batch query: ",
 			errExecBatch.Error())
@@ -273,7 +273,7 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 	c, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to send Batch query: ",
 			errSendBatch.Error())
@@ -289,7 +289,7 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 	// Execute Batch SQL Query
 	errExecBatch := r.Close()
 	if errExecBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to execute Batch query: ",
 			errExecBatch.Error())

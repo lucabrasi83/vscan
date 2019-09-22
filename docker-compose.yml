@@ -4,11 +4,11 @@ version: "3.7"
 services:
     # Vulscano API Core
     vulscano-core:
-       image: tatacomm/vulscano:beta
+       image: tatacomm/vscan:beta
        restart: always
        stdin_open: true
        tty: true
-       hostname: vulscano-core
+       hostname: vscan-core
        depends_on:
             - vulscano-db
        environment:
@@ -27,7 +27,7 @@ services:
             - VSCAN_REDIS_PASSWORD=${VSCAN_REDIS_PASSWORD}
             - VSCAN_SECRET_KEY=${VSCAN_SECRET_KEY}
      #   volumes:
-     #        - vulscanovol:/opt/vulscano/data
+     #        - vulscanovol:/opt/vscan/data
 
        network_mode: host
 
@@ -36,7 +36,7 @@ services:
     vulscano-db:
        image: tatacomm/vulscanodb:beta
        restart: always
-       hostname: vulscano-db
+       hostname: vscan-db
        stdin_open: true
        tty: true
        privileged: true
@@ -56,18 +56,18 @@ services:
     vulscano-db-admin:
        image: dpage/pgadmin4
        restart: always
-       hostname: vulscano-db-admin
+       hostname: vscan-db-admin
        environment:
-            - PGADMIN_DEFAULT_EMAIL=root@vulscano.com
-            - PGADMIN_DEFAULT_PASSWORD=vulscano
+            - PGADMIN_DEFAULT_EMAIL=root@vscan.com
+            - PGADMIN_DEFAULT_PASSWORD=vscan
             - PGADMIN_ENABLE_TLS=True
        ports:
             - "8443:443"
        networks:
             - vulscano-net
        volumes:
-            - "${VULSCANO_BASE_PATH}/pgadmin/vulscano-dbadmin.cer:/certs/server.cert"
-            - "${VULSCANO_BASE_PATH}/pgadmin/vulscano-dbadmin.key:/certs/server.key"
+            - "${VULSCANO_BASE_PATH}/pgadmin/vscan-dbadmin.cer:/certs/server.cert"
+            - "${VULSCANO_BASE_PATH}/pgadmin/vscan-dbadmin.key:/certs/server.key"
 
      # VSCAN Redis Cache
     vscan-cache:

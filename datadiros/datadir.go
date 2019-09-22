@@ -6,7 +6,7 @@ package datadiros
 import (
 	"os"
 
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 func init() {
@@ -16,18 +16,18 @@ func init() {
 	case "DEV":
 		DataDir, err := os.Getwd()
 		if err != nil {
-			logging.VulscanoLog("fatal",
+			logging.VSCANLog("fatal",
 				"Unable to load current directory: ", err.Error())
 		}
-		logging.VulscanoLog("info",
+		logging.VSCANLog("info",
 			"DEV Mode. Setting DataDir to: ", DataDir)
 
 	case "PROD":
-		DataDir := "/opt/vulscano/data"
-		logging.VulscanoLog("info",
+		DataDir := "/opt/vscan/data"
+		logging.VSCANLog("info",
 			"PROD Mode. Setting DataDir to: ", DataDir)
 	default:
-		logging.VulscanoLog("fatal",
+		logging.VSCANLog("fatal",
 			"VULSCANO_MODE environment variable is not set!")
 	}
 
@@ -38,7 +38,7 @@ func GetDataDir() string {
 		DataDir := "."
 		return DataDir
 	} else if os.Getenv("VULSCANO_MODE") == "PROD" {
-		DataDir := "/opt/vulscano/data"
+		DataDir := "/opt/vscan/data"
 		return DataDir
 	}
 	return ""

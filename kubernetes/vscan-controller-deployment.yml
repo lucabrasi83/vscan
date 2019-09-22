@@ -19,7 +19,7 @@ spec:
         app: vscan-controller
     spec:
       containers:
-        - image: tatacomm/vulscano:beta
+        - image: tatacomm/vscan:beta
           imagePullPolicy: Always
           name: vscan-controller
           stdin: true 

@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/logging"
-	"github.com/lucabrasi83/vulscano/rediscache"
+	"github.com/lucabrasi83/vscan/logging"
+	"github.com/lucabrasi83/vscan/rediscache"
 )
 
 type AnutaAPIDeviceDetails struct {
@@ -149,7 +149,7 @@ func GetAnutaDevice(dev string) (*AnutaAPIDeviceDetails, error) {
 	})
 
 	if err != nil {
-		logging.VulscanoLog("warning",
+		logging.VSCANLog("warning",
 			"Failed to insert device ", v.Controller.DeviceName, " into inventory cache: ", err)
 	}
 
@@ -239,7 +239,7 @@ func buildAnutaInventoryCache() error {
 				})
 
 				if err != nil {
-					logging.VulscanoLog("warning",
+					logging.VSCANLog("warning",
 						"Failed to insert device ", dev.DeviceName, " into inventory cache: ", err)
 				}
 
@@ -251,6 +251,6 @@ func buildAnutaInventoryCache() error {
 		wg.Wait()
 
 	}
-	logging.VulscanoLog("info", "Process to build Anuta NCX inventory in cache has completed.")
+	logging.VSCANLog("info", "Process to build Anuta NCX inventory in cache has completed.")
 	return nil
 }

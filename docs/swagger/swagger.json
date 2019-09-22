@@ -6,7 +6,7 @@
         "termsOfService" : "http://swagger.io/terms/",
         "contact" : {
             "name" : "VSCAN API Support",
-            "url" : "https://github.com/lucabrasi83/vulscano",
+            "url" : "https://github.com/lucabrasi83/vscan",
             "email" : "sebastien.pouplin@tatacommunications.com"
         },
         "license" : {

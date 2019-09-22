@@ -13,17 +13,17 @@ import (
 
 	"github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
-	"github.com/lucabrasi83/vulscano/initializer"
-	"github.com/lucabrasi83/vulscano/inventorymgr"
-	"github.com/lucabrasi83/vulscano/logging"
-	"github.com/lucabrasi83/vulscano/openvulnapi"
-	"github.com/lucabrasi83/vulscano/postgresdb"
-	"github.com/lucabrasi83/vulscano/rediscache"
+	"github.com/lucabrasi83/vscan/initializer"
+	"github.com/lucabrasi83/vscan/inventorymgr"
+	"github.com/lucabrasi83/vscan/logging"
+	"github.com/lucabrasi83/vscan/openvulnapi"
+	"github.com/lucabrasi83/vscan/postgresdb"
+	"github.com/lucabrasi83/vscan/rediscache"
 )
 
 const (
 	rootRole        = "vulscanoroot"
-	rootUser        = "root@vulscano.com"
+	rootUser        = "root@vscan.com"
 	userRole        = "vulscanouser"
 	ciscoIOSXE      = "IOS-XE"
 	ciscoIOS        = "IOS"
@@ -63,7 +63,7 @@ func LaunchAdHocScan(c *gin.Context) {
 	var devScanner DeviceScanner
 
 	if err := c.ShouldBindJSON(&ads); err != nil {
-		logging.VulscanoLog("error", err.Error())
+		logging.VSCANLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -72,7 +72,7 @@ func LaunchAdHocScan(c *gin.Context) {
 	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
 		//if devScanner == nil {
-		//	logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
+		//	logging.VSCANLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
 		//	c.JSON(http.StatusBadRequest, gin.H{
 		//		"error": "Failed to instantiate Device with given OS Type",
 		//	})
@@ -88,7 +88,7 @@ func LaunchAdHocScan(c *gin.Context) {
 
 	scanRes, err := LaunchAbstractVendorScan(devScanner, &ads, &jwtClaim)
 	if err != nil {
-		logging.VulscanoLog("error: ", err.Error())
+		logging.VSCANLog("error: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
@@ -123,7 +123,7 @@ func LaunchAnutaInventoryScan(c *gin.Context) {
 	var invDevice AnutaDeviceScanRequest
 
 	if err := c.ShouldBindJSON(&invDevice); err != nil {
-		logging.VulscanoLog("error", err.Error())
+		logging.VSCANLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -190,7 +190,7 @@ func GetCurrentlyScannedDevices(c *gin.Context) {
 
 	if err != nil {
 
-		logging.VulscanoLog("error", "unable to get the list of current scanned device: ", err.Error())
+		logging.VSCANLog("error", "unable to get the list of current scanned device: ", err.Error())
 
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unable to get the list of current scanned device"})
 
@@ -286,7 +286,7 @@ func CreateUserDeviceCredentials(c *gin.Context) {
 	var newDevCreds DeviceCredentialsCreate
 
 	if err := c.ShouldBindJSON(&newDevCreds); err != nil {
-		logging.VulscanoLog("error", "Device Credentials creation failed: ", err.Error())
+		logging.VSCANLog("error", "Device Credentials creation failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -333,7 +333,7 @@ func UpdateUserDeviceCredentials(c *gin.Context) {
 	var updateDevCreds DeviceCredentialsUpdate
 
 	if err := c.ShouldBindJSON(&updateDevCreds); err != nil {
-		logging.VulscanoLog("error", "Device Credentials update failed: ", err.Error())
+		logging.VSCANLog("error", "Device Credentials update failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -473,7 +473,7 @@ func CreateEnterprise(c *gin.Context) {
 	var newEnt EnterpriseCreate
 
 	if err := c.ShouldBindJSON(&newEnt); err != nil {
-		logging.VulscanoLog("error", "Enterprise creation failed: ", err.Error())
+		logging.VSCANLog("error", "Enterprise creation failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -524,7 +524,7 @@ func CreateUser(c *gin.Context) {
 	var newUser VulscanoUserCreate
 
 	if err := c.ShouldBindJSON(&newUser); err != nil {
-		logging.VulscanoLog("error", "User creation request failed: ", err.Error())
+		logging.VSCANLog("error", "User creation request failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -569,7 +569,7 @@ func UpdateUser(c *gin.Context) {
 	user := c.Param("user-id")
 
 	if err := c.ShouldBindJSON(&updateUser); err != nil {
-		logging.VulscanoLog("error", "user update request failed: ", err.Error())
+		logging.VSCANLog("error", "user update request failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -768,7 +768,7 @@ func GetAnutaDeviceSuggestedSW() ([]map[string]string, error) {
 						tempDate, errParseDate := time.Parse("02 Jan 2006", sug.ReleaseDate)
 
 						if errParseDate != nil {
-							logging.VulscanoLog("warning",
+							logging.VSCANLog("warning",
 								"Unable to parse Date from Cisco Software Suggestion API: ", sug.ReleaseDate,
 							)
 							continue
@@ -803,7 +803,7 @@ func GetAnutaDeviceSuggestedSW() ([]map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	logging.VulscanoLog("info",
+	logging.VSCANLog("info",
 		"Synchronization task of Devices Suggested Software with Cisco API has completed")
 
 	return snToPIDMap, nil
@@ -842,7 +842,7 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 	var devScanner DeviceBulkScanner
 
 	if err := c.ShouldBindJSON(&ads); err != nil {
-		logging.VulscanoLog("error", err.Error())
+		logging.VSCANLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -866,7 +866,7 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 
 	scanRes, err := LaunchAbstractVendorBulkScan(devScanner, &ads, &jwtClaim)
 	if err != nil {
-		logging.VulscanoLog("error: ", err.Error())
+		logging.VSCANLog("error: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
@@ -892,7 +892,7 @@ func LaunchAnutaInventoryBulkScan(c *gin.Context) {
 	var invDevices AnutaDeviceBulkScanRequest
 
 	if err := c.ShouldBindJSON(&invDevices); err != nil {
-		logging.VulscanoLog("error", err.Error())
+		logging.VSCANLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -997,13 +997,13 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 
 			defer wgSn.Done()
 
-			logging.VulscanoLog("info",
+			logging.VSCANLog("info",
 				"sending API Call for Serial Number ", snSlice[count:count+snIncrement])
 
 			pid, err := openvulnapi.GetCiscoPID(snSlice[count : count+snIncrement]...)
 
 			if err != nil {
-				logging.VulscanoLog("error",
+				logging.VSCANLog("error",
 					err.Error())
 				<-snGuard
 				return
@@ -1021,13 +1021,13 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 	wgSn.Wait()
 
 	// Send last increment of serial numbers slice to Cisco API
-	logging.VulscanoLog("info",
+	logging.VSCANLog("info",
 		"sending API Call for Serial Number ", snSlice[snTotalCountProc+snIncrement:])
 
 	pidLast, err := openvulnapi.GetCiscoPID(snSlice[snTotalCountProc+snIncrement:]...)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			err.Error())
 	} else {
 		ciscoSNAPISlice = append(ciscoSNAPISlice, *pidLast)
@@ -1064,13 +1064,13 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 
 			defer wgSn.Done()
 
-			logging.VulscanoLog("info",
+			logging.VSCANLog("info",
 				"sending API Call for PID ", snPID[count:count+pidIncrement])
 
 			sw, err := openvulnapi.GetCiscoSWSuggestion(snPID[count : count+pidIncrement]...)
 
 			if err != nil {
-				logging.VulscanoLog("error",
+				logging.VSCANLog("error",
 					err.Error())
 				<-pidGuard
 				return
@@ -1088,13 +1088,13 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 	wgSn.Wait()
 
 	// Send last increment of serial numbers slice to Cisco API
-	logging.VulscanoLog("info",
+	logging.VSCANLog("info",
 		"sending API Call for Cisco PID ", snPID[pidTotalCountProc+pidIncrement:])
 
 	swLast, err := openvulnapi.GetCiscoSWSuggestion(snPID[pidTotalCountProc+pidIncrement:]...)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			err.Error())
 	} else {
 		ciscoSuggSWSlice = append(ciscoSuggSWSlice, *swLast)
@@ -1131,7 +1131,7 @@ func FetchCiscoAMCStatus() error {
 
 	if len(sn) <= maxSN {
 
-		logging.VulscanoLog("info",
+		logging.VSCANLog("info",
 			"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn)
 
 		snAMCMap, err := getCiscoAMC(sn...)
@@ -1186,7 +1186,7 @@ func FetchCiscoAMCStatus() error {
 				// Therefore we just take the current index until what's left
 				if len(sn)-(count-maxSN) > len(sn) {
 
-					logging.VulscanoLog("info",
+					logging.VSCANLog("info",
 						"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn[len(sn)-count:])
 
 					snAMCMapChild, err := getCiscoAMC(sn[len(sn)-count:]...)
@@ -1202,7 +1202,7 @@ func FetchCiscoAMCStatus() error {
 
 				} else {
 
-					logging.VulscanoLog("info",
+					logging.VSCANLog("info",
 						"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn[len(sn)-count:len(sn)-(count-maxSN)])
 
 					// For each iteration, we take the starting index length of slice - current count
@@ -1239,7 +1239,7 @@ func FetchCiscoAMCStatus() error {
 		}
 
 	}
-	logging.VulscanoLog("info",
+	logging.VSCANLog("info",
 		"Synchronization task of SmartNet coverage status from Cisco API has completed")
 
 	return nil
@@ -1265,7 +1265,7 @@ func getCiscoAMC(sn ...string) ([]map[string]string, error) {
 	resp, err := openvulnapi.GetSmartNetCoverage(sn...)
 
 	if err != nil {
-		logging.VulscanoLog("error", "failed to retrieve SmartNet Coverage from Cisco SN2INFO: ", err)
+		logging.VSCANLog("error", "failed to retrieve SmartNet Coverage from Cisco SN2INFO: ", err)
 
 		return nil, err
 	}

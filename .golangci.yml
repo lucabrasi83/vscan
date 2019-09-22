@@ -10,7 +10,7 @@ linters:
     - gofmt
   fast: false
 service:
-  project-path: github.com/lucabrasi83/vulscano
-  golangci-lint-version: 1.15.0 # use fixed version to not introduce new linters unexpectedly
+  project-path: github.com/lucabrasi83/vscan
+  golangci-lint-version: 1.17.0 # use fixed version to not introduce new linters unexpectedly
 
   

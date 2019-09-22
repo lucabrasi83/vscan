@@ -20,7 +20,7 @@ var doc = `{
         "termsOfService" : "http://swagger.io/terms/",
         "contact" : {
             "name" : "VSCAN API Support",
-            "url" : "https://github.com/lucabrasi83/vulscano",
+            "url" : "https://github.com/lucabrasi83/vscan",
             "email" : "sebastien.pouplin@tatacommunications.com"
         },
         "license" : {
@@ -30,7 +30,7 @@ var doc = `{
         "version" : "1.0.0"
     },
     "servers" : [ {
-        "url" : "https://vulscano.vsnl.co.in/api/v1",
+        "url" : "https://vscan.vsnl.co.in/api/v1",
         "description" : "Production server (uses live data)"
     }, {
         "url" : "https://vscan.asdlab.net/api/v1",
@@ -596,7 +596,7 @@ var doc = `{
                     "email" : {
                         "type" : "string",
                         "format" : "email",
-                        "example" : "john@vulscano.com"
+                        "example" : "john@vscan.com"
                     },
                     "enterpriseID" : {
                         "type" : "string",
@@ -698,7 +698,7 @@ var doc = `{
                     "email" : {
                         "type" : "string",
                         "format" : "email",
-                        "example" : "john@vulscano.com"
+                        "example" : "john@vscan.com"
                     },
                     "enterpriseID" : {
                         "type" : "string",

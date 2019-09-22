@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/openvulnapi"
+	"github.com/lucabrasi83/vscan/openvulnapi"
 )
 
 // Login represents the JSON payload to be sent to POST /api/v1/login
@@ -171,7 +171,7 @@ type JwtClaim struct {
 // VulscanoUserCreate struct represents the JSON keys required to be passed by API consumer
 // in order to create a new user
 type VulscanoUserCreate struct {
-	Email      string `json:"email" binding:"required" example:"john@vulscano.com"`
+	Email      string `json:"email" binding:"required" example:"john@vscan.com"`
 	Password   string `json:"password" binding:"required" example:"!Mp0$$ible_2_ReMemBeR"`
 	Role       string `json:"role" binding:"required" example:"vulscanouser"`
 	Enterprise string `json:"enterpriseID" binding:"required" example:"TCL"`

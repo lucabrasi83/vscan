@@ -15,7 +15,7 @@ package handlers
 //	"github.com/docker/docker/api/types/container"
 //	"github.com/docker/docker/api/types/mount"
 //	"github.com/docker/docker/client"
-//	"github.com/lucabrasi83/vulscano/logging"
+//	"github.com/lucabrasi83/vscan/logging"
 //)
 //
 //var cli *client.Client
