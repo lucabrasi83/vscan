@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/jackc/pgx"
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/jackc/pgx/v4"
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 type SSHGatewayDB struct {
@@ -36,7 +36,7 @@ func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB
 
 	defer cancelQuery()
 
-	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, entid, gw)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, pgpSymEncryptKey, entid, gw)
 
 	err := row.Scan(
 		&sshGw.GatewayName,
@@ -48,7 +48,7 @@ func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB
 
 	switch err {
 	case pgx.ErrNoRows:
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error", "SSH Gateway "+gw+" not found in database")
 		return nil, fmt.Errorf("SSH Gateway %v not found", gw)
 
@@ -57,7 +57,7 @@ func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB
 		return &sshGw, nil
 
 	default:
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error", "error while searching for SSH Gateway in Database: ", err.Error())
 
 		return nil, fmt.Errorf("error while searching for SSH Gateway %v: %v", gw, err.Error())
@@ -82,10 +82,10 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, entid)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, pgpSymEncryptKey, entid)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"cannot fetch user SSH gateways from DB: ", err.Error(),
 		)
 		return nil, err
@@ -104,7 +104,7 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error
 		)
 
 		if err != nil {
-			logging.VulscanoLog("error",
+			logging.VSCANLog("error",
 				"error while scanning ssh_gateway table rows: ", err.Error())
 			return nil, err
 		}
@@ -112,7 +112,7 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error
 	}
 	err = rows.Err()
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"error returned while iterating through ssh_gateway table: ", err.Error())
 		return nil, err
 	}
@@ -130,10 +130,10 @@ func (p *vulscanoDB) DeleteUserSSHGateway(entid string, gw string) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, entid, gw)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, entid, gw)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"failed to delete SSH gateway: ", gw, " ", err.Error())
 
 		return err
@@ -141,7 +141,7 @@ func (p *vulscanoDB) DeleteUserSSHGateway(entid string, gw string) error {
 
 	if cTag.RowsAffected() == 0 {
 
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"failed to delete SSH gateway: ", gw)
 		return fmt.Errorf("failed to delete SSH gateway %v", gw)
 	}

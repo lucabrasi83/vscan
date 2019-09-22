@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/appleboy/gin-jwt"
+	"github.com/appleboy/gin-jwt/v2"
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 var (
@@ -36,7 +36,7 @@ func RequestsLogger() gin.HandlerFunc {
 		c.Next()
 
 		// Default User ID for API Handler not requiring authorization
-		userID := "anonymous@vulscano.com"
+		userID := "anonymous@vscan.com"
 
 		// Extract User ID from JWT Claim
 		jwtClaim := jwt.ExtractClaims(c)
@@ -54,7 +54,7 @@ func RequestsLogger() gin.HandlerFunc {
 			fgHiYellow.Sprintf("%-13v", time.Since(now).String()),
 			bgHiBlue.Sprint(c.Request.URL),
 		)
-		logging.VulscanoLog("info",
+		logging.VSCANLog("info",
 			logResMessage,
 		)
 

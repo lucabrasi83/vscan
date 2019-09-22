@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jackc/pgx"
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/jackc/pgx/v4"
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 // UserDeviceCredentials struct represents the Device Credentials to connect to a scanned device
@@ -38,7 +38,7 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 
 	defer cancelQuery()
 
-	row := p.db.QueryRowEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, uid, cn)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, pgpSymEncryptKey, uid, cn)
 
 	err := row.Scan(
 		&deviceCreds.CredentialsName,
@@ -51,7 +51,7 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 
 	switch err {
 	case pgx.ErrNoRows:
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error", "Device Credentials Name "+cn+" not found in database")
 		return nil, fmt.Errorf("device credentials name %v not found", cn)
 
@@ -60,7 +60,7 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 		return &deviceCreds, nil
 
 	default:
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error", "error while searching for Device Credentials in Database: ", err.Error())
 
 		return nil, fmt.Errorf("error while searching for Device Credentials %v: %v", cn, err.Error())
@@ -86,10 +86,10 @@ func (p *vulscanoDB) FetchAllUserDeviceCredentials(uid string) ([]DeviceCredenti
 
 	defer cancelQuery()
 
-	rows, err := p.db.QueryEx(ctxTimeout, sqlQuery, nil, pgpSymEncryptKey, uid)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, pgpSymEncryptKey, uid)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"cannot fetch user device credentials from DB: ", err.Error(),
 		)
 		return nil, err
@@ -108,7 +108,7 @@ func (p *vulscanoDB) FetchAllUserDeviceCredentials(uid string) ([]DeviceCredenti
 		)
 
 		if err != nil {
-			logging.VulscanoLog("error",
+			logging.VSCANLog("error",
 				"error while scanning device_credentials_set table rows: ", err.Error())
 			return nil, err
 		}
@@ -116,7 +116,7 @@ func (p *vulscanoDB) FetchAllUserDeviceCredentials(uid string) ([]DeviceCredenti
 	}
 	err = rows.Err()
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"error returned while iterating through device_credentials_set table: ", err.Error())
 		return nil, err
 	}
@@ -134,10 +134,10 @@ func (p *vulscanoDB) DeleteDeviceCredentials(uid string, cn string) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQuery, nil, uid, cn)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, uid, cn)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"failed to delete device credentials: ", cn, " ", err.Error())
 
 		return err
@@ -145,7 +145,7 @@ func (p *vulscanoDB) DeleteDeviceCredentials(uid string, cn string) error {
 
 	if cTag.RowsAffected() == 0 {
 
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"failed to delete device credentials: ", cn)
 		return fmt.Errorf("failed to delete device credentials %v", cn)
 	}
@@ -176,7 +176,7 @@ func (p *vulscanoDB) InsertNewDeviceCredentials(devCredsProps map[string]string)
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(
+	cTag, err := p.db.Exec(
 		ctxTimeout,
 		sqlQuery,
 		nil,
@@ -191,7 +191,7 @@ func (p *vulscanoDB) InsertNewDeviceCredentials(devCredsProps map[string]string)
 	)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"failed to insert device credentials: ", devCredsProps["credsName"], " ", err.Error())
 
 		if strings.Contains(err.Error(), "23505") {
@@ -205,7 +205,7 @@ func (p *vulscanoDB) InsertNewDeviceCredentials(devCredsProps map[string]string)
 
 	if cTag.RowsAffected() == 0 {
 
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"failed to insert device credentials: ", devCredsProps["credsName"])
 		return fmt.Errorf("failed to insert device credentials %v", devCredsProps["credsName"])
 	}
@@ -230,7 +230,7 @@ func (p *vulscanoDB) UpdateDeviceCredentials(devCredsProps map[string]string) er
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(
+	cTag, err := p.db.Exec(
 		ctxTimeout,
 		sqlQuery,
 		nil,
@@ -246,7 +246,7 @@ func (p *vulscanoDB) UpdateDeviceCredentials(devCredsProps map[string]string) er
 	)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"failed to update device credentials: ", devCredsProps["credsName"], " ", err.Error())
 
 		return err
@@ -254,7 +254,7 @@ func (p *vulscanoDB) UpdateDeviceCredentials(devCredsProps map[string]string) er
 
 	if cTag.RowsAffected() == 0 {
 
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			"failed to update device credentials: ", devCredsProps["credsName"])
 		return fmt.Errorf("failed to update device credentials %v", devCredsProps["credsName"])
 	}

@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/jackc/pgx/v4"
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 func (p *vulscanoDB) PersistScanJobReport(args ...interface{}) error {
@@ -16,13 +17,13 @@ func (p *vulscanoDB) PersistScanJobReport(args ...interface{}) error {
 	const sqlQueryJobReport = `INSERT INTO scan_jobs_history
 							   (job_id, start_time, end_time, 
 							    devices_scanned_name, devices_scanned_ip, 
-								job_result, user_id_scan_request)
-						       VALUES ($1, $2, $3, COALESCE($4, '{}'::text[]), COALESCE($5, '{}'::inet[]), $6, $7)
+								job_result, user_id_scan_request, scan_exec_agent)
+						       VALUES ($1, $2, $3, COALESCE($4, '{}'::text[]), COALESCE($5, '{}'::inet[]), $6, $7, $8)
 							  `
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQueryJobReport, nil, args...)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQueryJobReport, args...)
 
 	if err != nil {
 		return err
@@ -66,7 +67,7 @@ func (p *vulscanoDB) PersistDeviceVAJobReport(args ...interface{}) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQueryDeviceReport, nil, args...)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQueryDeviceReport, args...)
 
 	if err != nil {
 		return err
@@ -91,7 +92,7 @@ func (p *vulscanoDB) PersistDeviceVAHistory(args ...interface{}) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.ExecEx(ctxTimeout, sqlQueryDeviceHistory, nil, args...)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQueryDeviceHistory, args...)
 
 	if err != nil {
 		return err
@@ -135,42 +136,46 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 	defer cancelQuery()
 
 	// Prepare SQL Statement in DB for Batch
-	_, err := p.db.Prepare("insert_device_va_report", sqlQueryDeviceReport)
 
-	if err != nil {
-		logging.VulscanoLog(
-			"error",
-			"Failed to prepare Batch statement: ",
-			err.Error())
-		return err
-	}
+	//_, err := p.db.Prepare("insert_device_va_report", sqlQueryDeviceReport)
+	//
+	//if err != nil {
+	//	logging.VSCANLog(
+	//		"error",
+	//		"Failed to prepare Batch statement: ",
+	//		err.Error())
+	//	return err
+	//}
+	//
+	//b := p.db.BeginBatch()
 
-	b := p.db.BeginBatch()
+	b := &pgx.Batch{}
 
 	for _, d := range args {
 
-		b.Queue("insert_device_va_report",
-			[]interface{}{
-				d["deviceName"],
-				d["deviceIP"],
-				d["lastScan"],
-				d["advisoryID"],
-				d["totalVulnScanned"],
-				d["enterpriseID"],
-				d["scanMeantime"],
-				d["osType"],
-				d["osVersion"],
-				d["deviceModel"],
-				d["serialNumber"],
-				d["deviceHostname"],
-			},
-			nil, nil)
+		b.Queue(sqlQueryDeviceReport,
+			d["deviceName"],
+			d["deviceIP"],
+			d["lastScan"],
+			d["advisoryID"],
+			d["totalVulnScanned"],
+			d["enterpriseID"],
+			d["scanMeantime"],
+			d["osType"],
+			d["osVersion"],
+			d["deviceModel"],
+			d["serialNumber"],
+			d["deviceHostname"],
+		)
 	}
 
 	// Send Batch SQL Query
-	errSendBatch := b.Send(ctxTimeout, nil)
+	// errSendBatch := b.Send(ctxTimeout, nil)
+	r := p.db.SendBatch(ctxTimeout, b)
+	c, errSendBatch := r.Exec()
+
 	if errSendBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to send Batch query: ",
 			errSendBatch.Error())
@@ -179,10 +184,14 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 
 	}
 
+	if c.RowsAffected() < 1 {
+		return fmt.Errorf("no insertion of row while executing query %v", sqlQueryDeviceReport)
+	}
+
 	// Execute Batch SQL Query
-	errExecBatch := b.Close()
+	errExecBatch := r.Close()
 	if errExecBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to execute Batch query: ",
 			errExecBatch.Error())
@@ -204,34 +213,23 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 
 	defer cancelQuery()
 
-	// Prepare SQL Statement in DB for Batch
-	_, err := p.db.Prepare("insert_device_va_history", sqlQueryDeviceHistory)
-
-	if err != nil {
-		logging.VulscanoLog(
-			"error",
-			"Failed to prepare Batch statement: ",
-			err.Error())
-		return err
-	}
-
-	b := p.db.BeginBatch()
+	b := &pgx.Batch{}
 
 	for _, d := range args {
 
-		b.Queue("insert_device_va_history",
-			[]interface{}{
-				d["deviceName"],
-				d["advisoryID"],
-				d["lastScan"],
-			},
-			nil, nil)
+		b.Queue(sqlQueryDeviceHistory,
+			d["deviceName"],
+			d["advisoryID"],
+			d["lastScan"],
+		)
 	}
 
 	// Send Batch SQL Query
-	errSendBatch := b.Send(ctxTimeout, nil)
+	r := p.db.SendBatch(ctxTimeout, b)
+	c, errSendBatch := r.Exec()
+
 	if errSendBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to send Batch query: ",
 			errSendBatch.Error())
@@ -240,10 +238,14 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 
 	}
 
+	if c.RowsAffected() < 1 {
+		return fmt.Errorf("no insertion of row while executing query %v", sqlQueryDeviceHistory)
+	}
+
 	// Execute Batch SQL Query
-	errExecBatch := b.Close()
+	errExecBatch := r.Close()
 	if errExecBatch != nil {
-		logging.VulscanoLog(
+		logging.VSCANLog(
 			"error",
 			"Failed to execute Batch query: ",
 			errExecBatch.Error())

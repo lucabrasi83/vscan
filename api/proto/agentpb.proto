@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package agentpb;
+
+option go_package = "agentpb";
+
+// SSHGateway message represents an SSH Gateway settings to be used in order to scan devices
+// located on a private network.
+// This is an optional message
+message SSHGateway {
+    string gateway_name = 1;
+    string gateway_ip = 2;
+    string gateway_username = 3;
+    string gateway_password = 4;
+    string gateway_private_key = 5;
+}
+
+// UserDeviceCredentials represents the device credentials the VSCAN Agent must use to access the device.
+message UserDeviceCredentials {
+    string  credentials_name = 1;
+    string  credentials_device_vendor = 2;
+    string  username = 3;
+    string  password = 4;
+    string  ios_enable_password = 5;
+    string  private_key = 6;
+
+}
+// Device represents the device name / ip address pair a scan is requested for.
+message Device {
+    string device_name = 1;
+    string ip_address = 2;
+}
+
+// ScanRequest contains the protocol buffer message attributes required for VSCAN Agent to generate the scan job
+// config and run the vulnerability assessment on the target device(s)
+// If invalid arguments are sent, an INVALID_ARGUMENT GRPC error code will be sent back
+// It is expected for a Scan job not to take more than 15 minutes. Therefore, the client should Cancel the request
+// and the server abort the scan job if no result is provided after 15 minutes.
+message ScanRequest {
+    string job_id = 1;
+    repeated Device devices = 2;
+    SSHGateway ssh_gateway = 3;
+    UserDeviceCredentials user_device_credentials = 4;
+    string oval_source_url = 5;
+    int64  scan_timeout_seconds = 6;
+
+}
+
+message ScanResultsResponse {
+    bytes   scan_results_json = 1;
+    string  vscan_agent_name = 2;
+    string  device_name = 3;
+}
+
+
+service VscanAgentService {
+
+    rpc BuildScanConfig (ScanRequest) returns (stream ScanResultsResponse) {};
+}

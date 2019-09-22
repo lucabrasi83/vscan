@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    kubernetes.io/tls-acme: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+  creationTimestamp: null
+  generation: 1
+  namespace: vscan
+  name: vscan-ingress
+spec:
+  rules:
+    - host: vscan.asdlab.net
+      http:
+        paths:
+          - backend:
+              serviceName: vscan-controller
+              servicePort: 443
+            path: /
+  tls:
+    - hosts:
+        - vscan.asdlab.net
+      secretName: vscan-tls-cert
+status:
+  loadBalancer: {}

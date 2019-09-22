@@ -1,421 +1,523 @@
-basePath: /api/v1
-definitions:
-  handlers.AdHocScanDevice:
-    properties:
-      credentialsName:
-        example: MY-TACACS-CREDS
-        type: string
-      hostname:
-        example: TCL-IN-MUMBAI-RTR-1
-        type: string
-      ip:
-        example: 10.1.1.1
-        type: string
-      osType:
-        example: IOS-XE
-        type: string
-      osVersion:
-        example: 16.06.04
-        type: string
-      sshGateway:
-        example: UKL78-SSH-GW
-        type: string
-    required:
-    - credentialsName
-    - hostname
-    - ip
-    - osType
-    type: object
-  handlers.PingAPIResponse:
-    properties:
-      golangRuntime:
-        example: 1.11.5
-        type: string
-      pong:
-        example: I'm Alive
-        type: string
-      version:
-        example: 0.2.1
-        type: string
-    type: object
-  handlers.ScanResults:
-    properties:
-      scanDeviceMeanTimeMsec:
-        type: integer
-      scanJobEndTime:
-        type: string
-      scanJobID:
-        type: string
-      scanJobStartTime:
-        type: string
-      totalVulnerabilitiesFound:
-        type: integer
-      totalVulnerabilitiesScanned:
-        type: integer
-      vulnerabilitiesFoundDetails:
-        items:
-          $ref: '#/definitions/openvulnapi.VulnMetadata'
-        type: array
-    type: object
-  handlers.VulscanoUserCreate:
-    properties:
-      email:
-        example: john@vulscano.com
-        type: string
-      enterpriseID:
-        example: TCL
-        type: string
-      password:
-        example: '!Mp0$$ible_2_ReMemBeR'
-        type: string
-      role:
-        example: vulscanouser
-        type: string
-    required:
-    - email
-    - enterpriseID
-    - password
-    - role
-    type: object
-  handlers.VulscanoUserPatch:
-    properties:
-      enterpriseID:
-        example: TCL
-        type: string
-      password:
-        example: '!Mp0$$ible_2_ReMemBeR'
-        type: string
-      role:
-        example: vulscanouser
-        type: string
-    type: object
-  openvulnapi.VulnMetadata:
-    properties:
-      advisoryId:
-        type: string
-      advisoryTitle:
-        type: string
-      bugIDs:
-        items:
-          type: string
-        type: array
-      cves:
-        items:
-          type: string
-        type: array
-      cvssBaseScore:
-        type: string
-      firstFixed:
-        items:
-          type: string
-        type: array
-      firstPublished:
-        type: string
-      publicationUrl:
-        type: string
-      sir:
-        type: string
-    type: object
-  postgresdb.VulscanoDBUser:
-    properties:
-      email:
-        example: john@vulscano.com
-        type: string
-      enterpriseID:
-        example: TCL
-        type: string
-      role:
-        example: vulscanouser
-        type: string
-      userID:
-        example: 1bf3f4e6-5da2-4f82-87e4-606d5bf05d38
-        type: string
-    type: object
-host: vulscano.vsnl.co.in:8443
+openapi: 3.0.0
 info:
+  title: VSCAN API Documentation
+  description: Swagger API documentation for TATA Communications VSCAN.
+  termsOfService: http://swagger.io/terms/
   contact:
+    name: VSCAN API Support
+    url: https://github.com/lucabrasi83/vscan
     email: sebastien.pouplin@tatacommunications.com
-    name: Vulscano API Support
-    url: https://github.com/lucabrasi83/vulscano
-  description: Swagger API documentation for TATA Communications Vulscano.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: http://swagger.io/terms/
-  title: Vulscano API Documentation
-  version: "1.0"
+  version: 1.0.0
+servers:
+  - url: https://vscan.vsnl.co.in/api/v1
+    description: Production server (uses live data)
+  - url: https://vscan.asdlab.net/api/v1
+    description: Sandbox server (uses test data)
+tags:
+  - name: admins
+    description: Secured Admin-only calls
+  - name: users
+    description: Operations available to regular enterprise users
+  - name: ping
+    description: API Health Check
+  - name: login
+    description: VSCAN Authentication
 paths:
   /admin/all-users:
     get:
-      consumes:
-      - application/json
-      description: Fetch all users details provisioned in application
-      parameters:
-      - description: JWT Bearer Token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/postgresdb.VulscanoDBUser'
-            type: array
-        "400":
-          description: unable to fetch users
-          schema:
-            type: string
-        "401":
-          description: user not authorized
-          schema:
-            type: string
-        "404":
-          description: route requested does not exist
-          schema:
-            type: string
-      summary: Get all users provisioned
       tags:
-      - admin
+        - admins
+      summary: Get all users provisioned
+      description: Fetch all users details provisioned in application
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulscanoDBUserMain'
+        400:
+          description: unable to fetch users
+        401:
+          description: user not authorized
+        404:
+          description: route requested does not exist
+      security:
+        - bearerAuth: []
   /admin/on-demand-scan:
     post:
-      consumes:
-      - application/json
-      description: Perform a vulnerability scan any device NOT part of an inventory
-      parameters:
-      - description: JWT Bearer Token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Device Details
-        in: body
-        name: device-details
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.AdHocScanDevice'
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.ScanResults'
-            type: object
-        "400":
-          description: unable to launch scan
-          schema:
-            type: string
-        "401":
-          description: user not authorized
-          schema:
-            type: string
-        "404":
-          description: route requested does not exist
-          schema:
-            type: string
-        "413":
-          description: body size too large
-          schema:
-            type: string
-      summary: Launch On-Demand Vulnerability Scan
       tags:
-      - admin
+        - admins
+      summary: Launch On-Demand Vulnerability Scan
+      description: Perform a vulnerability scan any device NOT part of an inventory
+      requestBody:
+        description: Device Details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdHocScanDevice'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanResultsMain'
+        400:
+          description: unable to launch scan
+        401:
+          description: user not authorized
+        404:
+          description: route requested does not exist
+        413:
+          description: body size too large
+      security:
+        - bearerAuth: []
   /admin/user:
     post:
-      consumes:
-      - application/json
-      description: Create new user to access Vulscano
-      parameters:
-      - description: JWT Bearer Token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: New user details
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.VulscanoUserCreate'
-          type: object
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: user successfully created
-          schema:
-            type: string
-        "400":
-          description: unable to create requested user
-          schema:
-            type: string
-        "401":
-          description: user not authorized
-          schema:
-            type: string
-        "404":
-          description: route requested does not exist
-          schema:
-            type: string
-        "413":
-          description: body size too large
-          schema:
-            type: string
+      tags:
+        - admins
       summary: Create new user
-      tags:
-      - admin
-  /admin/user/{username}:
-    delete:
-      consumes:
-      - application/json
-      description: Delete an existing user
-      parameters:
-      - description: JWT Bearer Token
-        in: header
-        name: Authorization
+      description: Create new user to access Vulscano
+      requestBody:
+        description: New user details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VulscanoUserCreate'
         required: true
-        type: string
-      - description: Username in email format
-        in: path
-        name: username
-        required: true
-        type: string
-      produces:
-      - application/json
       responses:
-        "200":
-          description: user successfully deleted
-          schema:
-            type: string
-        "400":
-          description: unable to update requested user
-          schema:
-            type: string
-        "401":
+        200:
+          description: user successfully created
+          content:
+            application/json:
+              schema:
+                type: string
+        400:
+          description: unable to create requested user
+        401:
           description: user not authorized
-          schema:
-            type: string
-        "404":
+        404:
           description: route requested does not exist
-          schema:
-            type: string
-        "413":
+        413:
           description: body size too large
-          schema:
-            type: string
-      summary: Delete an existing user
-      tags:
-      - admin
+      security:
+        - bearerAuth: []
+  /admin/user/{username}:
     get:
-      consumes:
-      - application/json
+      tags:
+        - admins
+      summary: Get specific user details
       description: Fetch user details specified in user-id param
       parameters:
-      - description: JWT Bearer Token
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      - description: Username in email format
-        in: path
-        name: username
-        required: true
-        type: string
-      produces:
-      - application/json
+        - name: username
+          in: path
+          description: Username in email format
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        "200":
+        200:
           description: OK
-          schema:
-            $ref: '#/definitions/postgresdb.VulscanoDBUser'
-            type: object
-        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VulscanoDBUser'
+        400:
           description: unable to fetch requested user
-          schema:
-            type: string
-        "401":
+        401:
           description: user not authorized
-          schema:
-            type: string
-        "404":
+        404:
           description: route requested does not exist
+      security:
+        - bearerAuth: []
+    delete:
+      tags:
+        - admins
+      summary: Delete an existing user
+      description: Delete an existing user
+      parameters:
+        - name: username
+          in: path
+          description: Username in email format
+          required: true
+          style: simple
+          explode: false
           schema:
             type: string
-      summary: Get specific user details
-      tags:
-      - admin
+      responses:
+        200:
+          description: user successfully deleted
+          content:
+            application/json:
+              schema:
+                type: string
+        400:
+          description: unable to update requested user
+        401:
+          description: user not authorized
+        404:
+          description: route requested does not exist
+        413:
+          description: body size too large
+      security:
+        - bearerAuth: []
     patch:
-      consumes:
-      - application/json
+      tags:
+        - admins
+      summary: Update an existing user
       description: Update an existing user
       parameters:
-      - description: JWT Bearer Token
-        in: header
-        name: Authorization
+        - name: username
+          in: path
+          description: Username in email format
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+      requestBody:
+        description: Existing user details
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VulscanoUserPatch'
         required: true
-        type: string
-      - description: Username in email format
-        in: path
-        name: username
-        required: true
-        type: string
-      - description: Existing user details
-        in: body
-        name: user
-        required: true
-        schema:
-          $ref: '#/definitions/handlers.VulscanoUserPatch'
-          type: object
-      produces:
-      - application/json
       responses:
-        "200":
+        200:
           description: user successfully updated
-          schema:
-            type: string
-        "400":
+          content:
+            application/json:
+              schema:
+                type: string
+        400:
           description: unable to update requested user
-          schema:
-            type: string
-        "401":
+        401:
           description: user not authorized
-          schema:
-            type: string
-        "404":
+        404:
           description: route requested does not exist
-          schema:
-            type: string
-        "413":
+        413:
           description: body size too large
-          schema:
-            type: string
-      summary: Update an existing user
+      security:
+        - bearerAuth: []
+  /admin/batch/update-smartnet-coverage:
+    post:
       tags:
-      - admin
+        - admins
+      summary: SmartNet Coverage Bulk Update
+      description: Bulk Update SmartNet Coverage status on inventory devices
+      responses:
+        200:
+          description: OK
+      security:
+        - bearerAuth: []
+  /admin/batch/refresh-inventory-cache:
+    post:
+      tags:
+        - admins
+      summary: Refresh inventory cache
+      description: Sync Inventory backend (Anuta, Ansible) with VSCAN cache store
+      responses:
+        200:
+          description: OK
+      security:
+        - bearerAuth: []
+  /admin/batch/update-all-cisco-sa:
+    post:
+      tags:
+        - admins
+      summary: Pull latest Cisco published vulnerabilities
+      description: Pull latest security advisories from Cisco openVuln API
+      responses:
+        200:
+          description: OK
+      security:
+        - bearerAuth: []
+  /admin/batch/cisco-sw-suggested:
+    post:
+      tags:
+        - admins
+      summary: Pull latest IOS suggested software
+      description: Pull suggested IOS Software Release for each device from Cisco
+        API
+      responses:
+        200:
+          description: OK
+      security:
+        - bearerAuth: []
+  /admin/ongoing-scanned-devices:
+    get:
+      tags:
+        - admins
+      summary: Get list of currently scanned devices
+      description: Get the list of IP Addresses of devices currently being scanned
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OngoingScannedDevicesResponse'
+      security:
+        - bearerAuth: []
   /ping:
     get:
-      consumes:
-      - application/json
-      description: Verify the API is responding to HTTP requests
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/handlers.PingAPIResponse'
-            type: object
-      summary: Ping API Health Check
       tags:
-      - ping
-securityDefinitions:
-  ApiKeyAuth:
-    in: header
-    name: Authorization
-    type: apiKey
-swagger: "2.0"
+        - ping
+      summary: Ping API Health Check
+      description: Verify the API is responding to HTTP requests
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingAPIResponse'
+  /login:
+    post:
+      tags:
+        - login
+      summary: VSCAN user authentication
+      description: Authenticate VSCAN user
+      requestBody:
+        description: Login Credentials
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        401:
+          description: user not authorized
+        404:
+          description: route requested does not exist
+        413:
+          description: body size too large
+components:
+  schemas:
+    AdHocScanDevice:
+      required:
+        - credentialsName
+        - hostname
+        - ip
+        - osType
+      type: object
+      properties:
+        credentialsName:
+          type: string
+          example: MY-TACACS-CREDS
+        hostname:
+          type: string
+          example: TCL-IN-MUMBAI-RTR-1
+        ip:
+          type: string
+          example: 10.1.1.1
+        osType:
+          type: string
+          example: IOS-XE
+          enum:
+            - IOS
+            - IOS-XE
+        osVersion:
+          type: string
+          example: 16.06.04
+        sshGateway:
+          type: string
+          example: UKL78-SSH-GW
+    PingAPIResponse:
+      type: object
+      properties:
+        golangRuntime:
+          type: string
+          example: 1.11.5
+        pong:
+          type: string
+          example: I'm Alive
+        version:
+          type: string
+          example: 0.2.1
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: user1
+        password:
+          type: string
+          example: mypass
+    LoginResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        expire:
+          type: string
+          example: 2019-07-25T09:16:53Z
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InJvb3RAdnVsc2Nhbm8uY29tIiwiZW50ZXJwcmlzZSI6IlRDTCIsImV4cCI6MTU2NDA0NjIxMywib3JpZ19pYXQiOjE1NjQwNDI2MTMsInJvbGUiOiJ2dWxzY2Fub3Jvb3QiLCJ1c2VySUQiOiJlMWNkNDRkZi02MjcxLTQ5ZGItYWIzZi1lZjNjOTlhNGVmNzUifQ.3w3hsLIMSSMCNpCAnc0bboc0-A--5igTDmF_c3zHTSo
+    OngoingScannedDevicesResponse:
+      properties:
+        deviceCount:
+          type: integer
+          example: 20
+        devicesIP:
+          type: array
+          example:
+            - 10.1.1.1
+            - 10.2.2.2
+          items:
+            type: string
+    ScanResultsMain:
+      type: object
+      properties:
+        results:
+          $ref: '#/components/schemas/ScanResults'
+    ScanResults:
+      type: object
+      properties:
+        scanDeviceMeanTimeMsec:
+          type: integer
+          example: 6971
+        scanJobEndTime:
+          type: string
+          format: date-time
+        scanJobID:
+          type: string
+          example: OrNeDxMX324EpZ4iQeOkgAnlK2dno8
+        scanJobStartTime:
+          type: string
+          format: date-time
+        totalVulnerabilitiesFound:
+          type: integer
+          example: 6
+        totalVulnerabilitiesScanned:
+          type: integer
+          example: 189
+        vulnerabilitiesFoundDetails:
+          type: array
+          items:
+            $ref: '#/components/schemas/VulnMetadata'
+    VulscanoUserCreate:
+      required:
+        - email
+        - enterpriseID
+        - password
+        - role
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: john@vscan.com
+        enterpriseID:
+          type: string
+          example: TCL
+        password:
+          type: string
+          example: '!Mp0$$ible_2_ReMemBeR'
+        role:
+          type: string
+          example: vulscanouser
+          enum:
+            - vulscanouser
+            - vulscanoroot
+    VulscanoUserPatch:
+      type: object
+      properties:
+        enterpriseID:
+          type: string
+          example: TCL
+        password:
+          type: string
+          example: '!Mp0$$ible_2_ReMemBeR'
+        role:
+          type: string
+          example: vulscanouser
+          enum:
+            - vulscanouser
+            - vulscanoroot
+    VulnMetadata:
+      type: object
+      properties:
+        advisoryId:
+          type: string
+          example: cisco-sa-20180926-pnp-memleak
+        advisoryTitle:
+          type: string
+          example: Cisco IOS and IOS XE Software Plug and Play Agent Memory Leak Vulnerability
+        bugIDs:
+          type: array
+          example:
+            - CSCvi30136
+          items:
+            type: string
+        cves:
+          type: array
+          example:
+            - CVE-2018-15377
+          items:
+            type: string
+        cvssBaseScore:
+          type: string
+          example: "6.8"
+        firstFixed:
+          type: array
+          example:
+            - 16.6.7
+          items:
+            type: string
+        firstPublished:
+          type: string
+          format: date-time
+        publicationUrl:
+          type: string
+          example: https://tools.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-20180926-pnp-memleak
+        sir:
+          type: string
+          example: Medium
+    VulscanoDBUserMain:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/VulscanoDBUser'
+    VulscanoDBUser:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: john@vscan.com
+        enterpriseID:
+          type: string
+          example: TCL
+        role:
+          type: string
+          example: vulscanouser
+          enum:
+            - vulscanouser
+            - vulscanoroot
+        userID:
+          type: string
+          format: uuid
+          example: 1bf3f4e6-5da2-4f82-87e4-606d5bf05d38
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

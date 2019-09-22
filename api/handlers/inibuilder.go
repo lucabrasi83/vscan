@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/go-ini/ini"
-	"github.com/lucabrasi83/vulscano/datadiros"
+	"github.com/lucabrasi83/vscan/datadiros"
 )
 
 // Skeleton Struct to reflect from config.ini

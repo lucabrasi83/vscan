@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: null
+  labels:
+    app: vscan-agent
+  name: vscan-agent
+  namespace: vscan
+spec:
+  ports:
+    - port: 50051
+      protocol: TCP
+      targetPort: 50051
+  selector:
+    app: vscan-agent
+  type: ClusterIP
+status:
+  loadBalancer: {}

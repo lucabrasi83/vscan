@@ -4,22 +4,19 @@ version: "3.7"
 services:
     # Vulscano API Core
     vulscano-core:
-       image: tatacomm/vulscano:beta
+       image: tatacomm/vscan:beta
        restart: always
        stdin_open: true
        tty: true
-       hostname: vulscano-core
+       hostname: vscan-core
        depends_on:
             - vulscano-db
        environment:
             - VULSCANO_HTTPS_PORT=${VULSCANO_HTTPS_PORT}
             - VULSCANO_OPENVULN_CLIENT_ID=${VULSCANO_OPENVULN_CLIENT_ID}
             - VULSCANO_OPENVULN_CLIENT_SECRET=${VULSCANO_OPENVULN_CLIENT_SECRET}
-            - VULSCANO_DOCKER_VOLUME_NAME=${VULSCANO_DOCKER_VOLUME_NAME}
-            - VULSCANO_DOCKER_JOVAL_IMAGE=${VULSCANO_DOCKER_JOVAL_IMAGE}
-            - DOCKER_HUB_USERNAME=${DOCKER_HUB_USERNAME}
-            - DOCKER_HUB_PASSWORD=${DOCKER_HUB_PASSWORD}
-            - DOCKER_HUB_EMAIL=${DOCKER_HUB_EMAIL}
+            - VSCAN_AGENT_HOST=${VSCAN_AGENT_HOST}
+            - VSCAN_AGENT_PORT=${VSCAN_AGENT_PORT}
             - VULSCANO_DB_USERNAME=${VULSCANO_DB_USERNAME}
             - VULSCANO_DB_PASSWORD=${VULSCANO_DB_PASSWORD}
             - VULSCANO_DB_DATABASE_NAME=${VULSCANO_DB_DATABASE_NAME}
@@ -29,21 +26,17 @@ services:
             - VSCAN_REDIS_HOST=${VSCAN_REDIS_HOST}
             - VSCAN_REDIS_PASSWORD=${VSCAN_REDIS_PASSWORD}
             - VSCAN_SECRET_KEY=${VSCAN_SECRET_KEY}
-       volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
-            - vulscanovol:/opt/vulscano/data
+     #   volumes:
+     #        - vulscanovol:/opt/vscan/data
 
        network_mode: host
-     #   ports:
-     #        - "${VULSCANO_HTTPS_PORT}:8443"
-     #   networks:
-     #        - vulscano-net
+
 
     # Vulscano Postgres DB
     vulscano-db:
        image: tatacomm/vulscanodb:beta
        restart: always
-       hostname: vulscano-db
+       hostname: vscan-db
        stdin_open: true
        tty: true
        privileged: true
@@ -54,10 +47,7 @@ services:
             - PGDATA=/var/lib/postgresql/data/vulscanodata
 
        network_mode: host
-     #   ports:
-     #        - "5432:5432"
-     #   networks:
-     #        - vulscano-net
+
        volumes:
             - postgres_db_data_vol:/var/lib/postgresql/data/vulscanodata
             - postgres_db_conf_vol:/etc/postgresql/conf
@@ -66,18 +56,18 @@ services:
     vulscano-db-admin:
        image: dpage/pgadmin4
        restart: always
-       hostname: vulscano-db-admin
+       hostname: vscan-db-admin
        environment:
-            - PGADMIN_DEFAULT_EMAIL=root@vulscano.com
-            - PGADMIN_DEFAULT_PASSWORD=vulscano
+            - PGADMIN_DEFAULT_EMAIL=root@vscan.com
+            - PGADMIN_DEFAULT_PASSWORD=vscan
             - PGADMIN_ENABLE_TLS=True
        ports:
             - "8443:443"
        networks:
             - vulscano-net
        volumes:
-            - "${VULSCANO_BASE_PATH}/pgadmin/vulscano-dbadmin.cer:/certs/server.cert"
-            - "${VULSCANO_BASE_PATH}/pgadmin/vulscano-dbadmin.key:/certs/server.key"
+            - "${VULSCANO_BASE_PATH}/pgadmin/vscan-dbadmin.cer:/certs/server.cert"
+            - "${VULSCANO_BASE_PATH}/pgadmin/vscan-dbadmin.key:/certs/server.key"
 
      # VSCAN Redis Cache
     vscan-cache:
@@ -86,6 +76,23 @@ services:
        hostname: vscan-cache
        ports:
             - "6379:6379"
+       sysctls:
+            - net.core.somaxconn=1024
+       networks:
+            - vulscano-net
+
+     # VSCAN Agent
+    vscan-agent:
+       image: tatacomm/vscan-agent:beta
+       restart: always
+       hostname: vscan-agent
+       stdin_open: true
+       tty: true
+       ports:
+            - "${VSCAN_AGENT_BIND_PORT}:${VSCAN_AGENT_BIND_PORT}"
+       environment:
+            - VSCAN_AGENT_BIND_PORT=50051
+            - JAVA_TOOL_OPTIONS=${VSCAN_AGENT_JVM_OPTIONS}
        networks:
             - vulscano-net
 
@@ -93,8 +100,8 @@ networks:
    vulscano-net:
        driver: bridge
 volumes:
-  vulscanovol:
-       external: true
+#   vulscanovol:
+#        external: true
   postgres_db_data_vol:
        external: true
   postgres_db_conf_vol:

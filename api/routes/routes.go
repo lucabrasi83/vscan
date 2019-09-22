@@ -5,23 +5,31 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lucabrasi83/vulscano/api/handlers"
-	"github.com/lucabrasi83/vulscano/api/middleware"
+	"github.com/lucabrasi83/vscan/api/handlers"
+	"github.com/lucabrasi83/vscan/api/middleware"
 	"github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
+	ginprometheus "github.com/zsais/go-gin-prometheus"
 )
 
 func LoadRoutes(routes *gin.Engine) {
 
 	// Set Default Middleware
-	routes.Use(middleware.RequestSizeLimiter(10240), middleware.RequestsLogger(), middleware.APILoadControl())
+	routes.Use(
+		middleware.RequestSizeLimiter(10240),
+		middleware.RequestsLogger(),
+		middleware.APILoadControl(),
+	)
 
 	// Set up default handler for no routes found
 	routes.NoRoute(func(c *gin.Context) {
 		c.JSON(404, gin.H{"error": "404 - PAGE_NOT_FOUND", "message": "Requested route does not exist"})
 	})
 
-	// /api/v1 Routes group and associated handlers
+	// Prometheus Metrics Collection middleware
+	p := ginprometheus.NewPrometheus("gin")
+	p.MetricsPath = "/api/v1/metrics"
+	p.UseWithAuth(routes, gin.Accounts{"metrics_admin": "metrics_admin"})
 
 	// Register JSON Web Token Middleware
 	jwtMiddleware := middleware.JwtConfigGenerate()
@@ -29,6 +37,7 @@ func LoadRoutes(routes *gin.Engine) {
 	// Short hand declaration for JWT Middleware
 	authWare := jwtMiddleware.MiddlewareFunc
 
+	// /api/v1 Routes group and associated handlers
 	apiV1 := routes.Group("/api/v1")
 	{
 		apiV1.POST("/login", jwtMiddleware.LoginHandler)
@@ -40,7 +49,6 @@ func LoadRoutes(routes *gin.Engine) {
 		{
 			admin.POST("/on-demand-scan", handlers.LaunchAdHocScan)
 			admin.POST("/bulk-on-demand-scan", handlers.LaunchBulkAdHocScan)
-			admin.POST("/update-all-cisco-sa", handlers.UpdateCiscoOpenVulnSAAll)
 			admin.GET("/user/:user-id", handlers.GetUser)
 			admin.GET("/all-users", handlers.GetAllUsers)
 			admin.POST("/user", handlers.CreateUser)
@@ -51,8 +59,16 @@ func LoadRoutes(routes *gin.Engine) {
 			admin.POST("/enterprise", handlers.CreateEnterprise)
 			admin.PATCH("/enterprise/:enterprise-id", tempHandler)
 			admin.DELETE("/enterprise/:enterprise-id", handlers.DeleteEnterprise)
-			admin.POST("/cisco-sw-suggested", handlers.AdminGetAnutaDeviceSuggestedSW)
+
 			admin.GET("/ongoing-scanned-devices", handlers.GetCurrentlyScannedDevices)
+		}
+
+		batchAdmin := apiV1.Group("/admin/batch").Use(authWare())
+		{
+			batchAdmin.POST("/update-all-cisco-sa", handlers.UpdateCiscoOpenVulnSAAll)
+			batchAdmin.POST("/cisco-sw-suggested", handlers.AdminGetAnutaDeviceSuggestedSW)
+			batchAdmin.POST("/update-smartnet-coverage", handlers.AdminFetchCiscoAMCStatus)
+			batchAdmin.POST("/refresh-inventory-cache", handlers.RefreshInventoryCache)
 		}
 
 		vulnAdmin := apiV1.Group("/admin/vulnerabilities").Use(authWare())

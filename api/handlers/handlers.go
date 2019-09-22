@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -10,20 +11,19 @@ import (
 	"sync"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/initializer"
-	"github.com/lucabrasi83/vulscano/openvulnapi"
-	"github.com/lucabrasi83/vulscano/rediscache"
-
-	"github.com/appleboy/gin-jwt"
-
+	"github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
-	"github.com/lucabrasi83/vulscano/logging"
-	"github.com/lucabrasi83/vulscano/postgresdb"
+	"github.com/lucabrasi83/vscan/initializer"
+	"github.com/lucabrasi83/vscan/inventorymgr"
+	"github.com/lucabrasi83/vscan/logging"
+	"github.com/lucabrasi83/vscan/openvulnapi"
+	"github.com/lucabrasi83/vscan/postgresdb"
+	"github.com/lucabrasi83/vscan/rediscache"
 )
 
 const (
 	rootRole        = "vulscanoroot"
-	rootUser        = "root@vulscano.com"
+	rootUser        = "root@vscan.com"
 	userRole        = "vulscanouser"
 	ciscoIOSXE      = "IOS-XE"
 	ciscoIOS        = "IOS"
@@ -63,7 +63,7 @@ func LaunchAdHocScan(c *gin.Context) {
 	var devScanner DeviceScanner
 
 	if err := c.ShouldBindJSON(&ads); err != nil {
-		logging.VulscanoLog("error", err.Error())
+		logging.VSCANLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -72,7 +72,7 @@ func LaunchAdHocScan(c *gin.Context) {
 	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
 		//if devScanner == nil {
-		//	logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
+		//	logging.VSCANLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
 		//	c.JSON(http.StatusBadRequest, gin.H{
 		//		"error": "Failed to instantiate Device with given OS Type",
 		//	})
@@ -88,7 +88,7 @@ func LaunchAdHocScan(c *gin.Context) {
 
 	scanRes, err := LaunchAbstractVendorScan(devScanner, &ads, &jwtClaim)
 	if err != nil {
-		logging.VulscanoLog("error: ", err.Error())
+		logging.VSCANLog("error: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
@@ -123,7 +123,7 @@ func LaunchAnutaInventoryScan(c *gin.Context) {
 	var invDevice AnutaDeviceScanRequest
 
 	if err := c.ShouldBindJSON(&invDevice); err != nil {
-		logging.VulscanoLog("error", err.Error())
+		logging.VSCANLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -190,7 +190,7 @@ func GetCurrentlyScannedDevices(c *gin.Context) {
 
 	if err != nil {
 
-		logging.VulscanoLog("error", "unable to get the list of current scanned device: ", err.Error())
+		logging.VSCANLog("error", "unable to get the list of current scanned device: ", err.Error())
 
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unable to get the list of current scanned device"})
 
@@ -286,7 +286,7 @@ func CreateUserDeviceCredentials(c *gin.Context) {
 	var newDevCreds DeviceCredentialsCreate
 
 	if err := c.ShouldBindJSON(&newDevCreds); err != nil {
-		logging.VulscanoLog("error", "Device Credentials creation failed: ", err.Error())
+		logging.VSCANLog("error", "Device Credentials creation failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -333,7 +333,7 @@ func UpdateUserDeviceCredentials(c *gin.Context) {
 	var updateDevCreds DeviceCredentialsUpdate
 
 	if err := c.ShouldBindJSON(&updateDevCreds); err != nil {
-		logging.VulscanoLog("error", "Device Credentials update failed: ", err.Error())
+		logging.VSCANLog("error", "Device Credentials update failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -473,7 +473,7 @@ func CreateEnterprise(c *gin.Context) {
 	var newEnt EnterpriseCreate
 
 	if err := c.ShouldBindJSON(&newEnt); err != nil {
-		logging.VulscanoLog("error", "Enterprise creation failed: ", err.Error())
+		logging.VSCANLog("error", "Enterprise creation failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -524,7 +524,7 @@ func CreateUser(c *gin.Context) {
 	var newUser VulscanoUserCreate
 
 	if err := c.ShouldBindJSON(&newUser); err != nil {
-		logging.VulscanoLog("error", "User creation request failed: ", err.Error())
+		logging.VSCANLog("error", "User creation request failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -569,7 +569,7 @@ func UpdateUser(c *gin.Context) {
 	user := c.Param("user-id")
 
 	if err := c.ShouldBindJSON(&updateUser); err != nil {
-		logging.VulscanoLog("error", "user update request failed: ", err.Error())
+		logging.VSCANLog("error", "user update request failed: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -693,15 +693,14 @@ func AdminGetCVEVulnAffectingDevice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"results": devices})
 }
 
-// AdminGetAnutaDeviceSuggestedSW will pull in bulk the devices and serial numbers from onboarded inventory devices
+// GetAnutaDeviceSuggestedSW will pull in bulk the devices and serial numbers from onboarded inventory devices
 // API workflow to Cisco API's will then be triggered in order to retrieve the suggested SW versions for each device
-func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
+func GetAnutaDeviceSuggestedSW() ([]map[string]string, error) {
 
 	devList, err := postgresdb.DBInstance.FetchAllDevices()
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot fetch devices list from DB"})
-		return
+		return nil, err
 	}
 
 	// snSlice stores the Serial Number of Anuta devices
@@ -734,8 +733,7 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 	}
 
 	if len(snToPIDMap) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unable to process Serial Numbers from Cisco API"})
-		return
+		return nil, errors.New("unable to fetch suggested SW from Cisco API")
 	}
 
 	// Extract Serial Numbers in slice to be passed to Cisco Software Suggestion API
@@ -750,8 +748,8 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 	ciscoSuggSWAPISlice := buildCiscoSuggSWList(sl)
 
 	if len(ciscoSuggSWAPISlice) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unable to fetch suggested SW from Cisco API"})
-		return
+
+		return nil, errors.New("unable to fetch suggested SW from Cisco API")
 	}
 
 	tempSoftMap := map[string]string{}
@@ -770,7 +768,7 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 						tempDate, errParseDate := time.Parse("02 Jan 2006", sug.ReleaseDate)
 
 						if errParseDate != nil {
-							logging.VulscanoLog("warning",
+							logging.VSCANLog("warning",
 								"Unable to parse Date from Cisco Software Suggestion API: ", sug.ReleaseDate,
 							)
 							continue
@@ -803,7 +801,22 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 	err = postgresdb.DBInstance.UpdateDeviceSuggestedSW(snToPIDMap)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot insert Suggested SW results in DB"})
+		return nil, err
+	}
+	logging.VSCANLog("info",
+		"Synchronization task of Devices Suggested Software with Cisco API has completed")
+
+	return snToPIDMap, nil
+}
+
+// AdminGetAnutaDeviceSuggestedSW will pull in bulk the devices and serial numbers from onboarded inventory devices
+// API workflow to Cisco API's will then be triggered in order to retrieve the suggested SW versions for each device
+func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
+
+	snToPIDMap, err := GetAnutaDeviceSuggestedSW()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot fetch devices list from DB"})
 		return
 	}
 
@@ -829,7 +842,7 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 	var devScanner DeviceBulkScanner
 
 	if err := c.ShouldBindJSON(&ads); err != nil {
-		logging.VulscanoLog("error", err.Error())
+		logging.VSCANLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -843,13 +856,6 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 	switch ads.OSType {
 	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
-		//if devScanner == nil {
-		//	logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
-		//	c.JSON(http.StatusBadRequest, gin.H{
-		//		"error": "Failed to instantiate Device with given OS Type",
-		//	})
-		//	return
-		//}
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -860,7 +866,7 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 
 	scanRes, err := LaunchAbstractVendorBulkScan(devScanner, &ads, &jwtClaim)
 	if err != nil {
-		logging.VulscanoLog("error: ", err.Error())
+		logging.VSCANLog("error: ", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
@@ -886,7 +892,7 @@ func LaunchAnutaInventoryBulkScan(c *gin.Context) {
 	var invDevices AnutaDeviceBulkScanRequest
 
 	if err := c.ShouldBindJSON(&invDevices); err != nil {
-		logging.VulscanoLog("error", err.Error())
+		logging.VSCANLog("error", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -937,8 +943,7 @@ func LaunchAnutaInventoryBulkScan(c *gin.Context) {
 // validateEmail is a helper function to validate email address format during user creation
 func validateEmail(e string) bool {
 
-	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_` + "`" + `{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,
-		61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$`)
+	emailRegex := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
 	return emailRegex.MatchString(e)
 }
@@ -992,13 +997,13 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 
 			defer wgSn.Done()
 
-			logging.VulscanoLog("info",
+			logging.VSCANLog("info",
 				"sending API Call for Serial Number ", snSlice[count:count+snIncrement])
 
 			pid, err := openvulnapi.GetCiscoPID(snSlice[count : count+snIncrement]...)
 
 			if err != nil {
-				logging.VulscanoLog("error",
+				logging.VSCANLog("error",
 					err.Error())
 				<-snGuard
 				return
@@ -1016,13 +1021,13 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 	wgSn.Wait()
 
 	// Send last increment of serial numbers slice to Cisco API
-	logging.VulscanoLog("info",
+	logging.VSCANLog("info",
 		"sending API Call for Serial Number ", snSlice[snTotalCountProc+snIncrement:])
 
 	pidLast, err := openvulnapi.GetCiscoPID(snSlice[snTotalCountProc+snIncrement:]...)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			err.Error())
 	} else {
 		ciscoSNAPISlice = append(ciscoSNAPISlice, *pidLast)
@@ -1034,7 +1039,7 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 
 	// Get the Cisco SuggestedSW for each PID
-	// snIncrement will pass 10 PID's per API call until the snSlice exhausts
+	// snIncrement will pass 10 PID's per API call until the snPID exhausts
 	// snTotalCountProc will keep track of the number of PID's processed in snPID
 	// snGuard will allow 2 concurrent API calls as per Cisco API limits
 	pidIncrement := 10
@@ -1059,13 +1064,13 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 
 			defer wgSn.Done()
 
-			logging.VulscanoLog("info",
+			logging.VSCANLog("info",
 				"sending API Call for PID ", snPID[count:count+pidIncrement])
 
 			sw, err := openvulnapi.GetCiscoSWSuggestion(snPID[count : count+pidIncrement]...)
 
 			if err != nil {
-				logging.VulscanoLog("error",
+				logging.VSCANLog("error",
 					err.Error())
 				<-pidGuard
 				return
@@ -1083,16 +1088,204 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 	wgSn.Wait()
 
 	// Send last increment of serial numbers slice to Cisco API
-	logging.VulscanoLog("info",
+	logging.VSCANLog("info",
 		"sending API Call for Cisco PID ", snPID[pidTotalCountProc+pidIncrement:])
 
 	swLast, err := openvulnapi.GetCiscoSWSuggestion(snPID[pidTotalCountProc+pidIncrement:]...)
 
 	if err != nil {
-		logging.VulscanoLog("error",
+		logging.VSCANLog("error",
 			err.Error())
 	} else {
 		ciscoSuggSWSlice = append(ciscoSuggSWSlice, *swLast)
 	}
 	return ciscoSuggSWSlice
+}
+
+// RefreshInventoryCache is going to update the Redis cache with inventory information pulled from the different
+// integrations
+func RefreshInventoryCache(c *gin.Context) {
+	inventorymgr.BuildDevicesInventory()
+
+	c.JSON(http.StatusOK, gin.H{"reply": "request to rebuild inventory cache submitted."})
+}
+
+// FetchCiscoAMCStatus is the function that will interact with Cisco SN2INFO API and update Cisco CPE inventories
+// with their Maintenance Contract Status
+func FetchCiscoAMCStatus() error {
+
+	// Maximum Serial Number per API call
+	const maxSN = 50
+
+	devList, err := postgresdb.DBInstance.FetchAllDevices()
+
+	if err != nil {
+		return err
+	}
+
+	// sn stores the Serial Number of devices within the inventory
+	var sn []string
+
+	for _, dev := range devList {
+		if dev.SerialNumber != "NA" {
+			sn = append(sn, dev.SerialNumber)
+
+		}
+	}
+
+	if len(sn) <= maxSN {
+
+		logging.VSCANLog("info",
+			"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn)
+
+		snAMCMap, err := getCiscoAMC(sn...)
+
+		if err != nil {
+
+			return err
+		}
+
+		err = postgresdb.DBInstance.UpdateSmartNetCoverage(snAMCMap)
+
+		if err != nil {
+
+			return err
+		}
+
+	} else if len(sn) > maxSN {
+
+		// Keeps track of how many Serial Numbers left for request
+		currentCountSn := len(sn)
+
+		// Channel Guard for maximum 5 concurrent API calls
+		const maxConcurAPICalls = 5
+		guard := make(chan struct{}, maxConcurAPICalls)
+
+		// Wait Group for concurrent requests to Cisco SN2INFO API
+		var wg sync.WaitGroup
+
+		// Mutex to avoid race condition
+		var mu sync.Mutex
+
+		// Merged slice of all Serial Numbers / Coverage status retrieved from Cisco
+		var snAMCMapParent []map[string]string
+
+		for i := 0; currentCountSn >= maxSN; i++ {
+
+			guard <- struct{}{}
+			wg.Add(1)
+
+			// We don't decrement the current count on the first loop iteration
+			if i != 0 {
+
+				currentCountSn -= maxSN
+
+			}
+
+			go func(count int) {
+
+				defer wg.Done()
+
+				// Once count - maxSN returns a negative number, we know we're at the end of the sn Slice
+				// Therefore we just take the current index until what's left
+				if len(sn)-(count-maxSN) > len(sn) {
+
+					logging.VSCANLog("info",
+						"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn[len(sn)-count:])
+
+					snAMCMapChild, err := getCiscoAMC(sn[len(sn)-count:]...)
+
+					if err != nil {
+						<-guard
+						return
+					}
+
+					mu.Lock()
+					snAMCMapParent = append(snAMCMapParent, snAMCMapChild...)
+					mu.Unlock()
+
+				} else {
+
+					logging.VSCANLog("info",
+						"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn[len(sn)-count:len(sn)-(count-maxSN)])
+
+					// For each iteration, we take the starting index length of slice - current count
+					// Ending index length of slice - (current count - maximum serial numbers in single API call)
+					snAMCMapChild, err := getCiscoAMC(sn[len(sn)-count : len(sn)-(count-maxSN)]...)
+
+					if err != nil {
+						<-guard
+						return
+					}
+
+					mu.Lock()
+					snAMCMapParent = append(snAMCMapParent, snAMCMapChild...)
+					mu.Unlock()
+
+				}
+				// Decrement the number of serial numbers left to request
+
+				<-guard
+			}(currentCountSn)
+		}
+
+		wg.Wait()
+
+		if len(snAMCMapParent) == 0 {
+
+			return errors.New("failed to retrieve SmartNet Coverage from Cisco SN2INFO")
+		}
+
+		err = postgresdb.DBInstance.UpdateSmartNetCoverage(snAMCMapParent)
+
+		if err != nil {
+			return errors.New("cannot insert Cisco SmartNet Coverage in DB")
+		}
+
+	}
+	logging.VSCANLog("info",
+		"Synchronization task of SmartNet coverage status from Cisco API has completed")
+
+	return nil
+}
+
+// FetchCiscoAMCStatus is the function that will interact with Cisco SN2INFO API and update Cisco CPE inventories
+// with their Maintenance Contract Status
+func AdminFetchCiscoAMCStatus(c *gin.Context) {
+
+	err := FetchCiscoAMCStatus()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to reconcile Device AMC status with Cisco API"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "Cisco AMC contract details successfully retrieved."})
+
+}
+
+func getCiscoAMC(sn ...string) ([]map[string]string, error) {
+
+	resp, err := openvulnapi.GetSmartNetCoverage(sn...)
+
+	if err != nil {
+		logging.VSCANLog("error", "failed to retrieve SmartNet Coverage from Cisco SN2INFO: ", err)
+
+		return nil, err
+	}
+
+	var snAMCMap []map[string]string
+	for _, res := range resp.SerialNumbers {
+		snAMCMap = append(snAMCMap, map[string]string{
+			"serialNumber":               res.SrNo,
+			"productID":                  res.OrderablePidList[0].OrderablePid,
+			"serviceContractAssociated":  res.IsCovered,
+			"serviceContractDescription": res.ServiceLineDescr,
+			"serviceContractNumber":      res.ServiceContractNumber,
+			"serviceContractEndDate":     res.CoveredProductLineEndDate,
+			"serviceContractSiteCountry": res.ContractSiteCountry,
+		})
+	}
+
+	return snAMCMap, nil
 }

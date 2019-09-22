@@ -1,8 +1,7 @@
-// Package logging handles logging to StdOut and Writer vulscano.log
+// Package logging handles logging to StdOut and Writer vscan.log
 package logging
 
 import (
-	"os"
 	"time"
 
 	"github.com/fatih/color"
@@ -25,8 +24,11 @@ var (
 //)
 
 func logToStdOut(level string, fields ...interface{}) {
+
 	var log = logrus.New()
-	log.Out = os.Stdout
+
+	log.SetReportCaller(true)
+
 	localTimezone, _ := time.Now().In(time.Local).Zone()
 
 	formatter := &prefixed.TextFormatter{
@@ -59,7 +61,7 @@ func logToStdOut(level string, fields ...interface{}) {
 	}
 
 }
-func VulscanoLog(level string, fields ...interface{}) {
+func VSCANLog(level string, fields ...interface{}) {
 
 	logToStdOut(level, fields...)
 }

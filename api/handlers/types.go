@@ -4,7 +4,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/lucabrasi83/vulscano/openvulnapi"
+	"github.com/lucabrasi83/vscan/openvulnapi"
 )
 
 // Login represents the JSON payload to be sent to POST /api/v1/login
@@ -25,6 +25,7 @@ type ScanResults struct {
 	ScanJobID                   string                     `json:"scanJobID"`
 	ScanJobStartTime            time.Time                  `json:"scanJobStartTime"`
 	ScanJobEndTime              time.Time                  `json:"scanJobEndTime"`
+	ScanJobExecutingAgent       string                     `json:"scanJobAgent"`
 	ScanDeviceMeanTime          int                        `json:"scanDeviceMeanTimeMsec"`
 	TotalVulnerabilitiesFound   int                        `json:"totalVulnerabilitiesFound"`
 	TotalVulnerabilitiesScanned int                        `json:"totalVulnerabilitiesScanned"`
@@ -33,7 +34,7 @@ type ScanResults struct {
 
 // PingAPIResponse struct represents the JSON Body Response for API Health Check
 type PingAPIResponse struct {
-	ReplyBack       string `json:"pong" example:"I'm Alive"`
+	ReplyBack       string `json:"ping" example:"I'm Alive"`
 	VulscanoVersion string `json:"version" example:"0.2.1"`
 	GolangVersion   string `json:"golangRuntime" example:"1.11.5"`
 }
@@ -116,6 +117,7 @@ type AnutaBulkScanResults struct {
 	ScanJobID             string                      `json:"scanJobID"`
 	ScanJobStartTime      time.Time                   `json:"scanJobStartTime"`
 	ScanJobEndTime        time.Time                   `json:"scanJobEndTime"`
+	ScanJobExecutingAgent string                      `json:"scanJobAgent"`
 	DevicesScannedSuccess []string                    `json:"devicesScannedSuccess"`
 	DevicesScannedSkipped []string                    `json:"devicesScannedSkipped"`
 	DevicesScannedFailure []string                    `json:"devicesScannedFailure"`
@@ -143,6 +145,7 @@ type BulkScanResults struct {
 	ScanJobID             string              `json:"scanJobID"`
 	ScanJobStartTime      time.Time           `json:"scanJobStartTime"`
 	ScanJobEndTime        time.Time           `json:"scanJobEndTime"`
+	ScanJobExecutingAgent string              `json:"scanJobAgent"`
 	DevicesScannedSuccess []string            `json:"devicesScannedSuccess"`
 	DevicesScannedFailure []string            `json:"devicesScannedFailure"`
 	VulnerabilitiesFound  []BulkScanVulnFound `json:"vulnFoundDetails"`
@@ -168,7 +171,7 @@ type JwtClaim struct {
 // VulscanoUserCreate struct represents the JSON keys required to be passed by API consumer
 // in order to create a new user
 type VulscanoUserCreate struct {
-	Email      string `json:"email" binding:"required" example:"john@vulscano.com"`
+	Email      string `json:"email" binding:"required" example:"john@vscan.com"`
 	Password   string `json:"password" binding:"required" example:"!Mp0$$ible_2_ReMemBeR"`
 	Role       string `json:"role" binding:"required" example:"vulscanouser"`
 	Enterprise string `json:"enterpriseID" binding:"required" example:"TCL"`

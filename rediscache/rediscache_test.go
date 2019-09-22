@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,8 +13,17 @@ var testCacheStore *vscanCache
 
 func TestMain(m *testing.M) {
 
+	// Set Redis Client options
+	redisTestClient := redis.NewClient(&redis.Options{
+		Addr:         os.Getenv("VSCAN_REDIS_HOST") + ":6379",
+		Password:     os.Getenv("VSCAN_REDIS_PASSWORD"),
+		DB:           0, // use default DB,
+		PoolSize:     20,
+		MinIdleConns: 5,
+	})
+
 	// Assign Cache Store instance for all Tests
-	testCacheStore = newCacheStore(redisClient)
+	testCacheStore = newCacheStore(redisTestClient)
 
 	// Purge All keys before starting the tests
 	testCacheStore.cacheStoreClient.FlushAll()
@@ -21,7 +31,8 @@ func TestMain(m *testing.M) {
 	flag.Parse()
 	exitCode := m.Run()
 
-	// testCacheStore.CloseCacheConn()
+	// Close Redis connection after tests are done
+	testCacheStore.CloseCacheConn()
 
 	os.Exit(exitCode)
 
@@ -116,8 +127,6 @@ func TestCloseCacheStoreConn(t *testing.T) {
 
 	testCacheStore.CloseCacheConn()
 	ping, err := testCacheStore.cacheStoreClient.Ping().Result()
-
-	t.Logf("ping value is %q and err value is %v", ping, err)
 
 	t.Run("Check ping value is empty", func(t *testing.T) {
 

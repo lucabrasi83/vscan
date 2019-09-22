@@ -2,11 +2,12 @@ package rediscache
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
-	_ "github.com/lucabrasi83/vulscano/initializer" // Import for correct init functions order
-	"github.com/lucabrasi83/vulscano/logging"
+	_ "github.com/lucabrasi83/vscan/initializer" // Import for correct init functions order
+	"github.com/lucabrasi83/vscan/logging"
 )
 
 type vscanCache struct {
@@ -22,8 +23,15 @@ const (
 
 func init() {
 
+	// Disable Init Function when running tests
+	for _, arg := range os.Args {
+		if strings.Contains(arg, "test") {
+			return
+		}
+	}
+
 	if os.Getenv("VSCAN_REDIS_HOST") == "" {
-		logging.VulscanoLog("fatal", "Environment Variable VSCAN_REDIS_HOST not set")
+		logging.VSCANLog("fatal", "Environment Variable VSCAN_REDIS_HOST not set")
 	}
 
 	// Set Redis Client options
@@ -41,11 +49,11 @@ func init() {
 	// Verify Redis is UP and Running
 	_, err := CacheStore.cacheStoreClient.Ping().Result()
 	if err != nil {
-		logging.VulscanoLog("fatal",
+		logging.VSCANLog("fatal",
 			"Failed to connect to Redis instance ", err.Error())
 	}
 
-	logging.VulscanoLog("info", "Redis Cache Store connection pool successfully established")
+	logging.VSCANLog("info", "Redis Cache Store connection pool successfully established")
 
 }
 
@@ -59,7 +67,7 @@ func (p *vscanCache) CloseCacheConn() {
 	err := p.cacheStoreClient.Close()
 
 	if err != nil {
-		logging.VulscanoLog("error", "failed to close Redis Cache Store connection: ", err)
+		logging.VSCANLog("error", "failed to close Redis Cache Store connection: ", err)
 	}
 }
 func (p *vscanCache) LPushScannedDevicesIP(dev ...string) error {
@@ -74,7 +82,7 @@ func (p *vscanCache) LRemScannedDevicesIP(dev ...string) {
 		err := p.cacheStoreClient.LRem(ongoingScannedDevicesKey, 0, d).Err()
 
 		if err != nil {
-			logging.VulscanoLog("error", "failed to remove device with IP "+d+"from cacheStoreClient list")
+			logging.VSCANLog("error", "failed to remove device with IP "+d+"from cacheStoreClient list")
 		}
 	}
 }
@@ -95,7 +103,7 @@ func (p *vscanCache) CheckCacheEntryExists(dev string) (bool, error) {
 	entry, err := p.cacheStoreClient.HGetAll(dev).Result()
 
 	if err != nil {
-		logging.VulscanoLog("error", "failed to check cache entry for device ", dev, err)
+		logging.VSCANLog("error", "failed to check cache entry for device ", dev, err)
 
 		return false, err
 	}
@@ -127,4 +135,26 @@ func (p *vscanCache) HashMapSetDevicesInventory(dev string, kv map[string]interf
 		return err
 	}
 	return nil
+}
+
+func (p *vscanCache) SetBatchJobsRunningKey(i int) error {
+
+	err := p.cacheStoreClient.Set("batchjobsrunning", i, 24*time.Hour).Err()
+
+	return err
+}
+
+func (p *vscanCache) GetBatchJobsRunningKey() (bool, error) {
+
+	val, err := p.cacheStoreClient.Get("batchjobsrunning").Int()
+
+	if err != redis.Nil && err != nil {
+		return true, err
+	}
+
+	valToBool := func(v int) bool {
+		return v == 1
+	}
+
+	return valToBool(val), nil
 }

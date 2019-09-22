@@ -10,8 +10,9 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 
-	"github.com/lucabrasi83/vulscano/logging"
+	"github.com/lucabrasi83/vscan/logging"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/host"
@@ -26,6 +27,13 @@ var (
 )
 
 func init() {
+
+	// Disable Init Function when running tests
+	for _, arg := range os.Args {
+		if strings.Contains(arg, "test") {
+			return
+		}
+	}
 
 	// Gin by default disables logging timestamps. Re-enabling it here
 	log.SetFlags(log.LstdFlags)
@@ -43,12 +51,12 @@ func printBanner() {
 	fmt.Printf("\n")
 	banner, err := os.Open("banner.txt")
 	if err != nil {
-		logging.VulscanoLog("error", "Not able to load banner: ", err.Error())
+		logging.VSCANLog("error", "Not able to load banner: ", err.Error())
 	}
 	defer banner.Close()
 	_, err = io.Copy(os.Stdout, banner)
 	if err != nil {
-		logging.VulscanoLog("error", "Not able to load banner: ", err.Error())
+		logging.VSCANLog("error", "Not able to load banner: ", err.Error())
 	}
 	fmt.Printf("\n\n")
 }
@@ -56,7 +64,7 @@ func printBanner() {
 // printReleaseDetails is called as part of init() function and display Vulscano release details such as
 // Git Commit, Git tag, build date,...
 func printReleaseDetails() {
-	fmt.Println(logging.UnderlineText("Vulscano Release:"), logging.InfoMessage(Version))
+	fmt.Println(logging.UnderlineText("VSCAN Controller Release:"), logging.InfoMessage(Version))
 	fmt.Println(logging.UnderlineText("Github Commit:"), logging.InfoMessage(Commit))
 
 	fmt.Println(logging.UnderlineText(
@@ -73,7 +81,7 @@ func printPlatformDetails() {
 	platform, err := host.Info()
 
 	if err != nil {
-		logging.VulscanoLog("error", "Unable to fetch platform details:", err.Error())
+		logging.VSCANLog("error", "Unable to fetch platform details:", err.Error())
 	} else {
 		fmt.Println(
 			logging.UnderlineText("Hostname:"),
@@ -87,7 +95,7 @@ func printPlatformDetails() {
 
 	cpuDetails, err := cpu.Info()
 	if err != nil {
-		logging.VulscanoLog("error", "Unable to fetch CPU details:", err.Error())
+		logging.VSCANLog("error", "Unable to fetch CPU details:", err.Error())
 	} else {
 		fmt.Println(logging.UnderlineText("CPU Model:"), logging.InfoMessage(cpuDetails[0].ModelName))
 		fmt.Println(logging.UnderlineText("CPU Core(s):"), logging.InfoMessage(runtime.NumCPU()))
@@ -97,7 +105,7 @@ func printPlatformDetails() {
 	diskUsage, err := disk.Usage("/")
 
 	if err != nil {
-		logging.VulscanoLog("error", "Unable to fetch disk Usage details:", err.Error())
+		logging.VSCANLog("error", "Unable to fetch disk Usage details:", err.Error())
 	} else {
 		diskUsageRounded := strconv.Itoa(int(math.Round(diskUsage.UsedPercent)))
 
@@ -108,7 +116,7 @@ func printPlatformDetails() {
 	memUsage, err := mem.VirtualMemory()
 
 	if err != nil {
-		logging.VulscanoLog("error", "Unable to fetch Memory details:", err.Error())
+		logging.VSCANLog("error", "Unable to fetch Memory details:", err.Error())
 	} else {
 		memUsageRounded := strconv.Itoa(int(math.Round(memUsage.UsedPercent)))
 		fmt.Println(
