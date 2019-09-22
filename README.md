@@ -1,12 +1,22 @@
 # VSCAN
 
 
-[![Build Status](https://travis-ci.com/lucabrasi83/vulscano.svg?token=Rjzx1thyrVmqNDLuUZ1P&branch=master)](https://travis-ci.com/lucabrasi83/vulscano)
-[![codecov](https://codecov.io/gh/lucabrasi83/vulscano/branch/master/graph/badge.svg?token=Y5byK7OnSd)](https://codecov.io/gh/lucabrasi83/vulscano)
-[![Docker Automated](https://img.shields.io/docker/automated/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/)
-[![Docker Build](https://img.shields.io/docker/build/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/builds/)
-[![Microbadger](https://img.shields.io/microbadger/image-size/tatacomm/vulscano.svg?longCache=true&style=flat-square)](https://hub.docker.com/r/tatacomm/vulscano/tags/)
-[![GolangCI](https://golangci.com/badges/github.com/lucabrasi83/vscan.svg)](https://golangci.com/r/github.com/lucabrasi83/vscan)
+[![Build Status](https://travis-ci.com/lucabrasi83/vscan.svg?token=Rjzx1thyrVmqNDLuUZ1P&branch=master)](https
+://travis-ci.com/lucabrasi83/vscan)
+[![codecov](https://codecov.io/gh/lucabrasi83/vscan/master/graph/badge.svg?token=Y5byK7OnSd)](https
+://codecov.io/gh/lucabrasi83/vscan)
+[![Docker Automated](https://img.shields.io/docker/automated/tatacomm/vscan-controller.svg?longCache=true&style=flat
+-square
+)](https
+://hub.docker.com/r/tatacomm/vscan-controller/)
+[![Docker Build](https://img.shields.io/docker/build/tatacomm/vscan-controller.svg?longCache=true&style=flat-square
+)](https://hub
+.docker.com/r/tatacomm/vscan-controller/builds/)
+[![Microbadger](https://img.shields.io/microbadger/image-size/tatacomm/vscan-controller.svg?longCache=true&style=flat
+-square
+)](https://hub.docker.com/r/tatacomm/vscan-controller/tags/)
+[![GolangCI](https://golangci.com/badges/github.com/lucabrasi83/vscan-controller.svg)](https://golangci.com/r/github.com
+/lucabrasi83/vscan)
 [![godoc](https://docstand.rocro.com/badges/github.com/lucabrasi83/vscan/documentation/godoc?token
 =xwzHrjcWq5_ajaRHXPPzhY1agb3ZF1Sx-12hCBRUJAc&branch=master)](https://docstand.rocro.com/docs/github.com/lucabrasi83
 /vscan
