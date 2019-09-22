@@ -68,7 +68,6 @@ func (p *vscanCache) CloseCacheConn() {
 
 	if err != nil {
 		logging.VSCANLog("error", "failed to close Redis Cache Store connection: ", err)
-
 	}
 }
 func (p *vscanCache) LPushScannedDevicesIP(dev ...string) error {
