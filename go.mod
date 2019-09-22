@@ -12,7 +12,7 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-openapi/spec v0.19.2 // indirect
 	github.com/go-openapi/swag v0.19.4 // indirect
-	github.com/go-redis/redis v6.15.2+incompatible
+	github.com/go-redis/redis v6.15.5+incompatible
 	github.com/gogo/protobuf v1.1.1
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/jackc/pgx/v4 v4.0.0
