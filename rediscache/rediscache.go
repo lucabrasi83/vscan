@@ -139,7 +139,7 @@ func (p *vscanCache) HashMapSetDevicesInventory(dev string, kv map[string]interf
 
 func (p *vscanCache) SetBatchJobsRunningKey(i int) error {
 
-	err := p.cacheStoreClient.Set("batchjobsrunning", i, 0).Err()
+	err := p.cacheStoreClient.Set("batchjobsrunning", i, 24*time.Hour).Err()
 
 	return err
 }
@@ -148,15 +148,12 @@ func (p *vscanCache) GetBatchJobsRunningKey() (bool, error) {
 
 	val, err := p.cacheStoreClient.Get("batchjobsrunning").Int()
 
-	if err != nil {
-		return true, nil
+	if err != redis.Nil && err != nil {
+		return true, err
 	}
 
 	valToBool := func(v int) bool {
-		if v == 1 {
-			return true
-		}
-		return false
+		return v == 1
 	}
 
 	return valToBool(val), nil
