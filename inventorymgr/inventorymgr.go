@@ -10,5 +10,9 @@ func BuildDevicesInventory() {
 
 	if err != nil {
 		logging.VulscanoLog("failed to build cache for Anuta NCX devices inventory", err)
+		return
 	}
+	logging.VulscanoLog("info",
+		"Synchronization task of Devices Inventory backend with VSCAN cache has completed")
+
 }

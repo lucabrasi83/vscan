@@ -803,6 +803,9 @@ func GetAnutaDeviceSuggestedSW() ([]map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	logging.VulscanoLog("info",
+		"Synchronization task of Devices Suggested Software with Cisco API has completed")
+
 	return snToPIDMap, nil
 }
 
@@ -1236,6 +1239,9 @@ func FetchCiscoAMCStatus() error {
 		}
 
 	}
+	logging.VulscanoLog("info",
+		"Synchronization task of SmartNet coverage status from Cisco API has completed")
+
 	return nil
 }
 
