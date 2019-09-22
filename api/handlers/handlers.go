@@ -971,6 +971,11 @@ func validatePassword(p string) bool {
 // buildCiscoSNList is a helper function to fetch the Product ID's for each device passed in slice
 func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 
+	// If Serial Number slice less than 5, exit the function
+	if len(snSlice) < 5 {
+		return nil
+	}
+
 	// Get the Cisco Product ID for each Serial Number
 	// snIncrement will pass 10 serial numbers per API call until the snSlice exhausts
 	// snTotalCountProc will keep track of the number of serial numbers processed in snSlice
@@ -1038,6 +1043,10 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 // buildCiscoSuggSWList is a helper function to fetch the Cisco suggested Software for each PID passed
 func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 
+	// If no Product ID is present in the slice, exit the function
+	if len(snPID) == 0 {
+		return nil
+	}
 	// Get the Cisco SuggestedSW for each PID
 	// snIncrement will pass 10 PID's per API call until the snPID exhausts
 	// snTotalCountProc will keep track of the number of PID's processed in snPID

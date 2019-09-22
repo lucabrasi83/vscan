@@ -139,7 +139,7 @@ func (p *vscanCache) HashMapSetDevicesInventory(dev string, kv map[string]interf
 
 func (p *vscanCache) SetBatchJobsRunningKey(i int) error {
 
-	err := p.cacheStoreClient.Set("batchjobsrunning", i, 24*time.Hour).Err()
+	err := p.cacheStoreClient.Set("batchjobsrunning", i, 1*time.Hour).Err()
 
 	return err
 }
