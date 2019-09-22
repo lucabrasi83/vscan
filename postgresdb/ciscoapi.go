@@ -19,8 +19,6 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 		"info",
 		"Fetching all published Cisco Security Advisories...")
 
-	//var allSA *[]openvulnapi.VulnMetadata
-
 	allSA, err := openvulnapi.GetAllVulnMetaData()
 
 	if err != nil {
@@ -54,20 +52,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 
 	defer cancelQuery()
 
-	// Prepare SQL Statement in DB for Batch
-	//_, err = p.db.Prepare("insert_all_cisco_advisories", sqlQuery)
-	//
-	//if err != nil {
-	//	logging.VulscanoLog(
-	//		"error",
-	//		"Failed to prepare Batch statement: ",
-	//		err.Error())
-	//	return err
-	//}
-
 	b := &pgx.Batch{}
-
-	// b := p.db.BeginBatch()
 
 	for _, adv := range allSA {
 
@@ -110,7 +95,6 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	}
 
 	// Send Batch SQL Query
-	// errSendBatch := b.Send(ctxTimeout, nil)
 	r := p.db.SendBatch(ctxTimeout, b)
 	c, errSendBatch := r.Exec()
 
@@ -138,6 +122,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 
 		return errExecBatch
 	}
+	logging.VulscanoLog("info", "Successfully synchronized Cisco openVuln API with local vulnerabilities database")
 	return nil
 }
 
@@ -205,17 +190,6 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 
 	defer cancelQuery()
 
-	// Prepare SQL Statement in DB for Batch
-	//_, err := p.db.Prepare("update_device_suggested_sw", sqlQuery)
-	//if err != nil {
-	//	logging.VulscanoLog(
-	//		"error",
-	//		"Failed to prepare Batch statement: ",
-	//		err.Error())
-	//	return err
-	//}
-
-	// b := p.db.BeginBatch()
 	b := &pgx.Batch{}
 	for _, d := range devSW {
 
@@ -230,7 +204,6 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	r := p.db.SendBatch(ctxTimeout, b)
 	_, errSendBatch := r.Exec()
 
-	//errSendBatch := b.Send(ctxTimeout, nil)
 	if errSendBatch != nil {
 		logging.VulscanoLog(
 			"error",
@@ -272,19 +245,6 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 
 	defer cancelQuery()
 
-	// Prepare SQL Statement in DB for Batch
-	//_, err := p.db.Prepare("update_device_amc_coverage", sqlQuery)
-	//
-	//if err != nil {
-	//	logging.VulscanoLog(
-	//		"error",
-	//		"Failed to prepare Batch statement: ",
-	//		err.Error())
-	//	return err
-	//}
-
-	// b := p.db.BeginBatch()
-
 	b := &pgx.Batch{}
 
 	// Map to convert coverage status "YES" / "NO" to boolean
@@ -309,7 +269,6 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 	}
 
 	// Send Batch SQL Query
-	// errSendBatch := b.Send(ctxTimeout, nil)
 	r := p.db.SendBatch(ctxTimeout, b)
 	c, errSendBatch := r.Exec()
 

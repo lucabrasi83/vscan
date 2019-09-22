@@ -213,19 +213,6 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 
 	defer cancelQuery()
 
-	// Prepare SQL Statement in DB for Batch
-	//_, err := p.db.Prepare("insert_device_va_history", sqlQueryDeviceHistory)
-	//
-	//if err != nil {
-	//	logging.VulscanoLog(
-	//		"error",
-	//		"Failed to prepare Batch statement: ",
-	//		err.Error())
-	//	return err
-	//}
-	//
-	//b := p.db.BeginBatch()
-
 	b := &pgx.Batch{}
 
 	for _, d := range args {
@@ -240,8 +227,6 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 	// Send Batch SQL Query
 	r := p.db.SendBatch(ctxTimeout, b)
 	c, errSendBatch := r.Exec()
-
-	//errSendBatch := b.Send(ctxTimeout, nil)
 
 	if errSendBatch != nil {
 		logging.VulscanoLog(

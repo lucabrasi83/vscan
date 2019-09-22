@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -692,15 +693,14 @@ func AdminGetCVEVulnAffectingDevice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"results": devices})
 }
 
-// AdminGetAnutaDeviceSuggestedSW will pull in bulk the devices and serial numbers from onboarded inventory devices
+// GetAnutaDeviceSuggestedSW will pull in bulk the devices and serial numbers from onboarded inventory devices
 // API workflow to Cisco API's will then be triggered in order to retrieve the suggested SW versions for each device
-func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
+func GetAnutaDeviceSuggestedSW() ([]map[string]string, error) {
 
 	devList, err := postgresdb.DBInstance.FetchAllDevices()
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot fetch devices list from DB"})
-		return
+		return nil, err
 	}
 
 	// snSlice stores the Serial Number of Anuta devices
@@ -733,8 +733,7 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 	}
 
 	if len(snToPIDMap) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unable to process Serial Numbers from Cisco API"})
-		return
+		return nil, errors.New("unable to fetch suggested SW from Cisco API")
 	}
 
 	// Extract Serial Numbers in slice to be passed to Cisco Software Suggestion API
@@ -749,8 +748,8 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 	ciscoSuggSWAPISlice := buildCiscoSuggSWList(sl)
 
 	if len(ciscoSuggSWAPISlice) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "unable to fetch suggested SW from Cisco API"})
-		return
+
+		return nil, errors.New("unable to fetch suggested SW from Cisco API")
 	}
 
 	tempSoftMap := map[string]string{}
@@ -802,7 +801,19 @@ func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
 	err = postgresdb.DBInstance.UpdateDeviceSuggestedSW(snToPIDMap)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot insert Suggested SW results in DB"})
+		return nil, err
+	}
+	return snToPIDMap, nil
+}
+
+// AdminGetAnutaDeviceSuggestedSW will pull in bulk the devices and serial numbers from onboarded inventory devices
+// API workflow to Cisco API's will then be triggered in order to retrieve the suggested SW versions for each device
+func AdminGetAnutaDeviceSuggestedSW(c *gin.Context) {
+
+	snToPIDMap, err := GetAnutaDeviceSuggestedSW()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot fetch devices list from DB"})
 		return
 	}
 
@@ -842,13 +853,6 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 	switch ads.OSType {
 	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
-		//if devScanner == nil {
-		//	logging.VulscanoLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
-		//	c.JSON(http.StatusBadRequest, gin.H{
-		//		"error": "Failed to instantiate Device with given OS Type",
-		//	})
-		//	return
-		//}
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -1105,17 +1109,12 @@ func RefreshInventoryCache(c *gin.Context) {
 
 // FetchCiscoAMCStatus is the function that will interact with Cisco SN2INFO API and update Cisco CPE inventories
 // with their Maintenance Contract Status
-func AdminFetchCiscoAMCStatus(c *gin.Context) {
+func FetchCiscoAMCStatus() error {
 
 	// Maximum Serial Number per API call
 	const maxSN = 50
 
 	devList, err := postgresdb.DBInstance.FetchAllDevices()
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot fetch devices list from DB"})
-		return
-	}
 
 	// sn stores the Serial Number of devices within the inventory
 	var sn []string
@@ -1136,17 +1135,14 @@ func AdminFetchCiscoAMCStatus(c *gin.Context) {
 
 		if err != nil {
 
-			c.JSON(http.StatusBadRequest,
-				gin.H{"error": "failed to retrieve SmartNet Coverage from Cisco SN2INFO: " + err.Error()})
-
-			return
+			return err
 		}
 
 		err = postgresdb.DBInstance.UpdateSmartNetCoverage(snAMCMap)
 
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot insert Cisco SmartNet Coverage in DB"})
-			return
+
+			return err
 		}
 
 	} else if len(sn) > maxSN {
@@ -1229,19 +1225,29 @@ func AdminFetchCiscoAMCStatus(c *gin.Context) {
 		wg.Wait()
 
 		if len(snAMCMapParent) == 0 {
-			c.JSON(http.StatusBadRequest,
-				gin.H{"error": "failed to retrieve SmartNet Coverage from Cisco SN2INFO"})
 
-			return
+			return errors.New("failed to retrieve SmartNet Coverage from Cisco SN2INFO")
 		}
 
 		err = postgresdb.DBInstance.UpdateSmartNetCoverage(snAMCMapParent)
 
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot insert Cisco SmartNet Coverage in DB"})
-			return
+			return errors.New("cannot insert Cisco SmartNet Coverage in DB")
 		}
 
+	}
+	return nil
+}
+
+// FetchCiscoAMCStatus is the function that will interact with Cisco SN2INFO API and update Cisco CPE inventories
+// with their Maintenance Contract Status
+func AdminFetchCiscoAMCStatus(c *gin.Context) {
+
+	err := FetchCiscoAMCStatus()
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to reconcile Device AMC status with Cisco API"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"success": "Cisco AMC contract details successfully retrieved."})
