@@ -2,6 +2,7 @@ package rediscache
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -21,6 +22,13 @@ const (
 )
 
 func init() {
+
+	// Disable Init Function when running tests
+	for _, arg := range os.Args {
+		if strings.Contains(arg, "test") {
+			return
+		}
+	}
 
 	if os.Getenv("VSCAN_REDIS_HOST") == "" {
 		logging.VSCANLog("fatal", "Environment Variable VSCAN_REDIS_HOST not set")

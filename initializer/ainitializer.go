@@ -10,6 +10,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/lucabrasi83/vscan/logging"
 	"github.com/shirou/gopsutil/cpu"
@@ -26,6 +27,13 @@ var (
 )
 
 func init() {
+
+	// Disable Init Function when running tests
+	for _, arg := range os.Args {
+		if strings.Contains(arg, "test") {
+			return
+		}
+	}
 
 	// Gin by default disables logging timestamps. Re-enabling it here
 	log.SetFlags(log.LstdFlags)

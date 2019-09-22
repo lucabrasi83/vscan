@@ -225,7 +225,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 	wg.Add(devCount)
 
 	anutaScannedDevList := make([]AnutaDeviceInventory, 0)
-	skippedScannedDevices := make([]string, 0, 0)
+	skippedScannedDevices := make([]string, 0)
 
 	// We set a rate limit to throttle Goroutines querying Anuta.
 	rateLimit := time.NewTicker(100 * time.Millisecond)

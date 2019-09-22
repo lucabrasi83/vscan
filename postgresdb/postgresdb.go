@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -19,7 +20,6 @@ import (
 // db represents an instance of Postgres connection pool
 var ConnPool *pgxpool.Pool
 var DBInstance *vulscanoDB
-var connPoolConfig pgxpool.Config
 var pgpSymEncryptKey = os.Getenv("VSCAN_SECRET_KEY")
 
 const (
@@ -34,6 +34,13 @@ type vulscanoDB struct {
 
 // init() function will establish DB connection pool while package is being loaded.
 func init() {
+
+	// Disable Init Function when running tests
+	for _, arg := range os.Args {
+		if strings.Contains(arg, "test") {
+			return
+		}
+	}
 
 	// Check Environment Variables for Postgres DB Credentials
 	if os.Getenv("VULSCANO_DB_USERNAME") == "" || os.Getenv("VULSCANO_DB_PASSWORD") == "" {
@@ -68,35 +75,12 @@ func init() {
 
 	var err error
 
-	//dbConnectConfig := pgconn.Config{
-	//	Host: os.Getenv("VULSCANO_DB_HOST"),
-	//	TLSConfig: &tls.Config{
-	//		ServerName: os.Getenv("VULSCANO_DB_HOST"),
-	//		RootCAs:    certPool,
-	//	},
-	//	User:     os.Getenv("VULSCANO_DB_USERNAME"),
-	//	Password: os.Getenv("VULSCANO_DB_PASSWORD"),
-	//	Database: os.Getenv("VULSCANO_DB_DATABASE_NAME"),
-	//	DialFunc: (&net.Dialer{
-	//		KeepAlive: 30 * time.Second,
-	//		Timeout:   10 * time.Second,
-	//	}).DialContext,
-	//	// TargetSessionAttrs: "read-write",
-	//}
-
 	// pgx v4 requires config struct to be generated using ParseConfig method
 	poolConfig, errParsePool := pgxpool.ParseConfig("")
 
 	if errParsePool != nil {
 		logging.VSCANLog("fatal", fmt.Sprintf("failed to parse DB pool config %v", errParsePool))
 	}
-
-	//connPoolConfig = pgxpool.Config{
-	//	ConnConfig: &pgx.ConnConfig{
-	//		Config: dbConnectConfig,
-	//	},
-	//	MaxConns: 50,
-	//}
 
 	// Set Connection Parameters
 	poolConfig.MaxConns = 50

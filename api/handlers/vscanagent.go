@@ -79,7 +79,13 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 	}
 
 	// Closing GRPC client connection at the end of scan job
-	defer conn.Close()
+	defer func() {
+		errConnClose := conn.Close()
+		if errConnClose != nil {
+			logging.VSCANLog("warning",
+				fmt.Sprintf("failed to close gRPC client connection to VSCAN Agent. error: %v", errConnClose))
+		}
+	}()
 
 	var devices []*agentpb.Device
 
@@ -180,10 +186,11 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 
 			if err != nil {
 				logging.VSCANLog(
-
 					"error",
-					"unable to parse scan results for device ", resStream.GetDeviceName(), " during Job ID ", jobID,
-				)
+					fmt.Sprintf("unable to parse scan results for device %v during Job ID %v",
+						resStream.GetDeviceName(),
+						jobID,
+					))
 			}
 
 		} else {

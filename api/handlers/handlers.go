@@ -1119,6 +1119,10 @@ func FetchCiscoAMCStatus() error {
 
 	devList, err := postgresdb.DBInstance.FetchAllDevices()
 
+	if err != nil {
+		return err
+	}
+
 	// sn stores the Serial Number of devices within the inventory
 	var sn []string
 

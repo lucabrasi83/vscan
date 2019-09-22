@@ -5,11 +5,19 @@ package datadiros
 
 import (
 	"os"
+	"strings"
 
 	"github.com/lucabrasi83/vscan/logging"
 )
 
 func init() {
+
+	// Disable Init Function when running tests
+	for _, arg := range os.Args {
+		if strings.Contains(arg, "test") {
+			return
+		}
+	}
 
 	// Check for Environment Variable VULSCANO_MODE
 	switch os.Getenv("VULSCANO_MODE") {
