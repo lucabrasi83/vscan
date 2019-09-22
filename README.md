@@ -1,27 +1,14 @@
 # VSCAN
 
 
-[![Build Status](https://travis-ci.com/lucabrasi83/vscan.svg?token=Rjzx1thyrVmqNDLuUZ1P&branch=master)](https
-://travis-ci.com/lucabrasi83/vscan)
-[![codecov](https://codecov.io/gh/lucabrasi83/vscan/master/graph/badge.svg?token=Y5byK7OnSd)](https
-://codecov.io/gh/lucabrasi83/vscan)
-[![Docker Automated](https://img.shields.io/docker/automated/tatacomm/vscan-controller.svg?longCache=true&style=flat
--square
-)](https
-://hub.docker.com/r/tatacomm/vscan-controller/)
-[![Docker Build](https://img.shields.io/docker/build/tatacomm/vscan-controller.svg?longCache=true&style=flat-square
-)](https://hub
-.docker.com/r/tatacomm/vscan-controller/builds/)
-[![Microbadger](https://img.shields.io/microbadger/image-size/tatacomm/vscan-controller.svg?longCache=true&style=flat
--square
-)](https://hub.docker.com/r/tatacomm/vscan-controller/tags/)
-[![GolangCI](https://golangci.com/badges/github.com/lucabrasi83/vscan-controller.svg)](https://golangci.com/r/github.com
-/lucabrasi83/vscan)
-[![godoc](https://docstand.rocro.com/badges/github.com/lucabrasi83/vscan/documentation/godoc?token
-=xwzHrjcWq5_ajaRHXPPzhY1agb3ZF1Sx-12hCBRUJAc&branch=master)](https://docstand.rocro.com/docs/github.com/lucabrasi83
-/vscan
-/branch/master/godoc/github.com/lucabrasi83/vscan/)
-
+[![Build Status](https://travis-ci.com/lucabrasi83/vscan.svg?token=Rjzx1thyrVmqNDLuUZ1P&branch=master)](https://travis-ci.com/lucabrasi83/vscan)
+[![codecov](https://codecov.io/gh/lucabrasi83/vscan/branch/master/graph/badge.svg?token=Y5byK7OnSd)](https://codecov.io/gh/lucabrasi83/vscan)
+![Docker Cloud Automated build](https://img.shields.io/docker/cloud/automated/tatacomm/vscan-controller?style=flat-square)
+![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/tatacomm/vscan-controller?style=flat-square)
+![MicroBadger Size (tag)](https://img.shields.io/microbadger/image-size/tatacomm/vscan-controller/latest?style=flat-square)
+[![GolangCI](https://golangci.com/badges/github.com/lucabrasi83/vscan-controller.svg)](https://golangci.com/r/github.com/lucabrasi83/vscan)
+[![Job Status](https://docstand.rocro.com/badges/github.com/lucabrasi83/vscan/status?token=xwzHrjcWq5_ajaRHXPPzhY1agb3ZF1Sx-12hCBRUJAc)](https://docstand.rocro.com/jobs/github.com/lucabrasi83/vscan/latest?completed=true)
+[![godoc](https://docstand.rocro.com/badges/github.com/lucabrasi83/vscan/documentation/godoc?token=xwzHrjcWq5_ajaRHXPPzhY1agb3ZF1Sx-12hCBRUJAc&branch=master)](https://docstand.rocro.com/docs/github.com/lucabrasi83/vscan/branch/master/godoc/github.com/lucabrasi83/vscan/)
 #   
 
 <p align="center">
