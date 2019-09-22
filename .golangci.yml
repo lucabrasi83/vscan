@@ -11,6 +11,6 @@ linters:
   fast: false
 service:
   project-path: github.com/lucabrasi83/vscan
-  golangci-lint-version: 1.16.0 # use fixed version to not introduce new linters unexpectedly
+  golangci-lint-version: 1.18.0 # use fixed version to not introduce new linters unexpectedly
 
   

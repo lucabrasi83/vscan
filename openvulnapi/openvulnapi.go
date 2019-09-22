@@ -10,15 +10,24 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/lucabrasi83/vscan/logging"
 )
 
-//https://play.golang.org/p/sJjy61xyY9M
 func init() {
+
+	// Disable Init Function when running tests
+	for _, arg := range os.Args {
+		if strings.Contains(arg, "test") {
+			return
+		}
+	}
+
 	if os.Getenv("VULSCANO_OPENVULN_CLIENT_ID") == "" {
-		panic("Environment Variable VULSCANO_OPENVULN_CLIENT_ID is empty!")
+		logging.VSCANLog("fatal", "Environment Variable VULSCANO_OPENVULN_CLIENT_ID is empty!")
 	}
 	if os.Getenv("VULSCANO_OPENVULN_CLIENT_SECRET") == "" {
-		panic("Environment Variable VULSCANO_OPENVULN_CLIENT_SECRET is empty!")
+		logging.VSCANLog("fatal", "Environment Variable VULSCANO_OPENVULN_CLIENT_ID is empty!")
 	}
 }
 
