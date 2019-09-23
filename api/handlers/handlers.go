@@ -1038,7 +1038,7 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 		ciscoSNAPISlice = append(ciscoSNAPISlice, *pidLast)
 	}
 	logging.VSCANLog("info",
-		"Done Fetching Product ID of inventory devices from Cisco SN2INFO API...")
+		"Done Fetching Product ID of inventory devices from Cisco SN2INFO API.")
 
 	return ciscoSNAPISlice
 }
@@ -1113,7 +1113,7 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 		ciscoSuggSWSlice = append(ciscoSuggSWSlice, *swLast)
 	}
 	logging.VSCANLog("info",
-		"Done Fetching Suggested Software version of inventory devices from Cisco Suggested SW API...")
+		"Done Fetching Suggested Software version of inventory devices from Cisco Suggested SW API.")
 
 	return ciscoSuggSWSlice
 }
