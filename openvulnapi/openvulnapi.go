@@ -297,7 +297,9 @@ func GetCiscoPID(sn ...string) (*CiscoSnAPI, error) {
 	PIDReq, err := http.NewRequest("GET", snToPIDBaseURL+snJoined, nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("cannot fetch Cisco Product ID: %v", err)
+		return nil, fmt.Errorf(
+			"error %v while building HTTP Request to Cisco SN2INFO API for serial number(s) %v",
+			err, sn)
 	}
 
 	PIDReq.Header.Add("Content-Type", "application/json")
@@ -311,17 +313,19 @@ func GetCiscoPID(sn ...string) (*CiscoSnAPI, error) {
 	PIDRes, err := http.DefaultClient.Do(PIDReq)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while contacting Cisco API: %v", err)
+		return nil, fmt.Errorf("error %v while contacting CISCO SN2INFO API for serial number %v", err, sn)
 	}
 
 	if PIDRes.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("sn2info API responded with error code: %v", http.StatusText(PIDRes.StatusCode))
+		return nil, fmt.Errorf(
+			"CISCO SN2INFO API responded with error code: %v while querying serial number(s) %v",
+			http.StatusText(PIDRes.StatusCode), sn)
 	}
 
 	var p CiscoSnAPI
 
 	if err := json.NewDecoder(PIDRes.Body).Decode(&p); err != nil {
-		return nil, fmt.Errorf("error while serializing into JSON body into struct: %v", err)
+		return nil, fmt.Errorf("CISCO SN2INFO API error %v while serializing into JSON body into struct", err)
 	}
 
 	defer PIDRes.Body.Close()
@@ -344,7 +348,9 @@ func GetCiscoSWSuggestion(pid ...string) (*CiscoSWSuggestionAPI, error) {
 	SWReq, err := http.NewRequest("GET", SWSugBaseURL+pidJoined, nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("cannot fetch Cisco Suggested SW: %v", err)
+		return nil, fmt.Errorf(
+			"error %v while building HTTP Request to Cisco Suggested SW API for Product ID's %v",
+			err, pid)
 	}
 
 	SWReq.Header.Add("Content-Type", "application/json")
@@ -358,17 +364,19 @@ func GetCiscoSWSuggestion(pid ...string) (*CiscoSWSuggestionAPI, error) {
 	SWRes, err := http.DefaultClient.Do(SWReq)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while contacting Cisco API: %v", err)
+		return nil, fmt.Errorf("error %v while contacting CISCO SN2INFO API for Product IDs %v", err, pid)
 	}
 
 	if SWRes.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("swsuggestions API responded with error code: %v", http.StatusText(SWRes.StatusCode))
+		return nil, fmt.Errorf(
+			"CISCO Suggested SW API responded with error code: %v while querying Product IDs %v",
+			http.StatusText(SWRes.StatusCode), pid)
 	}
 
 	var s CiscoSWSuggestionAPI
 
 	if err := json.NewDecoder(SWRes.Body).Decode(&s); err != nil {
-		return nil, fmt.Errorf("error while serializing into JSON body into struct: %v", err)
+		return nil, fmt.Errorf("CISCO suggested Software API error %v while serializing into JSON body into struct", err)
 	}
 
 	defer SWRes.Body.Close()

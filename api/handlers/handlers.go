@@ -971,8 +971,15 @@ func validatePassword(p string) bool {
 // buildCiscoSNList is a helper function to fetch the Product ID's for each device passed in slice
 func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 
+	logging.VSCANLog("info",
+		"Start Fetching Product ID of inventory devices from Cisco SN2INFO API...")
+
 	// If Serial Number slice less than 5, exit the function
 	if len(snSlice) < 5 {
+		logging.VSCANLog("info",
+			fmt.Sprintf("Less than 5 Serial Numbers to query on Cisco SN2INFO API: %v. Cancelling the request",
+				snSlice))
+
 		return nil
 	}
 
@@ -1002,9 +1009,6 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 
 			defer wgSn.Done()
 
-			logging.VSCANLog("info",
-				"sending API Call for Serial Number ", snSlice[count:count+snIncrement])
-
 			pid, err := openvulnapi.GetCiscoPID(snSlice[count : count+snIncrement]...)
 
 			if err != nil {
@@ -1025,10 +1029,6 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 	}
 	wgSn.Wait()
 
-	// Send last increment of serial numbers slice to Cisco API
-	logging.VSCANLog("info",
-		"sending API Call for Serial Number ", snSlice[snTotalCountProc+snIncrement:])
-
 	pidLast, err := openvulnapi.GetCiscoPID(snSlice[snTotalCountProc+snIncrement:]...)
 
 	if err != nil {
@@ -1037,14 +1037,25 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 	} else {
 		ciscoSNAPISlice = append(ciscoSNAPISlice, *pidLast)
 	}
+	logging.VSCANLog("info",
+		"Done Fetching Product ID of inventory devices from Cisco SN2INFO API...")
+
 	return ciscoSNAPISlice
 }
 
 // buildCiscoSuggSWList is a helper function to fetch the Cisco suggested Software for each PID passed
 func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 
+	logging.VSCANLog("info",
+		"Start Fetching Suggested Software releases of inventory devices from Cisco Suggested SW API...")
+
 	// If no Product ID is present in the slice, exit the function
-	if len(snPID) == 0 {
+	if len(snPID) < 5 {
+
+		logging.VSCANLog("info",
+			fmt.Sprintf("Less than 5 Product ID's to query: %v on Cisco Suggested SW API. Cancelling the request",
+				snPID))
+
 		return nil
 	}
 	// Get the Cisco SuggestedSW for each PID
@@ -1073,9 +1084,6 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 
 			defer wgSn.Done()
 
-			logging.VSCANLog("info",
-				"sending API Call for PID ", snPID[count:count+pidIncrement])
-
 			sw, err := openvulnapi.GetCiscoSWSuggestion(snPID[count : count+pidIncrement]...)
 
 			if err != nil {
@@ -1096,10 +1104,6 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 	}
 	wgSn.Wait()
 
-	// Send last increment of serial numbers slice to Cisco API
-	logging.VSCANLog("info",
-		"sending API Call for Cisco PID ", snPID[pidTotalCountProc+pidIncrement:])
-
 	swLast, err := openvulnapi.GetCiscoSWSuggestion(snPID[pidTotalCountProc+pidIncrement:]...)
 
 	if err != nil {
@@ -1108,6 +1112,9 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 	} else {
 		ciscoSuggSWSlice = append(ciscoSuggSWSlice, *swLast)
 	}
+	logging.VSCANLog("info",
+		"Done Fetching Suggested Software version of inventory devices from Cisco Suggested SW API...")
+
 	return ciscoSuggSWSlice
 }
 
