@@ -17,7 +17,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 
 	logging.VSCANLog(
 		"info",
-		"Fetching all published Cisco Security Advisories...")
+		"Start Fetching all published Cisco Security Advisories...")
 
 	allSA, err := openvulnapi.GetAllVulnMetaData()
 

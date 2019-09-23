@@ -9,7 +9,7 @@ func BuildDevicesInventory() {
 	err := buildAnutaInventoryCache()
 
 	if err != nil {
-		logging.VSCANLog("failed to build cache for Anuta NCX devices inventory", err)
+		logging.VSCANLog("Failed to build cache for Anuta NCX devices inventory", err)
 		return
 	}
 	logging.VSCANLog("info",

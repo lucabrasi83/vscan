@@ -399,7 +399,8 @@ func GetSmartNetCoverage(sn ...string) (*SmartNetCoverage, error) {
 	CoverReq, err := http.NewRequest("GET", snSmartCoverURL+snJoined, nil)
 
 	if err != nil {
-		return nil, fmt.Errorf("cannot fetch Cisco SmartNetCoverage from sn2info API: %v", err)
+		return nil, fmt.Errorf(
+			"error %v while building HTTP Request to Cisco SmartNet Contract API for Serial Numbers %v", err, sn)
 	}
 
 	CoverReq.Header.Add("Content-Type", "application/json")
@@ -413,17 +414,21 @@ func GetSmartNetCoverage(sn ...string) (*SmartNetCoverage, error) {
 	CoverRes, err := http.DefaultClient.Do(CoverReq)
 
 	if err != nil {
-		return nil, fmt.Errorf("error while contacting Cisco API: %v", err)
+		return nil, fmt.Errorf(
+			"error %v while contacting Cisco SmartNet Coverage API for Serial Numbers %v", err, sn)
 	}
 
 	if CoverRes.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("sn2info API responded with error code: %v", http.StatusText(CoverRes.StatusCode))
+		return nil, fmt.Errorf(
+			"CISCO SmartNet Coverage API responded with error code: %v while querying for serial numbers %v",
+			http.StatusText(CoverRes.StatusCode), sn)
 	}
 
 	var p SmartNetCoverage
 
 	if err := json.NewDecoder(CoverRes.Body).Decode(&p); err != nil {
-		return nil, fmt.Errorf("error while serializing into JSON body into struct: %v", err)
+		return nil, fmt.Errorf(
+			"CISCO SmartNet Coverage API error %v while serializing into JSON body into struct for serial numbers %v", err, sn)
 	}
 
 	defer CoverRes.Body.Close()

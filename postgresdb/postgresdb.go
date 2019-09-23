@@ -84,7 +84,7 @@ func init() {
 
 	// Set Connection Parameters
 	poolConfig.MaxConns = 50
-	poolConfig.HealthCheckPeriod = 5 * time.Second
+	poolConfig.HealthCheckPeriod = 1 * time.Minute
 	poolConfig.ConnConfig.Host = os.Getenv("VULSCANO_DB_HOST")
 	poolConfig.ConnConfig.User = os.Getenv("VULSCANO_DB_USERNAME")
 	poolConfig.ConnConfig.Password = os.Getenv("VULSCANO_DB_PASSWORD")
@@ -98,8 +98,8 @@ func init() {
 
 	poolConfig.ConnConfig.DialFunc =
 		(&net.Dialer{
-			KeepAlive: 10 * time.Second,
-			Timeout:   30 * time.Second,
+			KeepAlive: 1 * time.Minute,
+			Timeout:   5 * time.Minute,
 		}).DialContext
 
 	// poolConfig.ConnConfig = &pgx.ConnConfig{Config: dbConnectConfig}

@@ -251,6 +251,5 @@ func buildAnutaInventoryCache() error {
 		wg.Wait()
 
 	}
-	logging.VSCANLog("info", "Process to build Anuta NCX inventory in cache has completed.")
 	return nil
 }

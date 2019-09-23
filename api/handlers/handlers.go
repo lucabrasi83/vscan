@@ -1130,6 +1130,9 @@ func RefreshInventoryCache(c *gin.Context) {
 // with their Maintenance Contract Status
 func FetchCiscoAMCStatus() error {
 
+	logging.VSCANLog("info",
+		"Start fetching Cisco SmartNet coverage status from Cisco API...")
+
 	// Maximum Serial Number per API call
 	const maxSN = 50
 
@@ -1150,9 +1153,6 @@ func FetchCiscoAMCStatus() error {
 	}
 
 	if len(sn) <= maxSN {
-
-		logging.VSCANLog("info",
-			"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn)
 
 		snAMCMap, err := getCiscoAMC(sn...)
 
@@ -1206,9 +1206,6 @@ func FetchCiscoAMCStatus() error {
 				// Therefore we just take the current index until what's left
 				if len(sn)-(count-maxSN) > len(sn) {
 
-					logging.VSCANLog("info",
-						"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn[len(sn)-count:])
-
 					snAMCMapChild, err := getCiscoAMC(sn[len(sn)-count:]...)
 
 					if err != nil {
@@ -1221,9 +1218,6 @@ func FetchCiscoAMCStatus() error {
 					mu.Unlock()
 
 				} else {
-
-					logging.VSCANLog("info",
-						"fetching SmartNet coverage status from Cisco API for serial numbers: ", sn[len(sn)-count:len(sn)-(count-maxSN)])
 
 					// For each iteration, we take the starting index length of slice - current count
 					// Ending index length of slice - (current count - maximum serial numbers in single API call)
@@ -1260,7 +1254,7 @@ func FetchCiscoAMCStatus() error {
 
 	}
 	logging.VSCANLog("info",
-		"Synchronization task of SmartNet coverage status from Cisco API has completed")
+		"Synchronization task of SmartNet coverage status from Cisco API has completed.")
 
 	return nil
 }
@@ -1285,8 +1279,6 @@ func getCiscoAMC(sn ...string) ([]map[string]string, error) {
 	resp, err := openvulnapi.GetSmartNetCoverage(sn...)
 
 	if err != nil {
-		logging.VSCANLog("error", "failed to retrieve SmartNet Coverage from Cisco SN2INFO: ", err)
-
 		return nil, err
 	}
 
