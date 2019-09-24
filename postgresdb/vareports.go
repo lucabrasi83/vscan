@@ -135,20 +135,6 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 
 	defer cancelQuery()
 
-	// Prepare SQL Statement in DB for Batch
-
-	//_, err := p.db.Prepare("insert_device_va_report", sqlQueryDeviceReport)
-	//
-	//if err != nil {
-	//	logging.VSCANLog(
-	//		"error",
-	//		"Failed to prepare Batch statement: ",
-	//		err.Error())
-	//	return err
-	//}
-	//
-	//b := p.db.BeginBatch()
-
 	b := &pgx.Batch{}
 
 	for _, d := range args {
@@ -170,8 +156,17 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 	}
 
 	// Send Batch SQL Query
-	// errSendBatch := b.Send(ctxTimeout, nil)
 	r := p.db.SendBatch(ctxTimeout, b)
+
+	// Close Batch at the end of function
+	defer func() {
+		errCloseBatch := r.Close()
+		if errCloseBatch != nil {
+			logging.VSCANLog("error",
+				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+		}
+	}()
+
 	c, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
@@ -188,16 +183,6 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 		return fmt.Errorf("no insertion of row while executing query %v", sqlQueryDeviceReport)
 	}
 
-	// Execute Batch SQL Query
-	errExecBatch := r.Close()
-	if errExecBatch != nil {
-		logging.VSCANLog(
-			"error",
-			"Failed to execute Batch query: ",
-			errExecBatch.Error())
-
-		return errExecBatch
-	}
 	return nil
 }
 
@@ -226,6 +211,16 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 
 	// Send Batch SQL Query
 	r := p.db.SendBatch(ctxTimeout, b)
+
+	// Close Batch at the end of function
+	defer func() {
+		errCloseBatch := r.Close()
+		if errCloseBatch != nil {
+			logging.VSCANLog("error",
+				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+		}
+	}()
+
 	c, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
@@ -242,15 +237,5 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 		return fmt.Errorf("no insertion of row while executing query %v", sqlQueryDeviceHistory)
 	}
 
-	// Execute Batch SQL Query
-	errExecBatch := r.Close()
-	if errExecBatch != nil {
-		logging.VSCANLog(
-			"error",
-			"Failed to execute Batch query: ",
-			errExecBatch.Error())
-
-		return errExecBatch
-	}
 	return nil
 }

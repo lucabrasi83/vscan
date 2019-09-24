@@ -84,7 +84,7 @@ func checkBatchJobsRunning() bool {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			fmt.Sprintf("failed to retrieve batchjobsrunning key in Cache Store. error: %v", err))
+			fmt.Sprintf("Failed to retrieve batchjobsrunning key in Cache Store. error: %v", err))
 		return true
 	}
 
@@ -97,7 +97,7 @@ func setBatchJobsRunningKey(i int) error {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			fmt.Sprintf("failed to set batchjobsrunning key in Cache Store. error: %v", err))
+			fmt.Sprintf("Failed to set batchjobsrunning key in Cache Store. error: %v", err))
 	}
 
 	return err

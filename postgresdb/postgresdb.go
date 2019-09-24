@@ -98,8 +98,8 @@ func init() {
 
 	poolConfig.ConnConfig.DialFunc =
 		(&net.Dialer{
-			KeepAlive: 1 * time.Minute,
-			Timeout:   5 * time.Minute,
+			KeepAlive: 30 * time.Second,
+			Timeout:   1 * time.Minute,
 		}).DialContext
 
 	// poolConfig.ConnConfig = &pgx.ConnConfig{Config: dbConnectConfig}

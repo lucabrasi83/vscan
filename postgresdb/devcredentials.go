@@ -179,7 +179,6 @@ func (p *vulscanoDB) InsertNewDeviceCredentials(devCredsProps map[string]string)
 	cTag, err := p.db.Exec(
 		ctxTimeout,
 		sqlQuery,
-		nil,
 		pgpSymEncryptKey,
 		devCredsProps["credsName"],
 		devCredsProps["credsVendor"],
@@ -233,7 +232,6 @@ func (p *vulscanoDB) UpdateDeviceCredentials(devCredsProps map[string]string) er
 	cTag, err := p.db.Exec(
 		ctxTimeout,
 		sqlQuery,
-		nil,
 		pgpSymEncryptKey,
 		devCredsProps["credsCurrentName"],
 		devCredsProps["credsVendor"],

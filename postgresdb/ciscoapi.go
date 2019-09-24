@@ -96,6 +96,16 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 
 	// Send Batch SQL Query
 	r := p.db.SendBatch(ctxTimeout, b)
+
+	// Close Batch at the end of function
+	defer func() {
+		errCloseBatch := r.Close()
+		if errCloseBatch != nil {
+			logging.VSCANLog("error",
+				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+		}
+	}()
+
 	c, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
@@ -110,17 +120,6 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 
 	if c.RowsAffected() < 1 {
 		return fmt.Errorf("no insertion of row while executing query %v", sqlQuery)
-	}
-
-	// Execute Batch SQL Query
-	errExecBatch := r.Close()
-	if errExecBatch != nil {
-		logging.VSCANLog(
-			"error",
-			"Failed to execute Batch query: ",
-			errExecBatch.Error())
-
-		return errExecBatch
 	}
 	logging.VSCANLog("info", "Successfully synchronized Cisco openVuln API with local vulnerabilities database")
 	return nil
@@ -202,6 +201,16 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	// Send Batch SQL Query
 
 	r := p.db.SendBatch(ctxTimeout, b)
+
+	// Close Batch at the end of function
+	defer func() {
+		errCloseBatch := r.Close()
+		if errCloseBatch != nil {
+			logging.VSCANLog("error",
+				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+		}
+	}()
+
 	_, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
@@ -214,17 +223,6 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 
 	}
 
-	// Execute Batch SQL Query
-
-	errExecBatch := r.Close()
-	if errExecBatch != nil {
-		logging.VSCANLog(
-			"error",
-			"Failed to execute Batch query: ",
-			errExecBatch.Error())
-
-		return errExecBatch
-	}
 	return nil
 }
 
@@ -270,6 +268,16 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 
 	// Send Batch SQL Query
 	r := p.db.SendBatch(ctxTimeout, b)
+
+	// Close Batch at the end of function
+	defer func() {
+		errCloseBatch := r.Close()
+		if errCloseBatch != nil {
+			logging.VSCANLog("error",
+				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+		}
+	}()
+
 	c, errSendBatch := r.Exec()
 
 	if errSendBatch != nil {
@@ -284,17 +292,6 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 
 	if c.RowsAffected() < 1 {
 		return fmt.Errorf("no insertion of row while executing query %v", sqlQuery)
-	}
-
-	// Execute Batch SQL Query
-	errExecBatch := r.Close()
-	if errExecBatch != nil {
-		logging.VSCANLog(
-			"error",
-			"Failed to execute Batch query: ",
-			errExecBatch.Error())
-
-		return errExecBatch
 	}
 	return nil
 }
