@@ -47,11 +47,22 @@ message ScanRequest {
 }
 
 message ScanResultsResponse {
-    bytes   scan_results_json = 1;
-    string  vscan_agent_name = 2;
-    string  device_name = 3;
+    bytes               scan_results_json = 1;
+    string              vscan_agent_name = 2;
+    string              device_name = 3;
+    ScanLogFileResponseWB scan_logs_websocket = 4;
+    ScanLogFileResponsePS scan_logs_persist = 5;
 }
 
+// ScanLogFileResponseWB represents a stream of a scan job logs fro Websocket consumption
+message ScanLogFileResponseWB {
+    bytes scan_logs = 1;
+}
+
+// ScanLogFileResponsePS represents a stream of a scan job logs to be persisted in DB
+message ScanLogFileResponsePS {
+    bytes scan_logs = 1;
+}
 
 service VscanAgentService {
 

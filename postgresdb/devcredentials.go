@@ -52,7 +52,7 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 	switch err {
 	case pgx.ErrNoRows:
 		logging.VSCANLog(
-			"error", "Device Credentials Name "+cn+" not found in database")
+			"error", "Device Credentials Name %v not found in database", cn)
 		return nil, fmt.Errorf("device credentials name %v not found", cn)
 
 	case nil:
@@ -61,7 +61,7 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 
 	default:
 		logging.VSCANLog(
-			"error", "error while searching for Device Credentials in Database: ", err.Error())
+			"error", "error while searching for Device Credentials in Database %v", err.Error())
 
 		return nil, fmt.Errorf("error while searching for Device Credentials %v: %v", cn, err.Error())
 	}
@@ -89,9 +89,7 @@ func (p *vulscanoDB) FetchAllUserDeviceCredentials(uid string) ([]DeviceCredenti
 	rows, err := p.db.Query(ctxTimeout, sqlQuery, pgpSymEncryptKey, uid)
 
 	if err != nil {
-		logging.VSCANLog("error",
-			"cannot fetch user device credentials from DB: ", err.Error(),
-		)
+		logging.VSCANLog("error", "cannot fetch user device credentials from DB %v", err.Error())
 		return nil, err
 	}
 

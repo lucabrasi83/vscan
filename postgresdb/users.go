@@ -36,14 +36,14 @@ func (p *vulscanoDB) FetchUser(u string) (*VulscanoDBUser, error) {
 
 	switch err {
 	case pgx.ErrNoRows:
-		logging.VSCANLog("error", "not able to find user requested in DB: ", u)
+		logging.VSCANLog("error", "not able to find user %v requested in DB", u)
 		return nil, fmt.Errorf("not able to find user %v requested in DB", u)
 
 	case nil:
 		return &user, nil
 
 	default:
-		logging.VSCANLog("error", "error while trying to retrieve user from DB: ", err.Error())
+		logging.VSCANLog("error", "error while trying to retrieve user from DB: %v", err.Error())
 		return nil, err
 	}
 }
@@ -64,7 +64,7 @@ func (p *vulscanoDB) InsertNewUser(email string, pass string, ent string, role s
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"failed to insert user: ", email, " ", err.Error())
+			"failed to insert user %v with error %v", email, err.Error())
 
 		if strings.Contains(err.Error(), "23505") {
 			return fmt.Errorf("user with email %v already exists", email)
@@ -77,8 +77,7 @@ func (p *vulscanoDB) InsertNewUser(email string, pass string, ent string, role s
 
 	if cTag.RowsAffected() == 0 {
 
-		logging.VSCANLog("error",
-			"failed to insert user: ", email)
+		logging.VSCANLog("error", "failed to insert user %v", email)
 		return fmt.Errorf("failed to insert user %v", email)
 	}
 
@@ -98,16 +97,14 @@ func (p *vulscanoDB) DeleteUser(email string) error {
 	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, email)
 
 	if err != nil {
-		logging.VSCANLog("error",
-			"failed to delete user: ", email, " ", err.Error())
+		logging.VSCANLog("error", "failed to delete user %v with error %v", email, err.Error())
 
 		return err
 	}
 
 	if cTag.RowsAffected() == 0 {
 
-		logging.VSCANLog("error",
-			"failed to delete user: ", email)
+		logging.VSCANLog("error", "failed to delete user %v", email)
 		return fmt.Errorf("failed to delete user %v", email)
 	}
 
@@ -140,14 +137,14 @@ func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent strin
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"failed to update user: ", email, " ", err.Error())
+			"failed to update user %v with error %v", email, err.Error())
 
 		return err
 	}
 
 	if cTag.RowsAffected() == 0 {
 		logging.VSCANLog("error",
-			"failed to update user: ", email)
+			"failed to update user %v", email)
 		return fmt.Errorf("failed to update user %v", email)
 	}
 
@@ -169,7 +166,7 @@ func (p *vulscanoDB) FetchAllUsers() ([]VulscanoDBUser, error) {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"cannot fetch Users from DB: ", err.Error(),
+			"cannot fetch Users from DB %v", err.Error(),
 		)
 		return nil, err
 	}
@@ -181,7 +178,7 @@ func (p *vulscanoDB) FetchAllUsers() ([]VulscanoDBUser, error) {
 
 		if err != nil {
 			logging.VSCANLog("error",
-				"error while scanning vulscano_users table rows: ", err.Error())
+				"error while scanning vulscano_users table rows %v", err.Error())
 			return nil, err
 		}
 		vulscanoUsers = append(vulscanoUsers, user)
@@ -189,7 +186,7 @@ func (p *vulscanoDB) FetchAllUsers() ([]VulscanoDBUser, error) {
 	err = rows.Err()
 	if err != nil {
 		logging.VSCANLog("error",
-			"error returned while iterating through vulscano_users table: ", err.Error())
+			"error returned while iterating through vulscano_users table %v", err.Error())
 		return nil, err
 	}
 
@@ -225,7 +222,7 @@ func (p *vulscanoDB) AuthenticateUser(user string, pass string) (*VulscanoDBUser
 	case pgx.ErrNoRows:
 		logging.VSCANLog(
 			"error",
-			"Authentication Failed for user: ", user)
+			"Authentication Failed for user %v", user)
 
 		return nil, fmt.Errorf("authentication failed for user %v", user)
 
@@ -235,8 +232,7 @@ func (p *vulscanoDB) AuthenticateUser(user string, pass string) (*VulscanoDBUser
 
 	default:
 		logging.VSCANLog(
-			"error",
-			fmt.Sprintf("error while authenticating user: %v error: %v", user, err.Error()))
+			"error", "error while authenticating user: %v error: %v", user, err.Error())
 
 		return nil, fmt.Errorf("authentication failed for user %v", user)
 	}
@@ -264,7 +260,7 @@ func (p *vulscanoDB) AssertUserExists(id interface{}) bool {
 	switch err {
 	case pgx.ErrNoRows:
 		logging.VSCANLog(
-			"error", "User ", id, " tried to access but doesn't exist in database.")
+			"error", "User %v tried to access but doesn't exist in database", id)
 		return false
 
 	case nil:

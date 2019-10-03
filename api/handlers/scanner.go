@@ -63,16 +63,19 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	// Constant for Job Scan Results
 	const scanJobFailedRes = "FAILED"
 	const scanJobSuccessRes = "SUCCESS"
+	const scanJobUnknownRes = "UNKNOWN"
 
 	// Struct holding the scan job results
 	var sr ScanResults
 
 	// Set Initial Job Start/End time type
 	reportScanJobStartTime, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-
 	var reportScanJobEndTime time.Time
+
 	successfulScannedDevName := make([]string, 0)
 	successfulScannedDevIP := make([]net.IP, 0)
+
+	// Set Default Job End Result
 	var scanJobStatus string
 
 	// We Generate a Scan Job ID from HashGen library
@@ -88,8 +91,21 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	// Execute functions to save scan job report in DB
 	defer func() {
 
+		// Test for empty variables to avoid blank fields in DB
 		if sr.ScanJobExecutingAgent == "" {
-			sr.ScanJobExecutingAgent = "NA"
+			sr.ScanJobExecutingAgent = "N/A"
+		}
+
+		if sr.ScanLogs == "" {
+			sr.ScanLogs = "No Logs available"
+		}
+
+		if scanJobStatus == "" {
+			scanJobStatus = scanJobUnknownRes
+		}
+
+		if reportScanJobEndTime.IsZero() {
+			reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		}
 
 		errJobInsertDB := scanJobReportDB(
@@ -101,6 +117,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 			scanJobStatus,
 			j,
 			sr.ScanJobExecutingAgent,
+			sr.ScanLogs,
 		)
 
 		if errJobInsertDB != nil {
@@ -348,9 +365,9 @@ func scanJobReportDB(j string,
 	di []net.IP,
 	r string,
 	jwt *JwtClaim,
-	a string) error {
+	a string, logs string) error {
 
-	errDB := postgresdb.DBInstance.PersistScanJobReport(j, st, et, dn, di, r, jwt.UserID, a)
+	errDB := postgresdb.DBInstance.PersistScanJobReport(j, st, et, dn, di, r, jwt.UserID, a, logs)
 	if errDB != nil {
 		return errDB
 	}

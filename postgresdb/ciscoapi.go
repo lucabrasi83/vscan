@@ -24,8 +24,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	if err != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to retrieve all Cisco Advisories from openVuln API: ",
-			err.Error())
+			"Failed to retrieve all Cisco Advisories from openVuln API %v", err.Error())
 
 		return err
 	}
@@ -66,7 +65,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 			if errFloatConver != nil {
 				logging.VSCANLog(
 					"error",
-					"Failed to Convert CVSS Score String to Float for advisory: ",
+					"Failed to Convert CVSS Score String to Float for advisory %v with error %v",
 					adv.AdvisoryID,
 					errFloatConver.Error())
 
@@ -101,8 +100,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	defer func() {
 		errCloseBatch := r.Close()
 		if errCloseBatch != nil {
-			logging.VSCANLog("error",
-				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+			logging.VSCANLog("error", "Failed to close SQL Batch Job query %v with error %v", sqlQuery, errCloseBatch)
 		}
 	}()
 
@@ -111,8 +109,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	if errSendBatch != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to send Batch query: ",
-			errSendBatch.Error())
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch.Error())
 
 		return errSendBatch
 
@@ -158,7 +155,7 @@ func (p *vulscanoDB) FetchCiscoSAMeta(sa string) *openvulnapi.VulnMetadata {
 	case pgx.ErrNoRows:
 		logging.VSCANLog(
 			"error",
-			"No entries found for Cisco Security Advisory ", sa)
+			"No entries found for Cisco Security Advisory %v", sa)
 
 	case nil:
 		// Convert Vulnerability published date from Time type to string
@@ -172,7 +169,7 @@ func (p *vulscanoDB) FetchCiscoSAMeta(sa string) *openvulnapi.VulnMetadata {
 
 	default:
 		logging.VSCANLog(
-			"error", "Error while fetching Cisco SA metadata for ", sa, err.Error())
+			"error", "Error while fetching Cisco SA metadata for %v with error %v", sa, err.Error())
 	}
 
 	return &saMetaDB
@@ -206,8 +203,7 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	defer func() {
 		errCloseBatch := r.Close()
 		if errCloseBatch != nil {
-			logging.VSCANLog("error",
-				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+			logging.VSCANLog("error", "Failed to close SQL Batch query %v Job with error %v", sqlQuery, errCloseBatch)
 		}
 	}()
 
@@ -216,8 +212,7 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	if errSendBatch != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to send Batch query: ",
-			errSendBatch.Error())
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch.Error())
 
 		return errSendBatch
 
@@ -274,7 +269,7 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 		errCloseBatch := r.Close()
 		if errCloseBatch != nil {
 			logging.VSCANLog("error",
-				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+				"Failed to close SQL Batch Job query %v with error %v", sqlQuery, errCloseBatch)
 		}
 	}()
 
@@ -283,8 +278,7 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 	if errSendBatch != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to send Batch query: ",
-			errSendBatch.Error())
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch.Error())
 
 		return errSendBatch
 

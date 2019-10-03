@@ -50,7 +50,7 @@ func init() {
 	_, err := CacheStore.cacheStoreClient.Ping().Result()
 	if err != nil {
 		logging.VSCANLog("fatal",
-			"Failed to connect to Redis instance ", err.Error())
+			"Failed to connect to Redis instance %v", err.Error())
 	}
 
 	logging.VSCANLog("info", "Redis Cache Store connection pool successfully established")
@@ -67,7 +67,7 @@ func (p *vscanCache) CloseCacheConn() {
 	err := p.cacheStoreClient.Close()
 
 	if err != nil {
-		logging.VSCANLog("error", "failed to close Redis Cache Store connection: ", err)
+		logging.VSCANLog("error", "failed to close Redis Cache Store connection %v", err)
 	}
 }
 func (p *vscanCache) LPushScannedDevicesIP(dev ...string) error {
@@ -82,7 +82,8 @@ func (p *vscanCache) LRemScannedDevicesIP(dev ...string) {
 		err := p.cacheStoreClient.LRem(ongoingScannedDevicesKey, 0, d).Err()
 
 		if err != nil {
-			logging.VSCANLog("error", "failed to remove device with IP "+d+"from cacheStoreClient list")
+			logging.VSCANLog("error",
+				"failed to remove device with IP %v from cacheStoreClient list with error %v", d, err)
 		}
 	}
 }
@@ -103,7 +104,7 @@ func (p *vscanCache) CheckCacheEntryExists(dev string) (bool, error) {
 	entry, err := p.cacheStoreClient.HGetAll(dev).Result()
 
 	if err != nil {
-		logging.VSCANLog("error", "failed to check cache entry for device ", dev, err)
+		logging.VSCANLog("error", "failed to check cache entry for device %v with error %v", dev, err)
 
 		return false, err
 	}

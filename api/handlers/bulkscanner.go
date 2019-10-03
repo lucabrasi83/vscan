@@ -59,7 +59,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	if errHash != nil {
 		logging.VSCANLog(
 			"error",
-			"Error when generating hash: ", errHash.Error())
+			"Error when generating hash: %v", errHash.Error())
 
 		return nil, errHash
 	}
@@ -67,7 +67,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	defer func() {
 
 		if bsr.ScanJobExecutingAgent == "" {
-			bsr.ScanJobExecutingAgent = "NA"
+			bsr.ScanJobExecutingAgent = "N/A"
 		}
 
 		errJobInsertDB := scanJobReportDB(
@@ -79,12 +79,13 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 			scanJobStatus,
 			j,
 			bsr.ScanJobExecutingAgent,
+			bsr.ScanLogs,
 		)
 
 		if errJobInsertDB != nil {
 			logging.VSCANLog(
 				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+				"Failed to insert Scan Job report in DB for Job ID %v error: %v ", jobID, errJobInsertDB.Error())
 		}
 	}()
 
@@ -250,8 +251,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 			// Don't waste resources trying to scan an offline device
 			if anutaDev.Status != "ONLINE" {
 				logging.VSCANLog("warning",
-					"Skipping Anuta device "+anutaDev.DeviceName+" Scan Request as it is currently offline",
-				)
+					"Skipping Anuta device %v Scan Request as it is currently offline", anutaDev.DeviceName)
 				skippedScannedDevices = append(skippedScannedDevices, anutaDev.DeviceName)
 
 				return
@@ -266,8 +266,8 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 			// This is to avoid false positive VA results and load the right OVAL definitions
 			if osType != d.OSType {
 				logging.VSCANLog("warning",
-					"Skipping Anuta device "+anutaDev.DeviceName+" Scan Request as OSType requested "+d.
-						OSType+" does not match with device "+dv)
+					"Skipping Anuta device %v Scan Request as OSType requested %v does not match with device %v",
+					anutaDev.DeviceName, d.OSType, dv)
 
 				skippedScannedDevices = append(skippedScannedDevices, anutaDev.DeviceName)
 
@@ -337,7 +337,7 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"Error while inserting Device VA Report into DB: ", err.Error())
+			"Error while inserting Device VA Report into DB: %v ", err.Error())
 		return nil, err
 	}
 

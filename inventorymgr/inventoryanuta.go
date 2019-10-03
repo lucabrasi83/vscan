@@ -150,7 +150,7 @@ func GetAnutaDevice(dev string) (*AnutaAPIDeviceDetails, error) {
 
 	if err != nil {
 		logging.VSCANLog("warning",
-			"Failed to insert device ", v.Controller.DeviceName, " into inventory cache: ", err)
+			"Failed to insert device %v into inventory cache with error %v", v.Controller.DeviceName, err)
 	}
 
 	return (&v).Controller, nil
@@ -240,7 +240,7 @@ func buildAnutaInventoryCache() error {
 
 				if err != nil {
 					logging.VSCANLog("warning",
-						"Failed to insert device ", dev.DeviceName, " into inventory cache: ", err)
+						"Failed to insert device %v into inventory cache with error %v", dev.DeviceName, err)
 				}
 
 				wg.Done()

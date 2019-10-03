@@ -37,6 +37,9 @@ func LoadRoutes(routes *gin.Engine) {
 	// Short hand declaration for JWT Middleware
 	authWare := jwtMiddleware.MiddlewareFunc
 
+	routes.GET("/", handlers.ServeLogHome)
+	routes.GET("/ws", handlers.ServeWs)
+
 	// /api/v1 Routes group and associated handlers
 	apiV1 := routes.Group("/api/v1")
 	{
@@ -44,7 +47,6 @@ func LoadRoutes(routes *gin.Engine) {
 		apiV1.GET("/refresh-token", jwtMiddleware.RefreshHandler)
 		apiV1.GET("/ping", handlers.Ping)
 		apiV1.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
 		admin := apiV1.Group("/admin").Use(authWare())
 		{
 			admin.POST("/on-demand-scan", handlers.LaunchAdHocScan)

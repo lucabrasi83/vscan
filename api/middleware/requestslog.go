@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -45,17 +44,16 @@ func RequestsLogger() gin.HandlerFunc {
 			userID = userJWT
 		}
 
-		logResMessage := fmt.Sprintf(
-			"Request Received: %s | User: %s | Client IP: %v | Response Code: %s | Reponse Time: %s | URL: %s",
+		logResMessage := "Request Received: %s | User: %s | Client IP: %v | Response Code: %s | Response Time: %s | URL: %s"
+
+		logging.VSCANLog("info",
+			logResMessage,
 			colorForMethod(c.Request.Method).Sprintf("%6s", c.Request.Method),
 			fgHiMagenta.Sprintf("%-30s", userID),
 			fgHiCyan.Sprintf("%-15v", c.ClientIP()),
 			colorForStatus(c.Writer.Status()).Sprintf("%3d", c.Writer.Status()),
 			fgHiYellow.Sprintf("%-13v", time.Since(now).String()),
 			bgHiBlue.Sprint(c.Request.URL),
-		)
-		logging.VSCANLog("info",
-			logResMessage,
 		)
 
 	}

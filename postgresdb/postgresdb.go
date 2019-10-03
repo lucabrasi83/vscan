@@ -5,7 +5,6 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
 	"net"
 	"os"
 	"strings"
@@ -79,7 +78,7 @@ func init() {
 	poolConfig, errParsePool := pgxpool.ParseConfig("")
 
 	if errParsePool != nil {
-		logging.VSCANLog("fatal", fmt.Sprintf("failed to parse DB pool config %v", errParsePool))
+		logging.VSCANLog("fatal", "failed to parse DB pool config %v", errParsePool)
 	}
 
 	// Set Connection Parameters

@@ -977,8 +977,8 @@ func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 	// If Serial Number slice less than 5, exit the function
 	if len(snSlice) < 5 {
 		logging.VSCANLog("info",
-			fmt.Sprintf("Less than 5 Serial Numbers to query on Cisco SN2INFO API: %v. Cancelling the request",
-				snSlice))
+			"Less than 5 Serial Numbers to query on Cisco SN2INFO API: %v. Cancelling the request",
+			snSlice)
 
 		return nil
 	}
@@ -1053,8 +1053,8 @@ func buildCiscoSuggSWList(snPID []string) []openvulnapi.CiscoSWSuggestionAPI {
 	if len(snPID) < 5 {
 
 		logging.VSCANLog("info",
-			fmt.Sprintf("Less than 5 Product ID's to query: %v on Cisco Suggested SW API. Cancelling the request",
-				snPID))
+			"Less than 5 Product ID's to query: %v on Cisco Suggested SW API. Cancelling the request",
+			snPID)
 
 		return nil
 	}

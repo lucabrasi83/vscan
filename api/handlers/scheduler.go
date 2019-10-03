@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -84,7 +83,7 @@ func checkBatchJobsRunning() bool {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			fmt.Sprintf("Failed to retrieve batchjobsrunning key in Cache Store. error: %v", err))
+			"Failed to retrieve batchjobsrunning key in Cache Store. error: %v", err)
 		return true
 	}
 
@@ -96,8 +95,7 @@ func setBatchJobsRunningKey(i int) error {
 	err := rediscache.CacheStore.SetBatchJobsRunningKey(i)
 
 	if err != nil {
-		logging.VSCANLog("error",
-			fmt.Sprintf("Failed to set batchjobsrunning key in Cache Store. error: %v", err))
+		logging.VSCANLog("error", "Failed to set batchjobsrunning key in Cache Store with error %v", err)
 	}
 
 	return err

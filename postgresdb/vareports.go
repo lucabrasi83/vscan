@@ -17,8 +17,9 @@ func (p *vulscanoDB) PersistScanJobReport(args ...interface{}) error {
 	const sqlQueryJobReport = `INSERT INTO scan_jobs_history
 							   (job_id, start_time, end_time, 
 							    devices_scanned_name, devices_scanned_ip, 
-								job_result, user_id_scan_request, scan_exec_agent)
-						       VALUES ($1, $2, $3, COALESCE($4, '{}'::text[]), COALESCE($5, '{}'::inet[]), $6, $7, $8)
+								job_result, user_id_scan_request, scan_exec_agent, scan_logs)
+						        VALUES ($1, $2, $3, COALESCE($4, '{}'::text[]), 
+			 			        COALESCE($5, '{}'::inet[]), $6, $7, $8, $9)
 							  `
 
 	defer cancelQuery()
@@ -162,8 +163,7 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 	defer func() {
 		errCloseBatch := r.Close()
 		if errCloseBatch != nil {
-			logging.VSCANLog("error",
-				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+			logging.VSCANLog("error", "Failed to close SQL Batch Job for query %v with error %v", sqlQueryDeviceReport, errCloseBatch)
 		}
 	}()
 
@@ -172,8 +172,7 @@ func (p *vulscanoDB) PersistBulkDeviceVAReport(args []map[string]interface{}) er
 	if errSendBatch != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to send Batch query: ",
-			errSendBatch.Error())
+			"Failed to send Batch query %v with error: %v", sqlQueryDeviceReport, errSendBatch.Error())
 
 		return errSendBatch
 
@@ -217,7 +216,7 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 		errCloseBatch := r.Close()
 		if errCloseBatch != nil {
 			logging.VSCANLog("error",
-				fmt.Sprintf("Failed to close SQL Batch Job with error %v", errCloseBatch))
+				"Failed to close SQL Batch Job query %v with error %v", sqlQueryDeviceHistory, errCloseBatch)
 		}
 	}()
 
@@ -226,8 +225,7 @@ func (p *vulscanoDB) PersistBulkDeviceVAHistory(args []map[string]interface{}) e
 	if errSendBatch != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to send Batch query: ",
-			errSendBatch.Error())
+			"Failed to send Batch query %v with error %v", sqlQueryDeviceHistory, errSendBatch.Error())
 
 		return errSendBatch
 

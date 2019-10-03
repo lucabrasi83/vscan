@@ -11,8 +11,8 @@ import (
 )
 
 // maxLoadLimit represents the threshold at which we abort the Request due to high system load
-// By default value is set at 80% for 5 minutes Average Load
-const maxLoadLimit = 0.8
+// By default value is set at 90% for 5 minutes Average Load
+const maxLoadLimit = 0.9
 
 // APILoadControl is a Gin middleware to ensure sufficient resources are available before performing
 // a Vulnerability Assessment Job.
@@ -37,8 +37,8 @@ func APILoadControl() gin.HandlerFunc {
 
 		if maxLoad >= maxLoadLimit {
 			logging.VSCANLog("error",
-				"Request from "+c.ClientIP()+" rejected due to high system load.",
-				" Current 5 minutes Average System Load at "+strconv.FormatFloat(currentLoad, 'f', 2, 64),
+				"Request from %v rejected due to high system load. Current 5 minutes Average System Load at %v",
+				c.ClientIP(), strconv.FormatFloat(currentLoad, 'f', 2, 64),
 			)
 			c.Header("connection", "close")
 			c.JSON(http.StatusBadGateway, gin.H{"error": "unable to process your request. Please retry later."})

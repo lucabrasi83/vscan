@@ -30,6 +30,7 @@ type ScanResults struct {
 	TotalVulnerabilitiesFound   int                        `json:"totalVulnerabilitiesFound"`
 	TotalVulnerabilitiesScanned int                        `json:"totalVulnerabilitiesScanned"`
 	VulnerabilitiesFoundDetails []openvulnapi.VulnMetadata `json:"vulnerabilitiesFoundDetails"`
+	ScanLogs                    string                     `json:"-"`
 }
 
 // PingAPIResponse struct represents the JSON Body Response for API Health Check
@@ -149,6 +150,7 @@ type BulkScanResults struct {
 	DevicesScannedSuccess []string            `json:"devicesScannedSuccess"`
 	DevicesScannedFailure []string            `json:"devicesScannedFailure"`
 	VulnerabilitiesFound  []BulkScanVulnFound `json:"vulnFoundDetails"`
+	ScanLogs              string              `json:"-"`
 }
 
 type BulkScanVulnFound struct {

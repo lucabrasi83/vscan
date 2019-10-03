@@ -29,7 +29,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 	rows, err := p.db.Query(ctxTimeout, sqlQuery)
 
 	if err != nil {
-		logging.VSCANLog("error", "cannot fetch list of enterprises: ", err.Error())
+		logging.VSCANLog("error", "cannot fetch list of enterprises: %v", err.Error())
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 
 		if err != nil {
 			logging.VSCANLog("error",
-				"error while scanning enterprise table rows: ", err.Error())
+				"error while scanning enterprise table rows: %v", err.Error())
 			return nil, err
 		}
 		enterprisesSLice = append(enterprisesSLice, ent)
@@ -53,7 +53,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"error returned while iterating through enterprise table: ", err.Error())
+			"error returned while iterating through enterprise table: %v", err.Error())
 		return nil, err
 	}
 
@@ -84,7 +84,7 @@ func (p *vulscanoDB) FetchEnterprise(entid string) (*EnterpriseDB, error) {
 	switch err {
 	case pgx.ErrNoRows:
 		logging.VSCANLog(
-			"error", "Enterprise ID "+entid+" not found in database")
+			"error", "Enterprise ID %v not found in database", entid)
 		return nil, fmt.Errorf("SSH Gateway %v not found", entid)
 
 	case nil:
@@ -93,7 +93,7 @@ func (p *vulscanoDB) FetchEnterprise(entid string) (*EnterpriseDB, error) {
 
 	default:
 		logging.VSCANLog(
-			"error", "error while searching for enterprise in Database: ", err.Error())
+			"error", "error while searching for enterprise in Database: %v", err.Error())
 
 		return nil, fmt.Errorf("error while searching for enterprise %v: %v", entid, err.Error())
 	}
@@ -115,7 +115,7 @@ func (p *vulscanoDB) InsertNewEnterprise(newEnt map[string]string) error {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"failed to insert enterprise: ", newEnt["entID"], " ", err.Error())
+			"failed to insert enterprise %v with error %v", newEnt["entID"], err.Error())
 
 		if strings.Contains(err.Error(), "23505") {
 			return fmt.Errorf("enterprise ID %v already exists", newEnt["entID"])
@@ -127,7 +127,7 @@ func (p *vulscanoDB) InsertNewEnterprise(newEnt map[string]string) error {
 	if cTag.RowsAffected() == 0 {
 
 		logging.VSCANLog("error",
-			"failed to insert enterprise: ", newEnt["entID"])
+			"failed to insert enterprise %v", newEnt["entID"])
 		return fmt.Errorf("failed to insert enterprise %v", newEnt["entID"])
 	}
 
@@ -150,7 +150,7 @@ func (p *vulscanoDB) DeleteEnterprise(entid string) error {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"failed to delete enterprise: ", entid, " ", err.Error())
+			"failed to delete enterprise: %v with error %v", entid, err.Error())
 
 		if strings.Contains(err.Error(), "23503") {
 			return fmt.Errorf("enterprise ID %v still has devices associated with it. ",
@@ -163,8 +163,8 @@ func (p *vulscanoDB) DeleteEnterprise(entid string) error {
 	if cTag.RowsAffected() == 0 {
 
 		logging.VSCANLog("error",
-			"failed to delete enterprise: ", entid)
-		return fmt.Errorf("failed to delete user %v", entid)
+			"failed to delete enterprise %v", entid)
+		return fmt.Errorf("failed to delete enterprise %v", entid)
 	}
 
 	return nil

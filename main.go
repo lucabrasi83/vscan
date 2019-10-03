@@ -20,25 +20,6 @@ import (
 	"github.com/lucabrasi83/vscan/rediscache"
 )
 
-// @title Vulscano API Documentation
-// @version 1.0
-// @description Swagger API documentation for TATA Communications Vulscano.
-// @termsOfService http://swagger.io/terms/
-
-// @contact.name Vulscano API Support
-// @contact.url https://github.com/lucabrasi83/vscan
-// @contact.email sebastien.pouplin@tatacommunications.com
-
-// @license.name Apache 2.0
-// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host vscan.vsnl.co.in:8443
-// @BasePath /api/v1
-
-// @securityDefinitions.apikey ApiKeyAuth
-// @in header
-// @name Authorization
-
 func main() {
 
 	// Release Postgres Connection Pool
@@ -54,7 +35,7 @@ func main() {
 		0644)
 	if err != nil {
 		logging.VSCANLog("error",
-			"Failed to open gingonic.log file: ", err.Error())
+			"Failed to open gingonic.log file %v", err.Error())
 	}
 
 	defer ginLogFile.Close()
@@ -119,7 +100,7 @@ func main() {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"Failed to purge scanned devices cache store: ", err.Error(),
+			"Failed to purge scanned devices cache store %v", err.Error(),
 		)
 	}
 
@@ -128,7 +109,7 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		logging.VSCANLog("fatal",
-			"Failed to gracefully shutdown VSCAN Controller ", err.Error(),
+			"Failed to gracefully shutdown VSCAN Controller %v", err.Error(),
 		)
 	}
 	logging.VSCANLog("info",

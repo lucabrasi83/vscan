@@ -18,6 +18,7 @@ import (
 	"github.com/lucabrasi83/vscan/logging"
 	"github.com/lucabrasi83/vscan/openvulnapi"
 	"github.com/lucabrasi83/vscan/postgresdb"
+	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -25,9 +26,14 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var conn *grpc.ClientConn
+var (
+	conn *grpc.ClientConn
 
-var vscanAgentPort = "50051"
+	vscanAgentPort = "50051"
+
+	// Declare Abstract In-Memory File System for scan job log file stream
+	abstractInMemoryFS = afero.NewMemMapFs()
+)
 
 const (
 
@@ -83,7 +89,7 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 		errConnClose := conn.Close()
 		if errConnClose != nil {
 			logging.VSCANLog("warning",
-				fmt.Sprintf("failed to close gRPC client connection to VSCAN Agent. error: %v", errConnClose))
+				"failed to close gRPC client connection to VSCAN Agent. error: %v", errConnClose)
 		}
 	}()
 
@@ -172,9 +178,17 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 				jobID, err)
 		}
 
+		// Write Log File buffer in memory File System
+		writeLogFileInMemory(resStream.ScanLogsWebsocket, jobID)
+
+		// If no result yet in the stream go back to the beginning of the streaming loop
+		if len(resStream.ScanResultsJson) == 0 {
+			continue
+		}
+
 		logging.VSCANLog("info",
-			fmt.Sprintf("Agent %v - Scan Job ID %v - received file stream for device %v\n",
-				resStream.GetVscanAgentName(), jobID, resStream.GetDeviceName()))
+			"Agent %v - Scan Job ID %v - received file stream for device %v",
+			resStream.GetVscanAgentName(), jobID, resStream.GetDeviceName())
 
 		// If more than one device requested for scan, handle it as a Bulk Scan
 		if len(devices) > 0 && bsr != nil {
@@ -182,21 +196,27 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 			// Add Agent Name in scan results
 			bsr.ScanJobExecutingAgent = resStream.VscanAgentName
 
+			// Save Scan job logs buffer for persistent storage
+			bsr.ScanLogs = string(resStream.GetScanLogsPersist().ScanLogs)
+
 			err = parseGRPCBulkScanReport(bsr, jobID, resStream.GetScanResultsJson())
 
 			if err != nil {
 				logging.VSCANLog(
 					"error",
-					fmt.Sprintf("unable to parse scan results for device %v during Job ID %v",
-						resStream.GetDeviceName(),
-						jobID,
-					))
+					"unable to parse scan results for device %v during Job ID %v",
+					resStream.GetDeviceName(),
+					jobID,
+				)
 			}
 
 		} else {
 
 			// Add Agent Name in scan results
 			sr.ScanJobExecutingAgent = resStream.VscanAgentName
+
+			// Save Scan job logs buffer for persistent storage
+			sr.ScanLogs = string(resStream.GetScanLogsPersist().ScanLogs)
 
 			err = parseGRPCScanReport(sr, jobID, resStream.GetScanResultsJson())
 
@@ -424,5 +444,35 @@ func clientCertLoad() (credentials.TransportCredentials, error) {
 		Certificates: []tls.Certificate{certificate},
 		RootCAs:      certPool,
 	}), nil
+
+}
+
+// writeLogFileInMemory will use the abstract in-memory filesystem to write the job log file
+// This will be used for Websocket clients who wish to follow the scan progress in real-time
+func writeLogFileInMemory(log *agentpb.ScanLogFileResponseWB, job string) {
+
+	file, err := abstractInMemoryFS.OpenFile(
+		filepath.Join(datadiros.GetDataDir(), job),
+		os.O_WRONLY|os.O_CREATE|os.O_APPEND,
+		0644,
+	)
+
+	if err != nil {
+		logging.VSCANLog("error", "Unable to create In-Memory Log file for job ID %v with error %v", job, err)
+	}
+
+	defer func() {
+		errFileClose := file.Close()
+		if errFileClose != nil {
+			logging.VSCANLog("error", "Unable to close In-Memory Log file for job ID %v with error %v", job, errFileClose)
+		}
+	}()
+
+	// Use FPrintln to write line by line
+	_, errFileWrite := fmt.Fprintln(file, string(log.GetScanLogs()))
+
+	if errFileWrite != nil {
+		logging.VSCANLog("error", "Unable to write In-Memory Log file for job ID %v with error %v", job, errFileWrite)
+	}
 
 }
