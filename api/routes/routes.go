@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vscan/api/handlers"
 	"github.com/lucabrasi83/vscan/api/middleware"
-	"github.com/swaggo/gin-swagger"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
 	ginprometheus "github.com/zsais/go-gin-prometheus"
 )
@@ -46,7 +46,6 @@ func LoadRoutes(routes *gin.Engine) {
 		apiV1.POST("/login", jwtMiddleware.LoginHandler)
 		apiV1.GET("/refresh-token", jwtMiddleware.RefreshHandler)
 		apiV1.GET("/ping", handlers.Ping)
-		apiV1.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 		admin := apiV1.Group("/admin").Use(authWare())
 		{
 			admin.POST("/on-demand-scan", handlers.LaunchAdHocScan)
@@ -108,6 +107,10 @@ func LoadRoutes(routes *gin.Engine) {
 			devcreds.POST("/credential", handlers.CreateUserDeviceCredentials)
 			devcreds.PATCH("/credential/:creds-name", handlers.UpdateUserDeviceCredentials)
 			devcreds.DELETE("/credential/:creds-name", handlers.DeleteUserDeviceCredentials)
+		}
+		docs := apiV1.Group("/docs").Use(authWare())
+		{
+			docs.GET("/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 		}
 
 	}
