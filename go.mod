@@ -42,7 +42,7 @@ require (
 	github.com/spf13/viper v1.4.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/swaggo/gin-swagger v1.2.0
-	github.com/swaggo/swag v1.6.2
+	github.com/swaggo/swag v1.6.3
 	github.com/ugorji/go v1.1.7 // indirect
 	github.com/ultraware/funlen v0.0.2 // indirect
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
