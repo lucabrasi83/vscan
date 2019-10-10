@@ -8,7 +8,6 @@ require (
 	github.com/appleboy/gin-jwt/v2 v2.6.2
 	github.com/fatih/color v1.7.0
 	github.com/gin-gonic/gin v1.4.0
-	github.com/go-ini/ini v1.42.0
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-openapi/jsonreference v0.19.3 // indirect
 	github.com/go-openapi/spec v0.19.3 // indirect
@@ -26,7 +25,6 @@ require (
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/sirupsen/logrus v1.4.2
-	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/speps/go-hashids v2.0.0+incompatible
 	github.com/spf13/afero v1.2.2
 	github.com/stretchr/testify v1.4.0
@@ -40,7 +38,6 @@ require (
 	golang.org/x/tools v0.0.0-20191005014404-c9f9432ec4b2 // indirect
 	google.golang.org/grpc v1.21.1
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
 
