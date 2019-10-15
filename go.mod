@@ -21,7 +21,7 @@ require (
 	github.com/golangci/golangci-lint v1.18.0 // indirect
 	github.com/golangci/revgrep v0.0.0-20180812185044-276a5c0a1039 // indirect
 	github.com/gostaticanalysis/analysisutil v0.0.3 // indirect
-	github.com/jackc/pgx/v4 v4.0.0
+	github.com/jackc/pgx/v4 v4.1.0
 	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mailru/easyjson v0.0.0-20190626092158-b2ccc519800e // indirect
