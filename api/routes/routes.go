@@ -3,6 +3,7 @@ package routes
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -15,12 +16,21 @@ import (
 
 func LoadRoutes(routes *gin.Engine) {
 
+	// CORS Config
+	corsMiddleware := cors.New(cors.Config{
+		AllowAllOrigins: true,
+		AllowMethods:    []string{"PUT", "PATCH", "GET", "POST"},
+		AllowHeaders:    []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
+		ExposeHeaders:   []string{"Content-Length"},
+		MaxAge:          12 * time.Hour,
+	})
+
 	// Set Default Middleware
 	routes.Use(
 		middleware.RequestSizeLimiter(10240),
 		middleware.RequestsLogger(),
 		middleware.APILoadControl(),
-		cors.Default(),
+		corsMiddleware,
 	)
 
 	// Set up default handler for no routes found
@@ -62,6 +72,7 @@ func LoadRoutes(routes *gin.Engine) {
 			admin.POST("/enterprise", handlers.CreateEnterprise)
 			admin.PATCH("/enterprise/:enterprise-id", tempHandler)
 			admin.DELETE("/enterprise/:enterprise-id", handlers.DeleteEnterprise)
+			admin.GET("/devices", handlers.AdminGetAllInventoryDevices)
 
 			admin.GET("/ongoing-scanned-devices", handlers.GetCurrentlyScannedDevices)
 		}

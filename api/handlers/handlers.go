@@ -697,7 +697,7 @@ func AdminGetCVEVulnAffectingDevice(c *gin.Context) {
 // API workflow to Cisco API's will then be triggered in order to retrieve the suggested SW versions for each device
 func GetAnutaDeviceSuggestedSW() ([]map[string]string, error) {
 
-	devList, err := postgresdb.DBInstance.FetchAllDevices()
+	devList, err := postgresdb.DBInstance.AdminGetAllDevices("")
 
 	if err != nil {
 		return nil, err
@@ -875,6 +875,20 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"results": *scanRes,
 	})
+}
+
+func AdminGetAllInventoryDevices(c *gin.Context) {
+
+	ent := c.Query("enterpriseID")
+
+	devices, err := postgresdb.DBInstance.AdminGetAllDevices(ent)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "unable to retrieve devices from inventory"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"devices": devices})
 }
 
 func LaunchAnutaInventoryBulkScan(c *gin.Context) {
@@ -1136,7 +1150,7 @@ func FetchCiscoAMCStatus() error {
 	// Maximum Serial Number per API call
 	const maxSN = 50
 
-	devList, err := postgresdb.DBInstance.FetchAllDevices()
+	devList, err := postgresdb.DBInstance.AdminGetAllDevices("")
 
 	if err != nil {
 		return err

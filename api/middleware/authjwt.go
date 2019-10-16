@@ -35,7 +35,7 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 		Key:              []byte(jwtKey),
 		Timeout:          time.Hour * 1,
 		MaxRefresh:       time.Hour * 1,
-		SigningAlgorithm: "HS256",
+		SigningAlgorithm: "HS512",
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 
 			// Payload Func to additional user details within JWT claim

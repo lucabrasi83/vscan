@@ -9,30 +9,48 @@ import (
 )
 
 type DeviceVADB struct {
-	DeviceID         string    `json:"deviceID"`
-	MgmtIPAddress    net.IP    `json:"mgmtIP"`
-	LastScan         time.Time `json:"lastScan"`
-	EnterpriseID     string    `json:"enterpriseID"`
-	ScanMeanTime     int       `json:"scanMeanTimeMilliseconds"`
-	OSType           string    `json:"osType"`
-	OSVersion        string    `json:"osVersion"`
-	DeviceModel      string    `json:"deviceModel"`
-	SerialNumber     string    `json:"serialNumber"`
-	TotalVulnScanned int       `json:"totalVulnScanned"`
+	DeviceID                   string    `json:"deviceID"`
+	MgmtIPAddress              net.IP    `json:"mgmtIP"`
+	LastScan                   time.Time `json:"lastScan"`
+	EnterpriseID               string    `json:"enterpriseID"`
+	ScanMeanTime               int       `json:"scanMeanTimeMilliseconds"`
+	OSType                     string    `json:"osType"`
+	OSVersion                  string    `json:"osVersion"`
+	DeviceModel                string    `json:"deviceModel"`
+	SerialNumber               string    `json:"serialNumber"`
+	SuggestedSW                string    `json:"suggestedSW"`
+	ProductID                  string    `json:"productID"`
+	VulnerabilitiesFound       []string  `json:"vulnerabilitiesFound"`
+	DeviceHostname             string    `json:"deviceHostname"`
+	TotalVulnScanned           int       `json:"totalVulnScanned"`
+	ServiceContractNumber      string    `json:"serviceContractNumber"`
+	ServiceContractDescription string    `json:"serviceContractDescription"`
+	ServiceContractEndDate     time.Time `json:"serviceContractEndDate"`
+	ServiceContractSiteCountry string    `json:"serviceContractSiteCountry"`
+	ServiceContractAssociated  bool      `json:"serviceContractAssociated"`
 }
 
-func (p *vulscanoDB) FetchAllDevices() ([]DeviceVADB, error) {
+func (p *vulscanoDB) AdminGetAllDevices(ent string) ([]DeviceVADB, error) {
+
+	pEnt := normalizeString(ent)
 
 	vulscanoDevices := make([]DeviceVADB, 0)
 
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
-	const sqlQuery = `SELECT device_id, serial_number FROM device_va_results`
+	const sqlQuery = `SELECT device_id, serial_number, mgmt_ip_address,
+		              last_successful_scan, vulnerabilities_found, enterprise_id,
+                      scan_mean_time, os_type, os_version, device_model, total_vulnerabilities_scanned,
+                      suggested_sw, device_hostname, product_id, service_contract_number, 
+                      service_contract_description, service_contract_end_date,
+				      service_contract_site_country, service_contract_associated
+					  FROM device_va_results
+				      WHERE enterprise_id = $1 or $1 IS NULL`
 
 	defer cancelQuery()
 
-	rows, err := p.db.Query(ctxTimeout, sqlQuery)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, pEnt)
 
 	if err != nil {
 		logging.VSCANLog("error",
@@ -45,7 +63,27 @@ func (p *vulscanoDB) FetchAllDevices() ([]DeviceVADB, error) {
 
 	for rows.Next() {
 		dev := DeviceVADB{}
-		err = rows.Scan(&dev.DeviceID, &dev.SerialNumber)
+		err = rows.Scan(
+			&dev.DeviceID,
+			&dev.SerialNumber,
+			&dev.MgmtIPAddress,
+			&dev.LastScan,
+			&dev.VulnerabilitiesFound,
+			&dev.EnterpriseID,
+			&dev.ScanMeanTime,
+			&dev.OSType,
+			&dev.OSVersion,
+			&dev.DeviceModel,
+			&dev.TotalVulnScanned,
+			&dev.SuggestedSW,
+			&dev.DeviceHostname,
+			&dev.ProductID,
+			&dev.ServiceContractNumber,
+			&dev.ServiceContractDescription,
+			&dev.ServiceContractEndDate,
+			&dev.ServiceContractSiteCountry,
+			&dev.ServiceContractAssociated,
+		)
 
 		if err != nil {
 			logging.VSCANLog("error",
