@@ -25,15 +25,15 @@ func init() {
 		DataDir, err := os.Getwd()
 		if err != nil {
 			logging.VSCANLog("fatal",
-				"Unable to load current directory: ", err.Error())
+				"Unable to load current directory: %v", err)
 		}
 		logging.VSCANLog("info",
-			"DEV Mode. Setting DataDir to: ", DataDir)
+			"DEV Mode. Setting DataDir to: %v", DataDir)
 
 	case "PROD":
 		DataDir := "/opt/vscan/data"
 		logging.VSCANLog("info",
-			"PROD Mode. Setting DataDir to: ", DataDir)
+			"PROD Mode. Setting DataDir to: %v", DataDir)
 	default:
 		logging.VSCANLog("fatal",
 			"VULSCANO_MODE environment variable is not set!")

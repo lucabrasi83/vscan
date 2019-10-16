@@ -82,7 +82,7 @@ func main() {
 			filepath.FromSlash(datadiros.GetDataDir()+"/certs/vscan.pem"),
 			filepath.FromSlash(datadiros.GetDataDir()+"/certs/vscan.key")); err != http.ErrServerClosed {
 
-			logging.VSCANLog("fatal", "Error when starting Vulscano Server: ", err.Error())
+			logging.VSCANLog("fatal", "Error when starting Vulscano Server: %v", err)
 		}
 
 	}()

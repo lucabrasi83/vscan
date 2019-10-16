@@ -190,7 +190,7 @@ func GetCurrentlyScannedDevices(c *gin.Context) {
 
 	if err != nil {
 
-		logging.VSCANLog("error", "unable to get the list of current scanned device: ", err.Error())
+		logging.VSCANLog("error", "unable to get the list of current scanned device: %v", err)
 
 		c.JSON(http.StatusBadRequest, gin.H{"error": "unable to get the list of current scanned device"})
 
@@ -286,7 +286,7 @@ func CreateUserDeviceCredentials(c *gin.Context) {
 	var newDevCreds DeviceCredentialsCreate
 
 	if err := c.ShouldBindJSON(&newDevCreds); err != nil {
-		logging.VSCANLog("error", "Device Credentials creation failed: ", err.Error())
+		logging.VSCANLog("error", "Device Credentials creation failed %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -333,7 +333,7 @@ func UpdateUserDeviceCredentials(c *gin.Context) {
 	var updateDevCreds DeviceCredentialsUpdate
 
 	if err := c.ShouldBindJSON(&updateDevCreds); err != nil {
-		logging.VSCANLog("error", "Device Credentials update failed: ", err.Error())
+		logging.VSCANLog("error", "Device Credentials update failed %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -473,7 +473,7 @@ func CreateEnterprise(c *gin.Context) {
 	var newEnt EnterpriseCreate
 
 	if err := c.ShouldBindJSON(&newEnt); err != nil {
-		logging.VSCANLog("error", "Enterprise creation failed: ", err.Error())
+		logging.VSCANLog("error", "Enterprise creation failed %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -524,7 +524,7 @@ func CreateUser(c *gin.Context) {
 	var newUser VulscanoUserCreate
 
 	if err := c.ShouldBindJSON(&newUser); err != nil {
-		logging.VSCANLog("error", "User creation request failed: ", err.Error())
+		logging.VSCANLog("error", "User creation request failed %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -569,7 +569,7 @@ func UpdateUser(c *gin.Context) {
 	user := c.Param("user-id")
 
 	if err := c.ShouldBindJSON(&updateUser); err != nil {
-		logging.VSCANLog("error", "user update request failed: ", err.Error())
+		logging.VSCANLog("error", "user update request failed %v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -769,7 +769,7 @@ func GetAnutaDeviceSuggestedSW() ([]map[string]string, error) {
 
 						if errParseDate != nil {
 							logging.VSCANLog("warning",
-								"Unable to parse Date from Cisco Software Suggestion API: ", sug.ReleaseDate,
+								"Unable to parse Date from Cisco Software Suggestion API: %v ", errParseDate,
 							)
 							continue
 						}

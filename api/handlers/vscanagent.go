@@ -65,7 +65,7 @@ func agentConnection() (agentpb.VscanAgentServiceClient, error) {
 	conn, err = grpc.Dial(os.Getenv("VSCAN_AGENT_HOST")+":"+vscanAgentPort, grpc.WithTransportCredentials(tlsCredentials))
 
 	if err != nil {
-		logging.VSCANLog("fatal", "unable to dial VSCAN Agent GRPC server: ", err)
+		logging.VSCANLog("fatal", "unable to dial VSCAN Agent GRPC server: %v", err)
 	}
 
 	c := agentpb.NewVscanAgentServiceClient(conn)

@@ -83,7 +83,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 	if errHash != nil {
 		logging.VSCANLog(
 			"error",
-			"Error when generating hash: ", errHash.Error())
+			"Error when generating hash: %v", errHash)
 
 		return nil, errHash
 	}
@@ -123,7 +123,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		if errJobInsertDB != nil {
 			logging.VSCANLog(
 				"error",
-				"Failed to insert Scan Job report in DB for Job ID: ", jobID, "error: ", errJobInsertDB.Error())
+				"Failed to insert Scan Job report in DB for Job ID: %v with error %v", jobID, errJobInsertDB)
 		}
 	}()
 
@@ -230,11 +230,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		if err != nil {
 			logging.VSCANLog(
 				"error",
-				"Failed to fetch vulnerability fixed versions from openVulnAPI for Version: ",
-				dev.OSVersion,
-				" Error: ",
-				err.Error(),
-			)
+				"Failed to fetch vulnerability fixed versions from openVulnAPI for Version %v with error %v ", dev.OSVersion, err)
 			return
 		}
 
@@ -269,7 +265,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 
 	if errAnuta != nil {
 		logging.VSCANLog("error",
-			"Error while fetching device inventory details from Anuta NCX: ", errAnuta.Error())
+			"Error while fetching device inventory details from Anuta NCX: %v", errAnuta)
 		return nil, errAnuta
 
 	}
@@ -349,7 +345,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"Error while inserting Device VA Report into DB: ", err.Error())
+			"Error while inserting Device VA Report into DB: %v", err)
 		return nil, err
 	}
 
@@ -423,7 +419,7 @@ func isDeviceBeingScanned(d string) bool {
 	cacheScannedDev, err := rediscache.CacheStore.LRangeScannedDevices()
 
 	if err != nil {
-		logging.VSCANLog("error", "unable to get the list of current scanned device: ", err.Error())
+		logging.VSCANLog("error", "unable to get the list of current scanned device: %v", err)
 	}
 
 	sort.Strings(cacheScannedDev)

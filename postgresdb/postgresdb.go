@@ -44,28 +44,28 @@ func init() {
 	// Check Environment Variables for Postgres DB Credentials
 	if os.Getenv("VULSCANO_DB_USERNAME") == "" || os.Getenv("VULSCANO_DB_PASSWORD") == "" {
 		logging.VSCANLog("fatal",
-			"Missing Environment Variable(s) for PostgresDB Connection not set ",
+			"Missing Environment Variable(s) for PostgresDB Connection not set %v",
 			"(VULSCANO_DB_USERNAME / VULSCANO_DB_PASSWORD)")
 	}
 
 	// Check Environment Variables for Postgres Hostname
 	if os.Getenv("VULSCANO_DB_HOST") == "" {
 		logging.VSCANLog("fatal",
-			"Missing Environment Variable for PostgresDB Hostname ",
+			"Missing Environment Variable for PostgresDB Hostname %v",
 			"VULSCANO_DB_HOST")
 	}
 
 	// Check Environment Variables for Postgres Database Name
 	if os.Getenv("VULSCANO_DB_DATABASE_NAME") == "" {
 		logging.VSCANLog("fatal",
-			"Missing Environment Variable for PostgresDB Database Name ",
+			"Missing Environment Variable for PostgresDB Database Name %v",
 			"VULSCANO_DB_DATABASE_NAME")
 	}
 
 	// Check Environment Variables for Secret Key
 	if os.Getenv("VSCAN_SECRET_KEY") == "" {
 		logging.VSCANLog("fatal",
-			"Missing Environment Variable for Data encryption secret key ",
+			"Missing Environment Variable for Data encryption secret key %v",
 			"VSCAN_SECRET_KEY")
 	}
 
@@ -108,8 +108,7 @@ func init() {
 	if err != nil {
 		logging.VSCANLog(
 			"fatal",
-			"Unable to Create Postgres Connection Pool: ",
-			err.Error())
+			"Unable to Create Postgres Connection Pool: %v", err)
 	} else {
 		logging.VSCANLog("info", "Database Connection Pool successfully created")
 	}
@@ -119,7 +118,7 @@ func init() {
 
 	postgresVersion := DBInstance.displayPostgresVersion()
 
-	logging.VSCANLog("info", "Postgres SQL Version: ", postgresVersion)
+	logging.VSCANLog("info", "Postgres SQL Version: %v", postgresVersion)
 
 }
 
@@ -143,8 +142,7 @@ func (p *vulscanoDB) displayPostgresVersion() string {
 	if err != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to retrieve Postgres Version: ",
-			err.Error())
+			"Failed to retrieve Postgres Version: %v", err)
 	}
 
 	return version

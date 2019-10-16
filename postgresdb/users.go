@@ -269,7 +269,7 @@ func (p *vulscanoDB) AssertUserExists(id interface{}) bool {
 
 	default:
 		logging.VSCANLog(
-			"error", "Error while asserting user exists in Database: ", err.Error())
+			"error", "Error while asserting user exists in Database: %v", err)
 
 		return false
 	}
