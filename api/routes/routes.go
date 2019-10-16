@@ -4,6 +4,7 @@ package routes
 import (
 	"net/http"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vscan/api/handlers"
 	"github.com/lucabrasi83/vscan/api/middleware"
@@ -19,6 +20,7 @@ func LoadRoutes(routes *gin.Engine) {
 		middleware.RequestSizeLimiter(10240),
 		middleware.RequestsLogger(),
 		middleware.APILoadControl(),
+		cors.Default(),
 	)
 
 	// Set up default handler for no routes found
