@@ -71,13 +71,6 @@ func LaunchAdHocScan(c *gin.Context) {
 	switch ads.OSType {
 	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
-		//if devScanner == nil {
-		//	logging.VSCANLog("error: ", "Failed to instantiate Device with given OS Type: ", ads.OSType)
-		//	c.JSON(http.StatusBadRequest, gin.H{
-		//		"error": "Failed to instantiate Device with given OS Type",
-		//	})
-		//	return
-		//}
 
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{

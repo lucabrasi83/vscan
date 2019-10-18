@@ -99,7 +99,7 @@ func JwtConfigGenerate() *jwt.GinJWTMiddleware {
 			return false
 		},
 
-		TokenLookup:   "header:Authorization",
+		TokenLookup:   "query:token, header:Authorization",
 		TokenHeadName: "Bearer",
 		TimeFunc:      time.Now,
 		SendCookie:    false,

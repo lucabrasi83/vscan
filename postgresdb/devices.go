@@ -13,6 +13,7 @@ type DeviceVADB struct {
 	MgmtIPAddress              net.IP    `json:"mgmtIP"`
 	LastScan                   time.Time `json:"lastScan"`
 	EnterpriseID               string    `json:"enterpriseID"`
+	EnterpriseName             string    `json:"enterpriseName"`
 	ScanMeanTime               int       `json:"scanMeanTimeMilliseconds"`
 	OSType                     string    `json:"osType"`
 	OSVersion                  string    `json:"osVersion"`
@@ -39,14 +40,18 @@ func (p *vulscanoDB) AdminGetAllDevices(ent string) ([]DeviceVADB, error) {
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
-	const sqlQuery = `SELECT device_id, serial_number, mgmt_ip_address,
-		              last_successful_scan, vulnerabilities_found, enterprise_id,
-                      scan_mean_time, os_type, os_version, device_model, total_vulnerabilities_scanned,
-                      suggested_sw, device_hostname, product_id, service_contract_number, 
-                      service_contract_description, service_contract_end_date,
-				      service_contract_site_country, service_contract_associated
-					  FROM device_va_results
-				      WHERE enterprise_id = $1 or $1 IS NULL`
+	const sqlQuery = `SELECT t1.device_id, t1.serial_number, t1.mgmt_ip_address,
+		              t1.last_successful_scan, t1.vulnerabilities_found, t1.enterprise_id,
+                      t1.scan_mean_time, t1.os_type, t1.os_version, 
+					  t1.device_model, t1.total_vulnerabilities_scanned,
+                      t1.suggested_sw, t1.device_hostname, t1.product_id, t1.service_contract_number, 
+                      t1.service_contract_description, t1.service_contract_end_date,
+				      t1.service_contract_site_country, t1.service_contract_associated,
+					  t2.enterprise_name 
+					  FROM device_va_results t1, enterprise t2
+				      WHERE t1.enterprise_id = $1 or $1 IS NULL
+					  AND t1.enterprise_id = t2.enterprise_id
+`
 
 	defer cancelQuery()
 
@@ -83,6 +88,7 @@ func (p *vulscanoDB) AdminGetAllDevices(ent string) ([]DeviceVADB, error) {
 			&dev.ServiceContractEndDate,
 			&dev.ServiceContractSiteCountry,
 			&dev.ServiceContractAssociated,
+			&dev.EnterpriseName,
 		)
 
 		if err != nil {

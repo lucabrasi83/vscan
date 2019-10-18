@@ -23,6 +23,7 @@ func LoadRoutes(routes *gin.Engine) {
 		AllowHeaders:    []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
 		ExposeHeaders:   []string{"Content-Length"},
 		MaxAge:          12 * time.Hour,
+		AllowWebSockets: true,
 	})
 
 	// Set Default Middleware
@@ -48,9 +49,6 @@ func LoadRoutes(routes *gin.Engine) {
 
 	// Short hand declaration for JWT Middleware
 	authWare := jwtMiddleware.MiddlewareFunc
-
-	routes.GET("/", handlers.ServeLogHome)
-	routes.GET("/ws", handlers.ServeWs)
 
 	// /api/v1 Routes group and associated handlers
 	apiV1 := routes.Group("/api/v1")
@@ -121,9 +119,15 @@ func LoadRoutes(routes *gin.Engine) {
 			devcreds.PATCH("/credential/:creds-name", handlers.UpdateUserDeviceCredentials)
 			devcreds.DELETE("/credential/:creds-name", handlers.DeleteUserDeviceCredentials)
 		}
-		docs := apiV1.Group("/docs").Use(authWare())
+		docs := apiV1.Group("/docs")
 		{
 			docs.GET("/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+		}
+		jobs := apiV1.Group("/jobs").Use(authWare())
+		{
+			//jobs.GET("/all", handlers.ServeLogHome).Use(authWare())
+			jobs.GET("/ws", handlers.ServeWs)
+
 		}
 
 	}

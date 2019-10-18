@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"flag"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -29,13 +27,14 @@ const (
 )
 
 var (
-	addr      = flag.String("addr", ":8080", "http service address")
-	homeTempl = template.Must(template.New("").Parse(homeHTML))
+	//addr      = flag.String("addr", ":8080", "http service address")
+	//homeTempl = template.Must(template.New("").Parse(homeHTML))
 
 	connWSUpgrade = websocket.Upgrader{
 		ReadBufferSize:    1024,
 		WriteBufferSize:   1024,
 		EnableCompression: true,
+		CheckOrigin:       func(r *http.Request) bool { return true },
 	}
 )
 
@@ -100,6 +99,7 @@ func writer(ws *websocket.Conn, lastMod time.Time, file string) {
 
 			if p != nil {
 				ws.SetWriteDeadline(time.Now().Add(writeWait))
+
 				if err := ws.WriteMessage(websocket.TextMessage, p); err != nil {
 					return
 				}
@@ -135,57 +135,57 @@ func ServeWs(c *gin.Context) {
 	reader(ws)
 }
 
-func ServeLogHome(c *gin.Context) {
-	if c.Request.URL.Path != "/" {
-		c.String(http.StatusNotFound, "Not found")
-		return
-	}
+//func ServeLogHome(c *gin.Context) {
+//	if c.Request.URL.Path != "/api/v1/jobs/all" {
+//		c.String(http.StatusNotFound, "Not found")
+//		return
+//	}
+//
+//	c.Header("Content-Type", "text/html; charset=utf-8")
+//
+//	scanJobID := c.Query("scanJobID")
+//
+//	p, lastMod, err := readFileIfModified(time.Time{}, scanJobID)
+//	if err != nil {
+//		p = []byte(err.Error())
+//		lastMod = time.Unix(0, 0)
+//		logging.VSCANLog("error", "Unable to access log file for Websocket stream on job ID %v with error %v",
+//			scanJobID, err)
+//	}
+//	var v = struct {
+//		Host      string
+//		Data      string
+//		LastMod   string
+//		ScanJobID string
+//	}{
+//		c.Request.Host,
+//		string(p),
+//		strconv.FormatInt(lastMod.UnixNano(), 16),
+//		scanJobID,
+//	}
+//	homeTempl.Execute(c.Writer, &v)
+//
+//}
 
-	c.Header("Content-Type", "text/html; charset=utf-8")
-
-	scanJobID := c.Query("scanJobID")
-
-	p, lastMod, err := readFileIfModified(time.Time{}, scanJobID)
-	if err != nil {
-		p = []byte(err.Error())
-		lastMod = time.Unix(0, 0)
-		logging.VSCANLog("error", "Unable to access log file for Websocket stream on job ID %v with error %v",
-			scanJobID, err)
-	}
-	var v = struct {
-		Host      string
-		Data      string
-		LastMod   string
-		ScanJobID string
-	}{
-		c.Request.Host,
-		string(p),
-		strconv.FormatInt(lastMod.UnixNano(), 16),
-		scanJobID,
-	}
-	homeTempl.Execute(c.Writer, &v)
-
-}
-
-const homeHTML = `<!DOCTYPE html>
-<html lang="en">
-   <head>
-       <title>WebSocket Example</title>
-   </head>
-   <body style="background-color: black;color: white;font-size: 20px;font-family: monospace;padding:10px 50px">
-       <pre id="fileData">{{.Data}}</pre>
-       <script type="text/javascript">
-           (function() {
-               var data = document.getElementById("fileData");
-               var conn = new WebSocket("wss://{{.Host}}/ws?lastMod={{.LastMod}}&scanJobID={{.ScanJobID}}");
-               conn.onclose = function(evt) {
-                   data.textContent = 'Connection closed';
-               }
-               conn.onmessage = function(evt) {
-                   data.textContent = evt.data;
-               }
-           })();
-       </script>
-   </body>
-</html>
-`
+//const homeHTML = `<!DOCTYPE html>
+//<html lang="en">
+//   <head>
+//       <title>WebSocket Example</title>
+//   </head>
+//   <body style="background-color: black;color: white;font-size: 20px;font-family: monospace;padding:10px 50px">
+//       <pre id="fileData">{{.Data}}</pre>
+//       <script type="text/javascript">
+//           (function() {
+//               var data = document.getElementById("fileData");
+//               var conn = new WebSocket("wss://{{.Host}}/api/v1/jobs/ws?lastMod={{.LastMod}}&scanJobID={{.ScanJobID}}");
+//               conn.onclose = function(evt) {
+//                   data.textContent = 'Connection closed';
+//               }
+//               conn.onmessage = function(evt) {
+//                   data.textContent = evt.data;
+//               }
+//           })();
+//       </script>
+//   </body>
+//</html>
+//`

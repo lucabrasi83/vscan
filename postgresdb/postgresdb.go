@@ -82,7 +82,7 @@ func init() {
 	}
 
 	// Set Connection Parameters
-	poolConfig.MaxConns = 50
+	poolConfig.MaxConns = 20
 	poolConfig.HealthCheckPeriod = 1 * time.Minute
 	poolConfig.ConnConfig.Host = os.Getenv("VULSCANO_DB_HOST")
 	poolConfig.ConnConfig.User = os.Getenv("VULSCANO_DB_USERNAME")
