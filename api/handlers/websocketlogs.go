@@ -40,6 +40,11 @@ var (
 
 func readFileIfModified(lastMod time.Time, filename string) ([]byte, time.Time, error) {
 	fi, err := abstractInMemoryFS.Stat(filename)
+
+	// Gracefully handle file to stream not existing yet
+	if errFileStat, ok := err.(*os.PathError); errFileStat != nil && ok {
+		return nil, lastMod, nil
+	}
 	if err != nil {
 		return nil, lastMod, err
 	}
@@ -129,7 +134,7 @@ func ServeWs(c *gin.Context) {
 	}
 
 	var file string
-	file = c.Query("scanJobID")
+	file = c.Query("logFileRequestHash")
 
 	go writer(ws, lastMod, file)
 	reader(ws)

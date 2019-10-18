@@ -75,7 +75,7 @@ func agentConnection() (agentpb.VscanAgentServiceClient, error) {
 }
 
 func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource string, sshGW *UserSSHGateway,
-	creds *UserDeviceCredentials, sr *ScanResults, bsr *BulkScanResults) error {
+	creds *UserDeviceCredentials, sr *ScanResults, bsr *BulkScanResults, logStreamReqHash string) error {
 
 	cc, err := agentConnection()
 
@@ -179,7 +179,7 @@ func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource str
 		}
 
 		// Write Log File buffer in memory File System
-		writeLogFileInMemory(resStream.ScanLogsWebsocket, jobID)
+		writeLogFileInMemory(resStream.ScanLogsWebsocket, logStreamReqHash)
 
 		// If no result yet in the stream go back to the beginning of the streaming loop
 		if len(resStream.ScanResultsJson) == 0 {
@@ -449,22 +449,22 @@ func clientCertLoad() (credentials.TransportCredentials, error) {
 
 // writeLogFileInMemory will use the abstract in-memory filesystem to write the job log file
 // This will be used for Websocket clients who wish to follow the scan progress in real-time
-func writeLogFileInMemory(log *agentpb.ScanLogFileResponseWB, job string) {
+func writeLogFileInMemory(log *agentpb.ScanLogFileResponseWB, hash string) {
 
 	file, err := abstractInMemoryFS.OpenFile(
-		filepath.Join(datadiros.GetDataDir(), job),
+		filepath.Join(datadiros.GetDataDir(), hash),
 		os.O_WRONLY|os.O_CREATE|os.O_APPEND,
 		0644,
 	)
 
 	if err != nil {
-		logging.VSCANLog("error", "Unable to create In-Memory Log file for job ID %v with error %v", job, err)
+		logging.VSCANLog("error", "Unable to create In-Memory Log file for hash ID %v with error %v", hash, err)
 	}
 
 	defer func() {
 		errFileClose := file.Close()
 		if errFileClose != nil {
-			logging.VSCANLog("error", "Unable to close In-Memory Log file for job ID %v with error %v", job, errFileClose)
+			logging.VSCANLog("error", "Unable to close In-Memory Log file for hash ID %v with error %v", hash, errFileClose)
 		}
 	}()
 
@@ -472,7 +472,7 @@ func writeLogFileInMemory(log *agentpb.ScanLogFileResponseWB, job string) {
 	_, errFileWrite := fmt.Fprintln(file, string(log.GetScanLogs()))
 
 	if errFileWrite != nil {
-		logging.VSCANLog("error", "Unable to write In-Memory Log file for job ID %v with error %v", job, errFileWrite)
+		logging.VSCANLog("error", "Unable to write In-Memory Log file for hash ID %v with error %v", hash, errFileWrite)
 	}
 
 }

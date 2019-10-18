@@ -199,7 +199,7 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 		return nil, errDevCredsDB
 	}
 
-	err := sendAgentScanRequest(jobID, devList, d.jovalURL, &sshGateway, devCreds, &sr, nil)
+	err := sendAgentScanRequest(jobID, devList, d.jovalURL, &sshGateway, devCreds, &sr, nil, dev.LogStreamHashRequest)
 
 	if err != nil {
 

@@ -61,21 +61,23 @@ type ScanReportFileResultIdentifier struct {
 
 // AdHocScanDevice represents the JSON payload to be sent to POST /api/v1/admin/on-demand-scan
 type AdHocScanDevice struct {
-	Hostname        string `json:"hostname" binding:"required" example:"TCL-IN-MUMBAI-RTR-1"`
-	IPAddress       string `json:"ip" binding:"required" example:"10.1.1.1"`
-	OSType          string `json:"osType" binding:"required" example:"IOS-XE"`
-	CredentialsName string `json:"credentialsName" binding:"required" example:"MY-TACACS-CREDS"`
-	OSVersion       string `json:"osVersion" example:"16.06.04"`
-	SSHGateway      string `json:"sshGateway" example:"UKL78-SSH-GW"`
+	Hostname             string `json:"hostname" binding:"required" example:"TCL-IN-MUMBAI-RTR-1"`
+	IPAddress            string `json:"ip" binding:"required" example:"10.1.1.1"`
+	OSType               string `json:"osType" binding:"required" example:"IOS-XE"`
+	CredentialsName      string `json:"credentialsName" binding:"required" example:"MY-TACACS-CREDS"`
+	OSVersion            string `json:"osVersion" example:"16.06.04"`
+	SSHGateway           string `json:"sshGateway" example:"UKL78-SSH-GW"`
+	LogStreamHashRequest string `json:"logStreamHashReq,omitempty"`
 }
 
 // AdHocBulkScan represents a slice of AdHocBulkScanDevice struct
 // for multiple devices to be scanned in a single container
 type AdHocBulkScan struct {
-	OSType          string                `json:"osType" binding:"required"`
-	SSHGateway      string                `json:"sshGateway"`
-	CredentialsName string                `json:"credentialsName" binding:"required"`
-	Devices         []AdHocBulkScanDevice `json:"devices" binding:"required"`
+	OSType               string                `json:"osType" binding:"required"`
+	SSHGateway           string                `json:"sshGateway"`
+	CredentialsName      string                `json:"credentialsName" binding:"required"`
+	Devices              []AdHocBulkScanDevice `json:"devices" binding:"required"`
+	LogStreamHashRequest string                `json:"logStreamHashReq,omitempty"`
 }
 
 type AdHocBulkScanDevice struct {

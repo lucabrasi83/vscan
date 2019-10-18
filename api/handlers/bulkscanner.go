@@ -185,7 +185,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 		return nil, errDevCredsDB
 	}
 
-	err := sendAgentScanRequest(jobID, devList, d.jovalURL, &sshGateway, devCreds, nil, &bsr)
+	err := sendAgentScanRequest(jobID, devList, d.jovalURL, &sshGateway, devCreds, nil, &bsr, dev.LogStreamHashRequest)
 
 	if err != nil {
 
