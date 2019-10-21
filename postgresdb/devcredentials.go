@@ -29,16 +29,16 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 	const sqlQuery = `SELECT credentials_name,
  				      device_vendor,
 	                  device_username,
-	                  COALESCE(pgp_sym_decrypt(device_password, $1), ''), 
-	                  COALESCE(pgp_sym_decrypt(device_private_key, $1), ''), 
-	                  COALESCE(pgp_sym_decrypt(device_ios_enable_pwd, $1), '')
+	                  COALESCE(device_password::text, ''), 
+	                  COALESCE(device_private_key::text, ''), 
+	                  COALESCE(device_ios_enable_pwd::text, '')
                       FROM device_credentials_set
-					  WHERE user_id = $2 AND credentials_name = $3
+					  WHERE user_id = $1 AND credentials_name = $2
 					 `
 
 	defer cancelQuery()
 
-	row := p.db.QueryRow(ctxTimeout, sqlQuery, pgpSymEncryptKey, uid, cn)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, uid, cn)
 
 	err := row.Scan(
 		&deviceCreds.CredentialsName,
@@ -78,15 +78,15 @@ func (p *vulscanoDB) FetchAllUserDeviceCredentials(uid string) ([]DeviceCredenti
 	const sqlQuery = `SELECT credentials_name,
  				      device_vendor,
 	                  device_username,
-	                  COALESCE(pgp_sym_decrypt(device_password, $1), ''), 
-	                  COALESCE(pgp_sym_decrypt(device_private_key, $1), ''), 
-	                  COALESCE(pgp_sym_decrypt(device_ios_enable_pwd, $1), '')
+	                  COALESCE(device_password::text, ''), 
+	                  COALESCE(device_private_key::text, ''), 
+	                  COALESCE(device_ios_enable_pwd::text, '')
                       FROM device_credentials_set
-					  WHERE user_id = $2`
+					  WHERE user_id = $1`
 
 	defer cancelQuery()
 
-	rows, err := p.db.Query(ctxTimeout, sqlQuery, pgpSymEncryptKey, uid)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, uid)
 
 	if err != nil {
 		logging.VSCANLog("error", "cannot fetch user device credentials from DB %v", err.Error())
