@@ -161,11 +161,25 @@ func (p *vscanCache) GetBatchJobsRunningKey() (bool, error) {
 }
 
 func (p *vscanCache) SearchCacheDevice(pattern string) ([]string, error) {
-	dev, _, err := p.cacheStoreClient.Scan(0, strings.ToUpper(pattern), 100000).Result()
 
-	if err != nil {
-		return nil, err
+	searchRes := make([]string, 0)
+
+	var initCursor uint64
+
+	for {
+
+		dev, cursor, err := p.cacheStoreClient.Scan(initCursor, strings.ToUpper(pattern), 100).Result()
+
+		if err != nil {
+			return nil, err
+		}
+		initCursor = cursor
+
+		searchRes = append(searchRes, dev...)
+
+		if cursor == 0 {
+			return searchRes, nil
+		}
 	}
 
-	return dev, nil
 }
