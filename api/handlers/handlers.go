@@ -690,7 +690,7 @@ func AdminGetCVEVulnAffectingDevice(c *gin.Context) {
 // API workflow to Cisco API's will then be triggered in order to retrieve the suggested SW versions for each device
 func GetAnutaDeviceSuggestedSW() ([]map[string]string, error) {
 
-	devList, err := postgresdb.DBInstance.AdminGetAllDevices("")
+	devList, err := postgresdb.DBInstance.GetAllDevicesDB("")
 
 	if err != nil {
 		return nil, err
@@ -870,11 +870,20 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 	})
 }
 
-func AdminGetAllInventoryDevices(c *gin.Context) {
+func GetAllInventoryDevices(c *gin.Context) {
 
-	ent := c.Query("enterpriseID")
+	// Extract JWT Claim
+	jwtMapClaim := jwt.ExtractClaims(c)
 
-	devices, err := postgresdb.DBInstance.AdminGetAllDevices(ent)
+	var ent string
+
+	if isUserVulscanoRoot(jwtMapClaim) {
+		ent = c.Query("enterpriseID")
+	} else {
+		ent = jwtMapClaim["enterprise"].(string)
+	}
+
+	devices, err := postgresdb.DBInstance.GetAllDevicesDB(ent)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "unable to retrieve devices from inventory"})
@@ -882,6 +891,30 @@ func AdminGetAllInventoryDevices(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"devices": devices})
+}
+
+func SearchInventoryDevices(c *gin.Context) {
+
+	// Extract JWT Claim
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	var searchPattern string
+
+	if isUserVulscanoRoot(jwtMapClaim) {
+		searchPattern = "*" + c.Query("pattern") + "*"
+	} else {
+		searchPattern = jwtMapClaim["enterprise"].(string) + "-*"
+	}
+
+	dev, err := rediscache.CacheStore.SearchCacheDevice(searchPattern)
+
+	if err != nil {
+		logging.VSCANLog("error", "failed to search device with pattern %v . Error %v", searchPattern, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"devices": dev})
+
 }
 
 func LaunchAnutaInventoryBulkScan(c *gin.Context) {
@@ -1143,7 +1176,7 @@ func FetchCiscoAMCStatus() error {
 	// Maximum Serial Number per API call
 	const maxSN = 50
 
-	devList, err := postgresdb.DBInstance.AdminGetAllDevices("")
+	devList, err := postgresdb.DBInstance.GetAllDevicesDB("")
 
 	if err != nil {
 		return err

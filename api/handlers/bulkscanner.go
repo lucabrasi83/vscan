@@ -305,10 +305,11 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 	}
 
 	adBulkScanReq := &AdHocBulkScan{
-		OSType:          d.OSType,
-		SSHGateway:      d.SSHGateway,
-		Devices:         adBulkScanList,
-		CredentialsName: d.CredentialsName,
+		OSType:               d.OSType,
+		SSHGateway:           d.SSHGateway,
+		Devices:              adBulkScanList,
+		CredentialsName:      d.CredentialsName,
+		LogStreamHashRequest: d.LogStreamHashRequest,
 	}
 
 	// devScanner represents DeviceScanner interface. Depending on the OS Type given, we instantiate

@@ -31,7 +31,7 @@ type DeviceVADB struct {
 	ServiceContractAssociated  bool      `json:"serviceContractAssociated"`
 }
 
-func (p *vulscanoDB) AdminGetAllDevices(ent string) ([]DeviceVADB, error) {
+func (p *vulscanoDB) GetAllDevicesDB(ent string) ([]DeviceVADB, error) {
 
 	pEnt := normalizeString(ent)
 

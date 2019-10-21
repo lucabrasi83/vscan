@@ -308,12 +308,13 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 	}
 
 	ads := AdHocScanDevice{
-		Hostname:        anutaScannedDev.DeviceName,
-		IPAddress:       anutaScannedDev.MgmtIPAddress.String(),
-		OSType:          anutaScannedDev.OSType,
-		OSVersion:       anutaScannedDev.OSVersion,
-		SSHGateway:      d.SSHGateway,
-		CredentialsName: d.CredentialsName,
+		Hostname:             anutaScannedDev.DeviceName,
+		IPAddress:            anutaScannedDev.MgmtIPAddress.String(),
+		OSType:               anutaScannedDev.OSType,
+		OSVersion:            anutaScannedDev.OSVersion,
+		SSHGateway:           d.SSHGateway,
+		CredentialsName:      d.CredentialsName,
+		LogStreamHashRequest: d.LogStreamHashRequest,
 	}
 
 	// devScanner represents DeviceScanner interface. Depending on the OS Type given, we instantiate
@@ -323,9 +324,7 @@ func AnutaInventoryScan(d *AnutaDeviceScanRequest, j *JwtClaim) (*AnutaDeviceInv
 	switch ads.OSType {
 	case ciscoIOSXE, ciscoIOS:
 		devScanner = NewCiscoScanDevice(ads.OSType)
-		//if devScanner == nil {
-		//	return nil, fmt.Errorf("failed to instantiate Device with given OS Type %v", ads.OSType)
-		//}
+
 	default:
 		return nil, fmt.Errorf("OS Type %v not supported for device %v",
 			anutaScannedDev.OSType, anutaScannedDev.DeviceName)

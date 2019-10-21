@@ -70,7 +70,6 @@ func LoadRoutes(routes *gin.Engine) {
 			admin.POST("/enterprise", handlers.CreateEnterprise)
 			admin.PATCH("/enterprise/:enterprise-id", tempHandler)
 			admin.DELETE("/enterprise/:enterprise-id", handlers.DeleteEnterprise)
-			admin.GET("/devices", handlers.AdminGetAllInventoryDevices)
 
 			admin.GET("/ongoing-scanned-devices", handlers.GetCurrentlyScannedDevices)
 		}
@@ -88,6 +87,12 @@ func LoadRoutes(routes *gin.Engine) {
 			vulnAdmin.GET("/cisco-advisory/:cisco-sa", handlers.AdminGetSAVulnAffectingDevice)
 			vulnAdmin.GET("/cve/:cve-id", handlers.AdminGetCVEVulnAffectingDevice)
 			vulnAdmin.GET("/device/:device-name", tempHandler)
+		}
+
+		devices := apiV1.GET("/devices").Use(authWare())
+		{
+			devices.GET("/devices/all", handlers.GetAllInventoryDevices)
+			devices.GET("/devices/search", handlers.SearchInventoryDevices)
 		}
 
 		scan := apiV1.Group("/scan").Use(authWare())
@@ -125,7 +130,6 @@ func LoadRoutes(routes *gin.Engine) {
 		}
 		jobs := apiV1.Group("/jobs").Use(authWare())
 		{
-			//jobs.GET("/all", handlers.ServeLogHome).Use(authWare())
 			jobs.GET("/ws", handlers.ServeWs)
 
 		}

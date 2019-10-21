@@ -27,14 +27,27 @@ const (
 )
 
 var (
-	//addr      = flag.String("addr", ":8080", "http service address")
-	//homeTempl = template.Must(template.New("").Parse(homeHTML))
+
+	// Allowed host Origin
+	allowedOrigins = []string{
+		"vulscano.vsnl.co.in",
+		"vscan.asdlab.net",
+		"vscan.tatacommunications.com",
+		"vulscano.vsnl.co.in:8443",
+	}
 
 	connWSUpgrade = websocket.Upgrader{
 		ReadBufferSize:    1024,
 		WriteBufferSize:   1024,
 		EnableCompression: true,
-		CheckOrigin:       func(r *http.Request) bool { return true },
+		CheckOrigin: func(r *http.Request) bool {
+			for _, origin := range allowedOrigins {
+				if r.Host == origin {
+					return true
+				}
+			}
+			return false
+		},
 	}
 )
 

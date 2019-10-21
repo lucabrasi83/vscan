@@ -87,16 +87,18 @@ type AdHocBulkScanDevice struct {
 
 // AnutaDeviceScanRequest represents the JSON payload to be sent to POST /api/v1/scan/anuta-inventory-device
 type AnutaDeviceScanRequest struct {
-	DeviceID        string `json:"deviceID" binding:"required"`
-	CredentialsName string `json:"credentialsName" binding:"required"`
-	SSHGateway      string `json:"sshGateway"`
+	DeviceID             string `json:"deviceID" binding:"required"`
+	CredentialsName      string `json:"credentialsName" binding:"required"`
+	LogStreamHashRequest string `json:"logStreamHashReq,omitempty"`
+	SSHGateway           string `json:"sshGateway"`
 }
 
 type AnutaDeviceBulkScanRequest struct {
-	OSType          string                   `json:"osType" binding:"required"`
-	SSHGateway      string                   `json:"sshGateway"`
-	CredentialsName string                   `json:"credentialsName" binding:"required"`
-	Devices         []AnutaDeviceScanRequest `json:"devices" binding:"required"`
+	OSType               string                   `json:"osType" binding:"required"`
+	SSHGateway           string                   `json:"sshGateway"`
+	CredentialsName      string                   `json:"credentialsName" binding:"required"`
+	LogStreamHashRequest string                   `json:"logStreamHashReq,omitempty"`
+	Devices              []AnutaDeviceScanRequest `json:"devices" binding:"required"`
 }
 
 // AnutaDeviceInventory struct represents a device attributes from Anuta NCX inventory

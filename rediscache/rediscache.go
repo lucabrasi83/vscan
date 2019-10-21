@@ -123,7 +123,8 @@ func (p *vscanCache) HGetAllDeviceDetails(dev string) map[string]string {
 }
 
 func (p *vscanCache) HashMapSetDevicesInventory(dev string, kv map[string]interface{}) error {
-	err := p.cacheStoreClient.HMSet(dev, kv).Err()
+
+	err := p.cacheStoreClient.HMSet(strings.ToUpper(dev), kv).Err()
 
 	if err != nil {
 		return err
@@ -141,7 +142,6 @@ func (p *vscanCache) HashMapSetDevicesInventory(dev string, kv map[string]interf
 func (p *vscanCache) SetBatchJobsRunningKey(i int) error {
 
 	err := p.cacheStoreClient.Set("batchjobsrunning", i, 1*time.Hour).Err()
-
 	return err
 }
 
@@ -158,4 +158,14 @@ func (p *vscanCache) GetBatchJobsRunningKey() (bool, error) {
 	}
 
 	return valToBool(val), nil
+}
+
+func (p *vscanCache) SearchCacheDevice(pattern string) ([]string, error) {
+	dev, _, err := p.cacheStoreClient.Scan(0, strings.ToUpper(pattern), 100000).Result()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return dev, nil
 }
