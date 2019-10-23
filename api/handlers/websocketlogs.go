@@ -37,9 +37,8 @@ var (
 	}
 
 	connWSUpgrade = websocket.Upgrader{
-		ReadBufferSize:    1024,
-		WriteBufferSize:   1024,
-		EnableCompression: true,
+		ReadBufferSize:  2048,
+		WriteBufferSize: 2048,
 		CheckOrigin: func(r *http.Request) bool {
 			for _, origin := range allowedOrigins {
 				if r.Host == origin {

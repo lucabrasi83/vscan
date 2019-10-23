@@ -28,15 +28,15 @@ func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB
 	const sqlQuery = `SELECT gateway_name, 
 	                  gateway_ip, 
 	                  gateway_username, 
-	                  COALESCE(gateway_password::text, ''), 
-	                  COALESCE(gateway_private_key::text, '')
+	                  COALESCE(pgp_sym_decrypt(gateway_password, $1), ''), 
+	                  COALESCE(pgp_sym_decrypt(gateway_private_key, $1), '')
                       FROM ssh_gateway
-					  WHERE enterprise_id = $1 AND gateway_name = $2
+					  WHERE enterprise_id = $2 AND gateway_name = $3
 					 `
 
 	defer cancelQuery()
 
-	row := p.db.QueryRow(ctxTimeout, sqlQuery, entid, gw)
+	row := p.db.QueryRow(ctxTimeout, sqlQuery, pgpSymEncryptKey, entid, gw)
 
 	err := row.Scan(
 		&sshGw.GatewayName,
@@ -75,15 +75,14 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error
 	const sqlQuery = `SELECT gateway_name, 
 	                  gateway_ip, 
 	                  gateway_username, 
-	                  COALESCE(gateway_password::text, ''),
-                      COALESCE(gateway_private_key::text, ''),
-			          enterprise_id
+	                  COALESCE(pgp_sym_decrypt(gateway_password, $1), ''), 
+	                  COALESCE(pgp_sym_decrypt(gateway_private_key, $1), '')
                       FROM ssh_gateway
-					  WHERE enterprise_id = $1`
+					  WHERE enterprise_id = $2`
 
 	defer cancelQuery()
 
-	rows, err := p.db.Query(ctxTimeout, sqlQuery, entid)
+	rows, err := p.db.Query(ctxTimeout, sqlQuery, pgpSymEncryptKey, entid)
 
 	if err != nil {
 		logging.VSCANLog("error",
@@ -102,7 +101,6 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error
 			&sshGw.GatewayUsername,
 			&sshGw.GatewayPassword,
 			&sshGw.GatewayPrivateKey,
-			&sshGw.EnterpriseID,
 		)
 
 		if err != nil {
