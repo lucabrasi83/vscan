@@ -58,8 +58,7 @@ func LoadRoutes(routes *gin.Engine) {
 		apiV1.GET("/ping", handlers.Ping)
 		admin := apiV1.Group("/admin").Use(authWare())
 		{
-			admin.POST("/on-demand-scan", handlers.LaunchAdHocScan)
-			admin.POST("/bulk-on-demand-scan", handlers.LaunchBulkAdHocScan)
+
 			admin.GET("/user/:user-id", handlers.GetUser)
 			admin.GET("/all-users", handlers.GetAllUsers)
 			admin.POST("/user", handlers.CreateUser)
@@ -82,13 +81,6 @@ func LoadRoutes(routes *gin.Engine) {
 			batchAdmin.POST("/refresh-inventory-cache", handlers.RefreshInventoryCache)
 		}
 
-		vulnAdmin := apiV1.Group("/admin/vulnerabilities").Use(authWare())
-		{
-			vulnAdmin.GET("/cisco-advisory/:cisco-sa", handlers.AdminGetSAVulnAffectingDevice)
-			vulnAdmin.GET("/cve/:cve-id", handlers.AdminGetCVEVulnAffectingDevice)
-			vulnAdmin.GET("/device/:device-name", tempHandler)
-		}
-
 		devices := apiV1.GET("/devices").Use(authWare())
 		{
 			devices.GET("/devices/all", handlers.GetAllInventoryDevices)
@@ -99,11 +91,13 @@ func LoadRoutes(routes *gin.Engine) {
 		{
 			scan.POST("/anuta-inventory-device", authWare(), handlers.LaunchAnutaInventoryScan)
 			scan.POST("/bulk-anuta-inventory", authWare(), handlers.LaunchAnutaInventoryBulkScan)
+			scan.POST("/on-demand-scan", handlers.LaunchAdHocScan)
+			scan.POST("/bulk-on-demand-scan", handlers.LaunchBulkAdHocScan)
 		}
 		vuln := apiV1.Group("/vulnerabilities").Use(authWare())
 		{
-			vuln.GET("/cisco-advisory/:cisco-sa", tempHandler)
-			vuln.GET("/cve/:cve-id", tempHandler)
+			vuln.GET("/cisco-advisory/:cisco-sa", handlers.GetSAVulnAffectingDevice)
+			vuln.GET("/cve/:cve-id", handlers.GetCVEVulnAffectingDevice)
 			vuln.GET("/device/:device-name", tempHandler)
 			vuln.GET("/cisco-published-sa", tempHandler)
 			vuln.GET("/summary", tempHandler)

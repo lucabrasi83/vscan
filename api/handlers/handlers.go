@@ -646,10 +646,20 @@ func DeleteUser(c *gin.Context) {
 
 }
 
-func AdminGetSAVulnAffectingDevice(c *gin.Context) {
+func GetSAVulnAffectingDevice(c *gin.Context) {
+
+	// Extract JWT Claim
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	var ent string
+
+	if isUserVulscanoRoot(jwtMapClaim) {
+		ent = c.Query("enterpriseID")
+	} else {
+		ent = jwtMapClaim["enterprise"].(string)
+	}
 
 	vuln := c.Param("cisco-sa")
-	ent := c.Query("enterpriseID")
 
 	devices, err := postgresdb.DBInstance.AdminGetDevVAResultsBySA(vuln, strings.ToUpper(ent))
 
@@ -666,10 +676,20 @@ func AdminGetSAVulnAffectingDevice(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"results": devices})
 }
 
-func AdminGetCVEVulnAffectingDevice(c *gin.Context) {
+func GetCVEVulnAffectingDevice(c *gin.Context) {
+
+	// Extract JWT Claim
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	var ent string
+
+	if isUserVulscanoRoot(jwtMapClaim) {
+		ent = c.Query("enterpriseID")
+	} else {
+		ent = jwtMapClaim["enterprise"].(string)
+	}
 
 	vuln := c.Param("cve-id")
-	ent := c.Query("enterpriseID")
 
 	devices, err := postgresdb.DBInstance.AdminGetDevVAResultsByCVE(strings.ToUpper(vuln), strings.ToUpper(ent))
 
