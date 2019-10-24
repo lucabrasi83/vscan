@@ -646,6 +646,92 @@ func DeleteUser(c *gin.Context) {
 
 }
 
+func GetAllVulnAffectingDevice(c *gin.Context) {
+
+	// Extract JWT Claim
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	var ent string
+
+	devID := c.Param("device-name")
+
+	if devID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "device ID param missing in request"})
+		return
+	}
+
+	if isUserVulscanoRoot(jwtMapClaim) {
+		ent = c.Query("enterpriseID")
+	} else {
+		ent = jwtMapClaim["enterprise"].(string)
+	}
+
+	vuln, err := postgresdb.DBInstance.DBVulnAffectingDevice(devID, ent)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to find a match for device specified"})
+		return
+	}
+
+	if len(vuln) == 0 {
+		c.JSON(http.StatusOK, gin.H{"results": "no vulnerability found for this device"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"results": vuln})
+
+}
+
+func GetVulnDeviceHistory(c *gin.Context) {
+
+	// Extract JWT Claim
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	var ent string
+
+	devID := c.Param("device-name")
+
+	limit, errConv := strconv.Atoi(c.Query("recordLimit"))
+
+	if errConv != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "enter a valid numeric value for record limit"})
+		return
+	}
+
+	if limit == 0 {
+		limit = 5
+	}
+
+	if devID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "device ID param missing in request"})
+		return
+	}
+
+	if isUserVulscanoRoot(jwtMapClaim) {
+		ent = c.Query("enterpriseID")
+	} else {
+		ent = jwtMapClaim["enterprise"].(string)
+	}
+
+	if ent == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "enterpriseID query param missing in request"})
+		return
+	}
+
+	vuln, err := postgresdb.DBInstance.DBVulnDeviceHistory(devID, ent, limit)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to find a match for device specified"})
+		return
+	}
+
+	if len(vuln) == 0 {
+		c.JSON(http.StatusOK, gin.H{"results": "no vulnerability history found for this device"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"results": vuln})
+
+}
+
 func GetSAVulnAffectingDevice(c *gin.Context) {
 
 	// Extract JWT Claim
@@ -661,7 +747,7 @@ func GetSAVulnAffectingDevice(c *gin.Context) {
 
 	vuln := c.Param("cisco-sa")
 
-	devices, err := postgresdb.DBInstance.AdminGetDevVAResultsBySA(vuln, strings.ToUpper(ent))
+	devices, err := postgresdb.DBInstance.GetDevVAResultsBySA(vuln, strings.ToUpper(ent))
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to find a match for vulnerability specified"})
@@ -691,7 +777,7 @@ func GetCVEVulnAffectingDevice(c *gin.Context) {
 
 	vuln := c.Param("cve-id")
 
-	devices, err := postgresdb.DBInstance.AdminGetDevVAResultsByCVE(strings.ToUpper(vuln), strings.ToUpper(ent))
+	devices, err := postgresdb.DBInstance.GetDevVAResultsByCVE(strings.ToUpper(vuln), strings.ToUpper(ent))
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Unable to find a match for vulnerability specified"})

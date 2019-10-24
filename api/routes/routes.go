@@ -98,7 +98,8 @@ func LoadRoutes(routes *gin.Engine) {
 		{
 			vuln.GET("/cisco-advisory/:cisco-sa", handlers.GetSAVulnAffectingDevice)
 			vuln.GET("/cve/:cve-id", handlers.GetCVEVulnAffectingDevice)
-			vuln.GET("/device/:device-name", tempHandler)
+			vuln.GET("/device/:device-name", handlers.GetAllVulnAffectingDevice)
+			vuln.GET("/device/:device-name/history", handlers.GetVulnDeviceHistory)
 			vuln.GET("/cisco-published-sa", tempHandler)
 			vuln.GET("/summary", tempHandler)
 		}
