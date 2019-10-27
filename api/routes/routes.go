@@ -19,7 +19,7 @@ func LoadRoutes(routes *gin.Engine) {
 	// CORS Config
 	corsMiddleware := cors.New(cors.Config{
 		AllowAllOrigins: true,
-		AllowMethods:    []string{"PUT", "PATCH", "GET", "POST"},
+		AllowMethods:    []string{"PUT", "PATCH", "GET", "POST", "DELETE"},
 		AllowHeaders:    []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
 		ExposeHeaders:   []string{"Content-Length"},
 		MaxAge:          12 * time.Hour,

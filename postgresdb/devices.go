@@ -269,7 +269,7 @@ func (p *vulscanoDB) DBVulnDeviceHistory(dev string, ent string, limit int) ([]V
 					  ON device_va_results.device_id = device_va_history.device_id
 				      WHERE device_va_results.device_id = $1
 					  AND device_va_results.enterprise_id = $2 OR $2 IS NULL
-					  ORDER BY timestamp DESC
+					  ORDER BY timestamp ASC
 					  LIMIT $3;
 				     `
 
