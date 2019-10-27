@@ -123,7 +123,7 @@ func (p *vulscanoDB) FetchAllUserDeviceCredentials(uid string) ([]DeviceCredenti
 
 }
 
-func (p *vulscanoDB) DeleteDeviceCredentials(uid string, cn string) error {
+func (p *vulscanoDB) DeleteDeviceCredentials(uid string, cn []string) error {
 
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
@@ -132,23 +132,40 @@ func (p *vulscanoDB) DeleteDeviceCredentials(uid string, cn string) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, uid, cn)
+	b := &pgx.Batch{}
 
-	if err != nil {
-		logging.VSCANLog("error",
-			"failed to delete device credentials %v with error %v", cn, err)
-
-		return err
+	for _, cred := range cn {
+		b.Queue(sqlQuery, uid, cred)
 	}
 
-	if cTag.RowsAffected() == 0 {
+	// Send Batch SQL Query
+	r := p.db.SendBatch(ctxTimeout, b)
 
-		logging.VSCANLog("error",
-			"failed to delete device credentials: %v", cn)
-		return fmt.Errorf("failed to delete device credentials %v", cn)
+	// Close Batch at the end of function
+	defer func() {
+		errCloseBatch := r.Close()
+		if errCloseBatch != nil {
+			logging.VSCANLog("error", "Failed to close SQL Batch Job query %v with error %v", sqlQuery, errCloseBatch)
+		}
+	}()
+
+	c, errSendBatch := r.Exec()
+
+	if errSendBatch != nil {
+		logging.VSCANLog(
+			"error",
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch)
+
+		return errSendBatch
+
+	}
+
+	if c.RowsAffected() < 1 {
+		return fmt.Errorf("no deletion of row while executing query %v", sqlQuery)
 	}
 
 	return nil
+
 }
 
 func (p *vulscanoDB) InsertNewDeviceCredentials(devCredsProps map[string]string) error {

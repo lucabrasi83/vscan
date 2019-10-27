@@ -121,7 +121,7 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error
 
 }
 
-func (p *vulscanoDB) DeleteUserSSHGateway(entid string, gw string) error {
+func (p *vulscanoDB) DeleteUserSSHGateway(entid string, gw []string) error {
 
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
@@ -130,21 +130,38 @@ func (p *vulscanoDB) DeleteUserSSHGateway(entid string, gw string) error {
 
 	defer cancelQuery()
 
-	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, entid, gw)
+	b := &pgx.Batch{}
 
-	if err != nil {
-		logging.VSCANLog("error",
-			"failed to delete SSH gateway %v with error %v", gw, err.Error())
-
-		return err
+	for _, g := range gw {
+		b.Queue(sqlQuery, entid, g)
 	}
 
-	if cTag.RowsAffected() == 0 {
+	// Send Batch SQL Query
+	r := p.db.SendBatch(ctxTimeout, b)
 
-		logging.VSCANLog("error",
-			"failed to delete SSH gateway %v", gw)
-		return fmt.Errorf("failed to delete SSH gateway %v", gw)
+	// Close Batch at the end of function
+	defer func() {
+		errCloseBatch := r.Close()
+		if errCloseBatch != nil {
+			logging.VSCANLog("error", "Failed to close SQL Batch Job query %v with error %v", sqlQuery, errCloseBatch)
+		}
+	}()
+
+	c, errSendBatch := r.Exec()
+
+	if errSendBatch != nil {
+		logging.VSCANLog(
+			"error",
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch)
+
+		return errSendBatch
+
+	}
+
+	if c.RowsAffected() < 1 {
+		return fmt.Errorf("no deletion of row while executing query %v", sqlQuery)
 	}
 
 	return nil
+
 }

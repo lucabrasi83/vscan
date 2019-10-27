@@ -159,13 +159,6 @@ func isUserVulscanoRoot(jwtMapClaim map[string]interface{}) bool {
 }
 
 // Ping is a health check status handler of the Vulscano API
-// @Summary Ping API Health Check
-// @Tags ping
-// @Description Verify the API is responding to HTTP requests
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} handlers.PingAPIResponse
-// @Router /ping [get]
 func Ping(c *gin.Context) {
 
 	pingRes := PingAPIResponse{
@@ -232,7 +225,16 @@ func DeleteUserDeviceCredentials(c *gin.Context) {
 		Role:       jwtMapClaim["role"].(string),
 	}
 
-	userInput := c.Param("creds-name")
+	credsObj := struct {
+		Credentials []string `json:"credentials" binding:"required"`
+	}{}
+
+	if errBind := c.ShouldBindJSON(&credsObj); errBind != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "credentials not specified in body"})
+		return
+	}
+
+	userInput := credsObj.Credentials
 
 	err := postgresdb.DBInstance.DeleteDeviceCredentials(jwtClaim.UserID, userInput)
 
@@ -241,7 +243,7 @@ func DeleteUserDeviceCredentials(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": "deleted " + userInput + " device credentials"})
+	c.JSON(http.StatusOK, gin.H{"success": "deleted device credentials"})
 }
 func GetAllUserDeviceCredentials(c *gin.Context) {
 
@@ -414,17 +416,60 @@ func DeleteUserSSHGateway(c *gin.Context) {
 		Role:       jwtMapClaim["role"].(string),
 	}
 
-	userInput := c.Param("gw-name")
+	sshgwObj := struct {
+		SSHGateways []string `json:"sshGateways" binding:"required"`
+	}{}
+
+	if errBind := c.ShouldBindJSON(&sshgwObj); errBind != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "sshGateways not specified in body"})
+		return
+	}
+
+	userInput := sshgwObj.SSHGateways
 
 	err := postgresdb.DBInstance.DeleteUserSSHGateway(jwtClaim.Enterprise, userInput)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot find requested gateway"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete requested SSH gateways"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": "gateway " + userInput + " deleted"})
+	c.JSON(http.StatusOK, gin.H{"success": "deleted SSH gateways"})
 }
+
+func DeleteInventoryDevices(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	var ent string
+
+	if isUserVulscanoRoot(jwtMapClaim) {
+		ent = ""
+	} else {
+		ent = jwtMapClaim["enterprise"].(string)
+	}
+
+	deviceObj := struct {
+		Devices []string `json:"devices" binding:"required"`
+	}{}
+
+	if errBind := c.ShouldBindJSON(&deviceObj); errBind != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "devices not specified in body"})
+		return
+	}
+
+	userInput := deviceObj.Devices
+
+	err := postgresdb.DBInstance.DeleteDevices(ent, userInput)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete requested devices"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "deleted devices"})
+}
+
 func GetAllEnterprises(c *gin.Context) {
 	ent, err := postgresdb.DBInstance.FetchAllEnterprises()
 

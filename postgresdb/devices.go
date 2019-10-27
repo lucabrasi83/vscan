@@ -2,9 +2,11 @@ package postgresdb
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"time"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/lucabrasi83/vscan/logging"
 )
 
@@ -251,6 +253,54 @@ func (p *vulscanoDB) GetDevVAResultsByCVE(cve string, ent string) ([]DeviceVADB,
 	}
 
 	return devSlice, nil
+}
+
+func (p *vulscanoDB) DeleteDevices(ent string, dev []string) error {
+
+	pEnt := normalizeString(ent)
+
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
+
+	const sqlQuery = `DELETE FROM device_va_results
+					  WHERE device_id = $1 
+					  AND (enterprise_id = $2 OR $2 IS NULL)`
+
+	defer cancelQuery()
+
+	b := &pgx.Batch{}
+
+	for _, d := range dev {
+		b.Queue(sqlQuery, d, pEnt)
+	}
+
+	// Send Batch SQL Query
+	r := p.db.SendBatch(ctxTimeout, b)
+
+	// Close Batch at the end of function
+	defer func() {
+		errCloseBatch := r.Close()
+		if errCloseBatch != nil {
+			logging.VSCANLog("error", "Failed to close SQL Batch Job query %v with error %v", sqlQuery, errCloseBatch)
+		}
+	}()
+
+	c, errSendBatch := r.Exec()
+
+	if errSendBatch != nil {
+		logging.VSCANLog(
+			"error",
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch)
+
+		return errSendBatch
+
+	}
+
+	if c.RowsAffected() < 1 {
+		return fmt.Errorf("no deletion of row while executing query %v", sqlQuery)
+	}
+
+	return nil
+
 }
 
 func (p *vulscanoDB) DBVulnDeviceHistory(dev string, ent string, limit int) ([]VulnHistoryDeviceDB, error) {

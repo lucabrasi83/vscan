@@ -109,7 +109,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	if errSendBatch != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch.Error())
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch)
 
 		return errSendBatch
 
@@ -229,10 +229,10 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 	// SQL Statement to update Cisco Suggested SW column for each device ID.
 	const sqlQuery = `UPDATE device_va_results SET 
 					  product_id = COALESCE($2, 'NA'),
-				      service_contract_associated = $3,
+				      service_contract_associated = COALESCE($3, false::bolean),
 					  service_contract_description = COALESCE($4, 'NA'),
                       service_contract_number = COALESCE($5, 'NA'),
-                      service_contract_end_date = $6,
+                      service_contract_end_date = COALESCE($6, '0001-01-01'::date),
 				      service_contract_site_country = COALESCE($7, 'UNKNOWN')
 					  WHERE serial_number = $1`
 

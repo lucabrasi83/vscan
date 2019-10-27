@@ -36,7 +36,8 @@ func LoadRoutes(routes *gin.Engine) {
 
 	// Set up default handler for no routes found
 	routes.NoRoute(func(c *gin.Context) {
-		c.JSON(404, gin.H{"error": "404 - PAGE_NOT_FOUND", "message": "Requested route does not exist"})
+		c.JSON(404, gin.H{"error": "HTTP Error 404 - API route requested does not exist",
+			"message": "Requested route does not exist"})
 	})
 
 	// Prometheus Metrics Collection middleware
@@ -85,6 +86,7 @@ func LoadRoutes(routes *gin.Engine) {
 		{
 			devices.GET("/devices/all", handlers.GetAllInventoryDevices)
 			devices.GET("/devices/search", handlers.SearchInventoryDevices)
+			devices.DELETE("/devices/device", handlers.DeleteInventoryDevices)
 		}
 
 		scan := apiV1.Group("/scan").Use(authWare())
@@ -109,7 +111,7 @@ func LoadRoutes(routes *gin.Engine) {
 			sshgw.GET("/gateway/:gw-name", handlers.GetUserSSHGateway)
 			sshgw.POST("/gateway", tempHandler)
 			sshgw.PATCH("/gateway/:gw-name", tempHandler)
-			sshgw.DELETE("/gateway/:gw-name", handlers.DeleteUserSSHGateway)
+			sshgw.DELETE("/gateway", handlers.DeleteUserSSHGateway)
 		}
 		devcreds := apiV1.Group("/device-credentials").Use(authWare())
 		{
@@ -117,7 +119,7 @@ func LoadRoutes(routes *gin.Engine) {
 			devcreds.GET("/credential/:creds-name", handlers.GetUserDeviceCredentials)
 			devcreds.POST("/credential", handlers.CreateUserDeviceCredentials)
 			devcreds.PATCH("/credential/:creds-name", handlers.UpdateUserDeviceCredentials)
-			devcreds.DELETE("/credential/:creds-name", handlers.DeleteUserDeviceCredentials)
+			devcreds.DELETE("/credential", handlers.DeleteUserDeviceCredentials)
 		}
 		docs := apiV1.Group("/docs")
 		{
