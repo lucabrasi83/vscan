@@ -30,7 +30,8 @@ func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB
 	                  gateway_ip, 
 	                  gateway_username, 
 	                  COALESCE(pgp_sym_decrypt(gateway_password, $1), ''), 
-	                  COALESCE(pgp_sym_decrypt(gateway_private_key, $1), '')
+	                  COALESCE(pgp_sym_decrypt(gateway_private_key, $1), ''),
+                      enterprise_id
                       FROM ssh_gateway
 					  WHERE enterprise_id = $2 AND gateway_name = $3
 					 `
@@ -45,6 +46,7 @@ func (p *vulscanoDB) FetchUserSSHGateway(entid string, gw string) (*SSHGatewayDB
 		&sshGw.GatewayUsername,
 		&sshGw.GatewayPassword,
 		&sshGw.GatewayPrivateKey,
+		&sshGw.EnterpriseID,
 	)
 
 	switch err {
@@ -77,7 +79,8 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error
 	                  gateway_ip, 
 	                  gateway_username, 
 	                  COALESCE(pgp_sym_decrypt(gateway_password, $1), ''), 
-	                  COALESCE(pgp_sym_decrypt(gateway_private_key, $1), '')
+	                  COALESCE(pgp_sym_decrypt(gateway_private_key, $1), ''),
+				      enterprise_id
                       FROM ssh_gateway
 					  WHERE enterprise_id = $2`
 
@@ -102,6 +105,7 @@ func (p *vulscanoDB) FetchAllUserSSHGateway(entid string) ([]SSHGatewayDB, error
 			&sshGw.GatewayUsername,
 			&sshGw.GatewayPassword,
 			&sshGw.GatewayPrivateKey,
+			&sshGw.EnterpriseID,
 		)
 
 		if err != nil {
