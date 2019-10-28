@@ -16,7 +16,7 @@ require (
 	github.com/gogo/protobuf v1.3.0
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/gorilla/websocket v1.4.0
-	github.com/jackc/pgx/v4 v4.1.0
+	github.com/jackc/pgx/v4 v4.1.2
 	github.com/json-iterator/go v1.1.7 // indirect
 	github.com/mailru/easyjson v0.7.0 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
