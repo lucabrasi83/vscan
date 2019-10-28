@@ -13,7 +13,7 @@ require (
 	github.com/go-openapi/jsonreference v0.19.3 // indirect
 	github.com/go-openapi/spec v0.19.3 // indirect
 	github.com/go-redis/redis v6.15.5+incompatible
-	github.com/gogo/protobuf v1.3.0
+	github.com/gogo/protobuf v1.3.1
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/gorilla/websocket v1.4.0
 	github.com/jackc/pgx/v4 v4.1.2
