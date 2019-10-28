@@ -68,3 +68,29 @@ func CreateEnterprise(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"success": "enterprise successfully created"})
 }
+
+func UpdateEnterprise(c *gin.Context) {
+
+	userInput := c.Param("enterprise-id")
+
+	var enterpriseUpdate EnterpriseUpdate
+
+	if err := c.ShouldBindJSON(&enterpriseUpdate); err != nil {
+		logging.VSCANLog("error", "Enterprise update failed %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	err := postgresdb.DBInstance.SQLUpdateEnterprise(
+		map[string]string{
+			"entID":   strings.ToUpper(userInput),
+			"entName": enterpriseUpdate.EnterpriseName,
+		},
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "enterprise successfully updated"})
+}

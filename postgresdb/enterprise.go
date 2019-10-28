@@ -29,7 +29,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 	rows, err := p.db.Query(ctxTimeout, sqlQuery)
 
 	if err != nil {
-		logging.VSCANLog("error", "cannot fetch list of enterprises: %v", err.Error())
+		logging.VSCANLog("error", "cannot fetch list of enterprises: %v", err)
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 
 		if err != nil {
 			logging.VSCANLog("error",
-				"error while scanning enterprise table rows: %v", err.Error())
+				"error while scanning enterprise table rows: %v", err)
 			return nil, err
 		}
 		enterprisesSLice = append(enterprisesSLice, ent)
@@ -53,7 +53,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"error returned while iterating through enterprise table: %v", err.Error())
+			"error returned while iterating through enterprise table: %v", err)
 		return nil, err
 	}
 
@@ -93,9 +93,9 @@ func (p *vulscanoDB) FetchEnterprise(entid string) (*EnterpriseDB, error) {
 
 	default:
 		logging.VSCANLog(
-			"error", "error while searching for enterprise in Database: %v", err.Error())
+			"error", "error while searching for enterprise in Database: %v", err)
 
-		return nil, fmt.Errorf("error while searching for enterprise %v: %v", entid, err.Error())
+		return nil, fmt.Errorf("error while searching for enterprise %v: %v", entid, err)
 	}
 
 }
@@ -105,7 +105,7 @@ func (p *vulscanoDB) InsertNewEnterprise(newEnt map[string]string) error {
 	// Set Query timeout
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
-	const sqlQuery = `INSERT INTO enterprise (enterprise_id, 					  enterprise_name) 
+	const sqlQuery = `INSERT INTO enterprise (enterprise_id, enterprise_name) 
 					  VALUES ($1, $2)
 					 `
 
@@ -115,7 +115,7 @@ func (p *vulscanoDB) InsertNewEnterprise(newEnt map[string]string) error {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"failed to insert enterprise %v with error %v", newEnt["entID"], err.Error())
+			"failed to insert enterprise %v with error %v", newEnt["entID"], err)
 
 		if strings.Contains(err.Error(), "23505") {
 			return fmt.Errorf("enterprise ID %v already exists", newEnt["entID"])
@@ -129,6 +129,37 @@ func (p *vulscanoDB) InsertNewEnterprise(newEnt map[string]string) error {
 		logging.VSCANLog("error",
 			"failed to insert enterprise %v", newEnt["entID"])
 		return fmt.Errorf("failed to insert enterprise %v", newEnt["entID"])
+	}
+
+	return nil
+}
+
+func (p *vulscanoDB) SQLUpdateEnterprise(newEnt map[string]string) error {
+
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
+
+	const sqlQuery = `UPDATE enterprise 
+				      SET enterprise_name = $2
+                      WHERE enterprise_id = $1
+					 `
+
+	defer cancelQuery()
+
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, newEnt["entID"], newEnt["entName"])
+
+	if err != nil {
+		logging.VSCANLog("error",
+			"failed to update enterprise %v with error %v", newEnt["entID"], err)
+
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+
+		logging.VSCANLog("error",
+			"failed to update enterprise %v", newEnt["entID"])
+		return fmt.Errorf("failed to update enterprise %v", newEnt["entID"])
 	}
 
 	return nil
@@ -150,7 +181,7 @@ func (p *vulscanoDB) DeleteEnterprise(entid string) error {
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"failed to delete enterprise: %v with error %v", entid, err.Error())
+			"failed to delete enterprise: %v with error %v", entid, err)
 
 		if strings.Contains(err.Error(), "23503") {
 			return fmt.Errorf("enterprise ID %v still has devices associated with it. ",

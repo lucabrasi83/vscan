@@ -252,3 +252,8 @@ type EnterpriseCreate struct {
 	EnterpriseID   string `json:"enterpriseID" binding:"required"`
 	EnterpriseName string `json:"enterpriseName" binding:"required"`
 }
+
+// EnterpriseUpdate struct represents the JSON keys to be passed in order to update an enterprise
+type EnterpriseUpdate struct {
+	EnterpriseName string `json:"enterpriseName" binding:"required"`
+}

@@ -61,9 +61,9 @@ func (p *vulscanoDB) FetchDeviceCredentials(uid string, cn string) (*DeviceCrede
 
 	default:
 		logging.VSCANLog(
-			"error", "error while searching for Device Credentials in Database %v", err.Error())
+			"error", "error while searching for Device Credentials in Database %v", err)
 
-		return nil, fmt.Errorf("error while searching for Device Credentials %v: %v", cn, err.Error())
+		return nil, fmt.Errorf("error while searching for Device Credentials %v: %v", cn, err)
 	}
 
 }
@@ -89,7 +89,7 @@ func (p *vulscanoDB) FetchAllUserDeviceCredentials(uid string) ([]DeviceCredenti
 	rows, err := p.db.Query(ctxTimeout, sqlQuery, pgpSymEncryptKey, uid)
 
 	if err != nil {
-		logging.VSCANLog("error", "cannot fetch user device credentials from DB %v", err.Error())
+		logging.VSCANLog("error", "cannot fetch user device credentials from DB %v", err)
 		return nil, err
 	}
 
@@ -161,6 +161,7 @@ func (p *vulscanoDB) DeleteDeviceCredentials(uid string, cn []string) error {
 	}
 
 	if c.RowsAffected() < 1 {
+		logging.VSCANLog("warning", "no deletion of row while executing query %v", sqlQuery)
 		return fmt.Errorf("no deletion of row while executing query %v", sqlQuery)
 	}
 

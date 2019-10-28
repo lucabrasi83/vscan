@@ -24,7 +24,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 	if err != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to retrieve all Cisco Advisories from openVuln API %v", err.Error())
+			"Failed to retrieve all Cisco Advisories from openVuln API %v", err)
 
 		return err
 	}
@@ -212,7 +212,7 @@ func (p *vulscanoDB) UpdateDeviceSuggestedSW(devSW []map[string]string) error {
 	if errSendBatch != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch.Error())
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch)
 
 		return errSendBatch
 
@@ -278,7 +278,7 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 	if errSendBatch != nil {
 		logging.VSCANLog(
 			"error",
-			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch.Error())
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch)
 
 		return errSendBatch
 
