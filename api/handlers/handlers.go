@@ -654,40 +654,38 @@ func UpdateUser(c *gin.Context) {
 }
 
 // DeleteUser is a Gin handler to delete a user
-// @Summary Delete an existing user
-// @Tags admin
-// @Description Delete an existing user
-// @Accept  json
-// @Produce  json
-// @Param Authorization header string true "JWT Bearer Token"
-// @Param username path string true "Username in email format"
-// @Success 200 {string} string "user successfully deleted"
-// @Failure 400 {string} string "unable to update requested user"
-// @Failure 404 {string} string "route requested does not exist"
-// @Failure 401 {string} string "user not authorized"
-// @Failure 413 {string} string "body size too large"
-// @Router /admin/user/{username} [delete]
 func DeleteUser(c *gin.Context) {
-	user := c.Param("user-id")
 
-	if user == rootUser {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete root user"})
+	userObj := struct {
+		Users []string `json:"users" binding:"required"`
+	}{}
+
+	if errBind := c.ShouldBindJSON(&userObj); errBind != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "users not specified in body"})
 		return
 	}
+	users := userObj.Users
 
-	if isDBUser := postgresdb.DBInstance.AssertUserExists(user); !isDBUser {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "user " + user + " does not exist"})
-		return
+	for _, u := range users {
+		if u == rootUser {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete root user"})
+			return
+		}
+
+		if isDBUser := postgresdb.DBInstance.AssertUserExists(u); !isDBUser {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "user " + u + " does not exist"})
+			return
+		}
 	}
 
-	err := postgresdb.DBInstance.DeleteUser(user)
+	err := postgresdb.DBInstance.DeleteUser(users)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to delete user"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": "user " + user + " deleted"})
+	c.JSON(http.StatusOK, gin.H{"success": "users successfully deleted"})
 
 }
 

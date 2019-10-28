@@ -61,15 +61,15 @@ func LoadRoutes(routes *gin.Engine) {
 		{
 
 			admin.GET("/user/:user-id", handlers.GetUser)
-			admin.GET("/all-users", handlers.GetAllUsers)
+			admin.GET("/users", handlers.GetAllUsers)
 			admin.POST("/user", handlers.CreateUser)
 			admin.PATCH("/user/:user-id", handlers.UpdateUser)
-			admin.DELETE("/user/:user-id", handlers.DeleteUser)
+			admin.DELETE("/users", handlers.DeleteUser)
 			admin.GET("/enterprise/:enterprise-id", handlers.GetEnterprise)
-			admin.GET("/all-enterprises", handlers.GetAllEnterprises)
+			admin.GET("/enterprises", handlers.GetAllEnterprises)
 			admin.POST("/enterprise", handlers.CreateEnterprise)
 			admin.PATCH("/enterprise/:enterprise-id", tempHandler)
-			admin.DELETE("/enterprise/:enterprise-id", handlers.DeleteEnterprise)
+			admin.DELETE("/enterprises", handlers.DeleteEnterprise)
 
 			admin.GET("/ongoing-scanned-devices", handlers.GetCurrentlyScannedDevices)
 		}
