@@ -109,8 +109,8 @@ func LoadRoutes(routes *gin.Engine) {
 		{
 			sshgw.GET("/all", handlers.GetAllUserSSHGateway)
 			sshgw.GET("/gateway/:gw-name", handlers.GetUserSSHGateway)
-			sshgw.POST("/gateway", tempHandler)
-			sshgw.PATCH("/gateway/:gw-name", tempHandler)
+			sshgw.POST("/gateway", handlers.CreateUserSSHGateway)
+			sshgw.PATCH("/gateway/:gw-name", handlers.UpdateUserSSHGateway)
 			sshgw.DELETE("/gateway", handlers.DeleteUserSSHGateway)
 		}
 		devcreds := apiV1.Group("/device-credentials").Use(authWare())

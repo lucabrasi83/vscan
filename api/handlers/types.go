@@ -200,6 +200,23 @@ type UserSSHGateway struct {
 	GatewayPrivateKey string
 }
 
+// UserSSHGatewayCreate struct represents represents the JSON keys to be passed in order to create a new SSH Gateway
+type UserSSHGatewayCreate struct {
+	GatewayName       string `json:"gatewayName" binding:"required"`
+	GatewayIP         string `json:"gatewayIP" binding:"required"`
+	GatewayUsername   string `json:"gatewayUsername" binding:"required"`
+	GatewayPassword   string `json:"gatewayPassword"`
+	GatewayPrivateKey string `json:"gatewayPrivateKey"`
+}
+
+// UserSSHGatewayUpdate struct represents represents the JSON keys to be passed in order to update a SSH Gateway
+type UserSSHGatewayUpdate struct {
+	GatewayIP         string `json:"gatewayIP"`
+	GatewayUsername   string `json:"gatewayUsername"`
+	GatewayPassword   string `json:"gatewayPassword"`
+	GatewayPrivateKey string `json:"gatewayPrivateKey"`
+}
+
 // UserDeviceCredentials struct represents the Device Credentials to connect to a scanned device
 type UserDeviceCredentials struct {
 	CredentialsName         string

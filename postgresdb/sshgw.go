@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/lucabrasi83/vscan/logging"
@@ -159,9 +160,104 @@ func (p *vulscanoDB) DeleteUserSSHGateway(entid string, gw []string) error {
 	}
 
 	if c.RowsAffected() < 1 {
+
+		logging.VSCANLog("warning", "no deletion of row while executing query %v", sqlQuery)
 		return fmt.Errorf("no deletion of row while executing query %v", sqlQuery)
 	}
 
 	return nil
 
+}
+
+func (p *vulscanoDB) CreateUserSSHGateway(sshgwProps map[string]string) error {
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
+
+	const sqlQuery = `INSERT INTO ssh_gateway
+                      (gateway_name, gateway_ip, gateway_username, gateway_password, gateway_private_key, enterprise_id)
+			          VALUES($2, $3, $4,
+					  COALESCE(pgp_sym_encrypt($5, $1, 'compress-algo=1, cipher-algo=aes256'),''),
+				      COALESCE(pgp_sym_encrypt($6, $1, 'compress-algo=1, cipher-algo=aes256'),''),
+					  $7)
+					`
+
+	defer cancelQuery()
+
+	cTag, err := p.db.Exec(
+		ctxTimeout,
+		sqlQuery,
+		pgpSymEncryptKey,
+		sshgwProps["gwName"],
+		sshgwProps["gwIP"],
+		sshgwProps["gwUsername"],
+		sshgwProps["gwPassword"],
+		sshgwProps["gwPrivateKey"],
+		sshgwProps["gwEnterprise"],
+	)
+
+	if err != nil {
+		logging.VSCANLog("error",
+			"failed to create SSH Gateway: %v with error %v", sshgwProps["gwName"], err)
+
+		if strings.Contains(err.Error(), "23505") {
+			return fmt.Errorf("SSH Gateway %v already exists", sshgwProps["gwName"])
+		}
+		if strings.Contains(err.Error(), "23503") {
+			return fmt.Errorf("enterprise ID %v does not exist", sshgwProps["gwEnterprise"])
+		}
+
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+
+		logging.VSCANLog("error",
+			"failed to update SSH Gateway: %v", sshgwProps["gwName"])
+		return fmt.Errorf("failed to create SSH Gateway %v", sshgwProps["gwName"])
+	}
+
+	return nil
+}
+
+func (p *vulscanoDB) UpdateUserSSHGateway(sshgwProps map[string]string) error {
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
+
+	const sqlQuery = `UPDATE ssh_gateway SET
+					  gateway_ip = COALESCE($3, gateway_ip),
+				      gateway_username = COALESCE($4, gateway_username),
+					  gateway_password =  COALESCE(pgp_sym_encrypt($5, $1, 'compress-algo=1, cipher-algo=aes256'),gateway_password), 
+					  gateway_private_key =  COALESCE(pgp_sym_encrypt($6, $1, 'compress-algo=1, cipher-algo=aes256'),gateway_private_key)
+					  WHERE gateway_name = $2 AND enterprise_id = $7
+					`
+
+	defer cancelQuery()
+
+	cTag, err := p.db.Exec(
+		ctxTimeout,
+		sqlQuery,
+		pgpSymEncryptKey,
+		sshgwProps["gwName"],
+		sshgwProps["gwIP"],
+		sshgwProps["gwUsername"],
+		sshgwProps["gwPassword"],
+		sshgwProps["gwPrivateKey"],
+		sshgwProps["gwEnterprise"],
+	)
+
+	if err != nil {
+		logging.VSCANLog("error",
+			"failed to update SSH Gateway: %v with error %v", sshgwProps["gwName"], err)
+
+		return err
+	}
+
+	if cTag.RowsAffected() == 0 {
+
+		logging.VSCANLog("error",
+			"failed to update SSH Gateway: %v", sshgwProps["gwName"])
+		return fmt.Errorf("failed to update SSH Gateway %v", sshgwProps["gwName"])
+	}
+
+	return nil
 }

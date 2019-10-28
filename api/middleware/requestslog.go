@@ -48,7 +48,7 @@ func RequestsLogger() gin.HandlerFunc {
 
 		logging.VSCANLog("info",
 			logResMessage,
-			colorForMethod(c.Request.Method).Sprintf("%6s", c.Request.Method),
+			colorForMethod(c.Request.Method).Sprintf("%8s", c.Request.Method),
 			fgHiMagenta.Sprintf("%-30s", userID),
 			fgHiCyan.Sprintf("%-15v", c.ClientIP()),
 			colorForStatus(c.Writer.Status()).Sprintf("%3d", c.Writer.Status()),
