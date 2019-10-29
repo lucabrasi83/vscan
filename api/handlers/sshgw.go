@@ -1,12 +1,17 @@
 package handlers
 
 import (
+	"context"
 	"net/http"
+	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	agentpb "github.com/lucabrasi83/vscan/api/proto"
 	"github.com/lucabrasi83/vscan/logging"
 	"github.com/lucabrasi83/vscan/postgresdb"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/encoding/gzip"
 )
 
 func GetAllUserSSHGateway(c *gin.Context) {
@@ -29,6 +34,57 @@ func GetAllUserSSHGateway(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"sshGateway": sshgwFound})
+}
+
+func SSHGatewayConnectTest(c *gin.Context) {
+
+	var sshGWParams UserSSHGatewayCreate
+
+	if err := c.ShouldBindJSON(&sshGWParams); err != nil {
+		logging.VSCANLog("error", "SSH Gateway test request failed %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	req := &agentpb.SSHGatewayTestRequest{SshGateway: &agentpb.SSHGateway{
+		GatewayUsername:   sshGWParams.GatewayUsername,
+		GatewayIp:         sshGWParams.GatewayIP,
+		GatewayPassword:   sshGWParams.GatewayPassword,
+		GatewayPrivateKey: sshGWParams.GatewayPrivateKey,
+	}}
+
+	cc, err := agentConnection()
+
+	if err != nil {
+		logging.VSCANLog("error", "unable to connect to VSCAN Agent %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+
+	}
+
+	// Closing GRPC client connection at the end of scan job
+	defer func() {
+		errConnClose := conn.Close()
+		if errConnClose != nil {
+			logging.VSCANLog("warning",
+				"failed to close gRPC client connection to VSCAN Agent. error: %v", errConnClose)
+		}
+	}()
+
+	// Setting timeout context for scan requests
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+
+	defer cancel()
+
+	resp, err := cc.SSHConnectivityTest(ctxTimeout, req, grpc.UseCompressor(gzip.Name))
+
+	if err != nil {
+		logging.VSCANLog("error", "unable to proceed with VSCAN Agent SSH Test %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"testSuccess": resp.SshCanConnect, "message": resp.SshTestResult})
 }
 
 func UpdateUserSSHGateway(c *gin.Context) {

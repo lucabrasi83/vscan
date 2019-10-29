@@ -110,6 +110,7 @@ func LoadRoutes(routes *gin.Engine) {
 			sshgw.GET("/all", handlers.GetAllUserSSHGateway)
 			sshgw.GET("/gateway/:gw-name", handlers.GetUserSSHGateway)
 			sshgw.POST("/gateway", handlers.CreateUserSSHGateway)
+			sshgw.POST("/gateway/test-connectivity", handlers.SSHGatewayConnectTest)
 			sshgw.PATCH("/gateway/:gw-name", handlers.UpdateUserSSHGateway)
 			sshgw.DELETE("/gateway", handlers.DeleteUserSSHGateway)
 		}

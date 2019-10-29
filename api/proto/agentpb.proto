@@ -64,7 +64,21 @@ message ScanLogFileResponsePS {
     bytes scan_logs = 1;
 }
 
+// SSHGatewayTestRequest represents a request to test connectivity to an openSSH host
+message SSHGatewayTestRequest {
+    SSHGateway ssh_gateway = 1;
+}
+
+// SSHGatewayTestResponse represents a response to test connectivity to an openSSH host
+message SSHGatewayTestResponse {
+    string ssh_test_result = 1;
+    bool   ssh_can_connect = 2;
+}
+
+
 service VscanAgentService {
 
     rpc BuildScanConfig (ScanRequest) returns (stream ScanResultsResponse) {};
+
+    rpc SSHConnectivityTest (SSHGatewayTestRequest) returns (SSHGatewayTestResponse) {};
 }

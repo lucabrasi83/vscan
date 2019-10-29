@@ -2,6 +2,7 @@ package hashgen
 
 import (
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/speps/go-hashids"
@@ -32,7 +33,7 @@ func GenHash() (string, error) {
 
 func newhdData() *hashids.HashIDData {
 	hd := hashids.NewData()
-	hd.Salt = "Vul$can0 RoCk$"
+	hd.Salt = os.Getenv("VSCAN_SECRET_KEY")
 	hd.MinLength = 30
 
 	return hd
