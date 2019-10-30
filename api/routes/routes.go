@@ -66,7 +66,7 @@ func LoadRoutes(routes *gin.Engine) {
 			admin.PATCH("/user/:user-id", handlers.UpdateUser)
 			admin.DELETE("/users", handlers.DeleteUser)
 			admin.GET("/enterprise/:enterprise-id", handlers.GetEnterprise)
-			admin.GET("/enterprises", handlers.GetAllEnterprises)
+			admin.GET("/enterprises/all", handlers.GetAllEnterprises)
 			admin.POST("/enterprise", handlers.CreateEnterprise)
 			admin.PATCH("/enterprise/:enterprise-id", handlers.UpdateEnterprise)
 			admin.DELETE("/enterprises", handlers.DeleteEnterprise)

@@ -10,8 +10,9 @@ import (
 )
 
 type EnterpriseDB struct {
-	EnterpriseID   string `json:"enterpriseID"`
-	EnterpriseName string `json:"enterpriseName"`
+	EnterpriseID      string `json:"enterpriseID"`
+	EnterpriseName    string `json:"enterpriseName"`
+	EnterpriseDevices int    `json:"enterpriseDevices"`
 }
 
 func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
@@ -21,8 +22,13 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
-	const sqlQuery = `SELECT enterprise_id, enterprise_name
-  					  FROM enterprise`
+	const sqlQuery = `SELECT ent.enterprise_id, ent.enterprise_name, 
+                      COUNT(dev.device_id) AS dev_count
+				      FROM enterprise AS ent
+                      INNER JOIN device_va_results AS dev
+                      ON ent.enterprise_id = dev.enterprise_id
+                      GROUP BY ent.enterprise_id
+                      ORDER BY ent.enterprise_id`
 
 	defer cancelQuery()
 
@@ -40,6 +46,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 		err = rows.Scan(
 			&ent.EnterpriseID,
 			&ent.EnterpriseName,
+			&ent.EnterpriseDevices,
 		)
 
 		if err != nil {

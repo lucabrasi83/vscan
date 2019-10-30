@@ -70,6 +70,10 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 			bsr.ScanJobExecutingAgent = "N/A"
 		}
 
+		if bsr.ScanLogs == "" {
+			bsr.ScanLogs = "No Logs available"
+		}
+
 		errJobInsertDB := scanJobReportDB(
 			jobID,
 			reportScanJobStartTime,
