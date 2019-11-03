@@ -3,10 +3,175 @@ package postgresdb
 import (
 	"context"
 	"fmt"
+	"net"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/lucabrasi83/vscan/logging"
 )
+
+type ScanJobsHistory struct {
+	JobID              string    `json:"jobID"`
+	StartDate          time.Time `json:"startTime"`
+	EndDate            time.Time `json:"endTime"`
+	DevicesScannedName []string  `json:"devicesScannedName"`
+	DevicesScannedIP   []net.IP  `json:"devicesScannedIP"`
+	JobStatus          string    `json:"jobStatus"`
+	User               string    `json:"user"`
+	Agent              string    `json:"agent"`
+	JobLogs            string    `json:"jobLogs"`
+}
+
+func (p *vulscanoDB) GetScanJobsHistoryCounts(filters map[string]string, uid string) (int, error) {
+
+	// Normalize filter strings to Postgres NULL type if empty
+	pDevName := normalizeString(filters["deviceName"])
+	pDevIP := normalizeString(filters["deviceIP"])
+	pStartTime := normalizeString(filters["startTime"])
+	pEndTime := normalizeString(filters["endTime"])
+	pJobResult := normalizeString(filters["jobResult"])
+	pUserID := normalizeString(uid)
+	pLogPattern := normalizeString(filters["logPattern"])
+
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
+
+	sqlQuery := `
+        SELECT COUNT(job_id)
+        FROM   scan_jobs_history AS jobs
+        WHERE (jobs.devices_scanned_name && 
+              (ARRAY(SELECT device_id::text FROM device_va_results WHERE device_id::text ILIKE '%' || $1 || '%')) 
+              OR $1 IS NULL)
+        AND (ARRAY[$2]::inet[] && devices_scanned_ip OR $2 IS NULL)
+        AND (jobs.start_time >= $3 OR $3 IS NULL)
+        AND (jobs.end_time <= $4 OR $4 IS NULL )
+        AND (jobs.job_result = $5 OR $5 IS NULL )
+        AND (jobs.user_id_scan_request = $6 OR $6 IS NULL)
+        AND (jobs.scan_logs::text ILIKE '%' || $7 || '%' OR $7 IS NULL)
+        `
+
+	defer cancelQuery()
+
+	var countRec int
+
+	countRow := p.db.QueryRow(
+		ctxTimeout,
+		sqlQuery,
+		pDevName,
+		pDevIP,
+		pStartTime,
+		pEndTime,
+		pJobResult,
+		pUserID,
+		pLogPattern)
+
+	err := countRow.Scan(&countRec)
+
+	if err != nil {
+		logging.VSCANLog("error",
+			"cannot fetch Scan Jobs History Count from DB %v", err,
+		)
+		return 0, err
+	}
+
+	return countRec, nil
+
+}
+
+func (p *vulscanoDB) GetScanJobsHistoryResults(filters, order map[string]string, limit string,
+	offset string, uid string) ([]ScanJobsHistory,
+	error) {
+
+	jobSlice := make([]ScanJobsHistory, 0)
+
+	// Normalize filter strings to Postgres NULL type if empty
+	pDevName := normalizeString(filters["deviceName"])
+	pDevIP := normalizeString(filters["deviceIP"])
+	pStartTime := normalizeString(filters["startTime"])
+	pEndTime := normalizeString(filters["endTime"])
+	pJobResult := normalizeString(filters["jobResult"])
+	pUserID := normalizeString(uid)
+	pLogPattern := normalizeString(filters["logPattern"])
+
+	// Set Query timeout
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
+
+	sqlQuery := `
+        SELECT jobs.job_id, jobs.start_time, jobs.end_time, jobs.job_result, users.email,
+               jobs.devices_scanned_name, jobs.devices_scanned_ip, jobs.scan_exec_agent, jobs.scan_logs
+        FROM   scan_jobs_history AS jobs
+        INNER JOIN vulscano_users AS users
+		ON jobs.user_id_scan_request = users.user_id
+        WHERE (jobs.devices_scanned_name && 
+              (ARRAY(SELECT device_id::text FROM device_va_results WHERE device_id::text ILIKE '%' || $1 || '%')) 
+              OR $1 IS NULL)
+        AND (ARRAY[$2]::inet[] && devices_scanned_ip OR $2 IS NULL)
+        AND (jobs.start_time >= $3 OR $3 IS NULL)
+        AND (jobs.end_time <= $4 OR $4 IS NULL )
+        AND (jobs.job_result = $5 OR $5 IS NULL )
+        AND (jobs.user_id_scan_request = $6 OR $6 IS NULL)
+        AND (jobs.scan_logs::text ILIKE '%' || $7 || '%' OR $7 IS NULL)
+        ORDER BY jobs.` + order["column"] + " " + order["direction"] + `
+		LIMIT $8
+		OFFSET $9
+        `
+
+	defer cancelQuery()
+
+	rows, err := p.db.Query(
+		ctxTimeout,
+		sqlQuery,
+		pDevName,
+		pDevIP,
+		pStartTime,
+		pEndTime,
+		pJobResult,
+		pUserID,
+		pLogPattern,
+		limit,
+		offset,
+	)
+
+	if err != nil {
+		logging.VSCANLog("error",
+			"cannot fetch Scan Jobs History from DB %v", err,
+		)
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		job := ScanJobsHistory{}
+
+		err = rows.Scan(
+			&job.JobID,
+			&job.StartDate,
+			&job.EndDate,
+			&job.JobStatus,
+			&job.User,
+			&job.DevicesScannedName,
+			&job.DevicesScannedIP,
+			&job.Agent,
+			&job.JobLogs,
+		)
+
+		if err != nil {
+			logging.VSCANLog("error",
+				"error while scanning scan_jobs_history table rows %v", err)
+			return nil, err
+		}
+		jobSlice = append(jobSlice, job)
+	}
+	err = rows.Err()
+	if err != nil {
+		logging.VSCANLog("error",
+			"error returned while fetching scan jobs %v", err)
+		return nil, err
+	}
+
+	return jobSlice, nil
+}
 
 func (p *vulscanoDB) PersistScanJobReport(args ...interface{}) error {
 

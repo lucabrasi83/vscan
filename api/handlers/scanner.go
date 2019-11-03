@@ -104,6 +104,11 @@ func (d *CiscoScanDevice) Scan(dev *AdHocScanDevice, j *JwtClaim) (*ScanResults,
 			scanJobStatus = scanJobUnknownRes
 		}
 
+		// Mark Scan as failed if slice is empty
+		if len(successfulScannedDevName) == 0 && len(successfulScannedDevIP) == 0 {
+			scanJobStatus = scanJobFailedRes
+		}
+
 		if reportScanJobEndTime.IsZero() {
 			reportScanJobEndTime, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		}

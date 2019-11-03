@@ -140,7 +140,7 @@ func (p *vulscanoDB) GetDevVAResultsBySA(vuln string, ent string) ([]DeviceVADB,
 					  scan_mean_time, os_type, os_version, device_model, 
 					  serial_number, total_vulnerabilities_scanned
 					  FROM device_va_results 
-					  WHERE $1 = ANY(vulnerabilities_found)
+					  WHERE vulnerabilities_found @> ARRAY[$1]
 					  AND (enterprise_id = $2 OR $2 IS NULL)
 				     `
 
@@ -203,9 +203,9 @@ func (p *vulscanoDB) GetDevVAResultsByCVE(cve string, ent string) ([]DeviceVADB,
 					  scan_mean_time, os_type, os_version, device_model, 
  				      serial_number, total_vulnerabilities_scanned 
 					  FROM device_va_results 
-					  WHERE (
-							SELECT advisory_id FROM cisco_advisories WHERE $1 = ANY(cve_id)
-						    ) = ANY(vulnerabilities_found)
+					  WHERE vulnerabilities_found @> ARRAY[(
+  				      SELECT advisory_id FROM cisco_advisories WHERE 
+					  UPPER(cve_id::text)::text[] @> ARRAY[UPPER($1)])]::text[]
 				      AND (enterprise_id = $2 OR $2 IS NULL)
 				     `
 

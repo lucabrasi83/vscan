@@ -424,6 +424,58 @@ func SearchInventoryDevices(c *gin.Context) {
 
 }
 
+func GetScanJobHistory(c *gin.Context) {
+
+	// Extract JWT Claim
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	// Extract Filters Map
+	filtersMap := c.QueryMap("filters")
+
+	// Extract Order Map
+	orderMap := c.QueryMap("sort")
+
+	// Page Size
+	pageSize := c.Query("pageSize")
+
+	if pageSize == "" {
+		pageSize = "10"
+	}
+
+	// Page Number
+	pageNumber := c.Query("pageNumber")
+
+	if pageNumber == "" {
+		pageNumber = "0"
+	}
+
+	var userID string
+
+	if isUserVulscanoRoot(jwtMapClaim) {
+		userID = filtersMap["userID"]
+	} else {
+		userID = jwtMapClaim["userID"].(string)
+	}
+
+	// Records Count
+	countRec, err := postgresdb.DBInstance.GetScanJobsHistoryCounts(filtersMap, userID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "unable to retrieve scan jobs history count"})
+		return
+	}
+
+	// Filtered Records
+	jobs, err := postgresdb.DBInstance.GetScanJobsHistoryResults(filtersMap, orderMap, pageSize, pageNumber, userID)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "unable to retrieve scan jobs history"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"jobs": jobs, "totalRecords": countRec})
+}
+
 func LaunchAnutaInventoryBulkScan(c *gin.Context) {
 
 	jwtMapClaim := jwt.ExtractClaims(c)

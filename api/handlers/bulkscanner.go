@@ -41,6 +41,7 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 	// Constant for Job Scan Results
 	const scanJobFailedRes = "FAILED"
 	const scanJobSuccessRes = "SUCCESS"
+	const scanJobUnknownRes = "UNKNOWN"
 
 	// Struct holding the scan job results
 	var bsr BulkScanResults
@@ -72,6 +73,15 @@ func (d *CiscoScanDevice) BulkScan(dev *AdHocBulkScan, j *JwtClaim) (*BulkScanRe
 
 		if bsr.ScanLogs == "" {
 			bsr.ScanLogs = "No Logs available"
+		}
+
+		if scanJobStatus == "" {
+			scanJobStatus = scanJobUnknownRes
+		}
+
+		// Mark Scan as failed if slice is empty
+		if len(successfulScannedDevName) == 0 && len(successfulScannedDevIP) == 0 {
+			scanJobStatus = scanJobFailedRes
 		}
 
 		errJobInsertDB := scanJobReportDB(

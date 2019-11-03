@@ -61,7 +61,7 @@ func LoadRoutes(routes *gin.Engine) {
 		{
 
 			admin.GET("/user/:user-id", handlers.GetUser)
-			admin.GET("/users", handlers.GetAllUsers)
+			admin.GET("/users/all", handlers.GetAllUsers)
 			admin.POST("/user", handlers.CreateUser)
 			admin.PATCH("/user/:user-id", handlers.UpdateUser)
 			admin.DELETE("/users", handlers.DeleteUser)
@@ -128,6 +128,7 @@ func LoadRoutes(routes *gin.Engine) {
 		}
 		jobs := apiV1.Group("/jobs").Use(authWare())
 		{
+			jobs.GET("/history", handlers.GetScanJobHistory)
 			jobs.GET("/ws", handlers.ServeWs)
 
 		}

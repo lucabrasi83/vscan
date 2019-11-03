@@ -23,7 +23,7 @@ require (
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/prometheus/client_golang v1.0.0 // indirect
-	github.com/shirou/gopsutil v2.18.12+incompatible
+	github.com/shirou/gopsutil v2.19.10+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/speps/go-hashids v2.0.0+incompatible
