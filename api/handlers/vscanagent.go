@@ -397,6 +397,7 @@ func parseGRPCBulkScanReport(res *BulkScanResults, jobID string, scanFileRes []b
 
 		vulnFound := BulkScanVulnFound{
 			DeviceName:                  scanReport.DeviceName,
+			DeviceIP:                    scanReport.DeviceIP[0],
 			ScanDeviceMeanTime:          int(deviceScanEndTime.Sub(deviceScanStartTime).Seconds() * 1000),
 			VulnerabilitiesFoundDetails: vulnMetaSlice,
 			TotalVulnerabilitiesScanned: vulnTotal,

@@ -342,7 +342,7 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 	var devScanner DeviceBulkScanner
 
 	if err := c.ShouldBindJSON(&ads); err != nil {
-		logging.VSCANLog("error", err.Error())
+		logging.VSCANLog("error", "%v", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -366,7 +366,7 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 
 	scanRes, err := LaunchAbstractVendorBulkScan(devScanner, &ads, &jwtClaim)
 	if err != nil {
-		logging.VSCANLog("error: ", err.Error())
+		logging.VSCANLog("error", "%v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})

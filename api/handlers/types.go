@@ -43,6 +43,7 @@ type PingAPIResponse struct {
 // Scan ReportFile represents the JSON report file created for each device by Joval scan
 type ScanReportFile struct {
 	DeviceName    string                 `json:"fact_friendlyname"`
+	DeviceIP      []string               `json:"target_names"`
 	ScanStartTime string                 `json:"start_time"`
 	ScanEndTime   string                 `json:"end_time"`
 	RuleResults   []ScanReportFileResult `json:"rule_results"`
@@ -159,6 +160,7 @@ type BulkScanResults struct {
 
 type BulkScanVulnFound struct {
 	DeviceName                  string                     `json:"deviceName"`
+	DeviceIP                    string                     `json:"deviceIP"`
 	ScanDeviceMeanTime          int                        `json:"scanDeviceMeanTimeMsec"`
 	TotalVulnerabilitiesFound   int                        `json:"totalVulnerabilitiesFound"`
 	TotalVulnerabilitiesScanned int                        `json:"totalVulnerabilitiesScanned"`
