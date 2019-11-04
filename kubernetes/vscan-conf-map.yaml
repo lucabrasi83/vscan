@@ -6,7 +6,7 @@ data:
   VSCAN_REDIS_HOST: vscan-cache
   VULSCANO_DB_HOST: vscan-db.cg3utcbqnrdv.eu-west-2.rds.amazonaws.com
   VULSCANO_DB_DATABASE_NAME: vulscanodb
-  VULSCANO_MODE: PROD
+  VSCAN_MODE: PROD
   VULSCANO_HTTPS_PORT: "443"
 kind: ConfigMap
 metadata:

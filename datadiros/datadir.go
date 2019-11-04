@@ -19,8 +19,8 @@ func init() {
 		}
 	}
 
-	// Check for Environment Variable VULSCANO_MODE
-	switch os.Getenv("VULSCANO_MODE") {
+	// Check for Environment Variable VSCAN_MODE
+	switch os.Getenv("VSCAN_MODE") {
 	case "DEV":
 		DataDir, err := os.Getwd()
 		if err != nil {
@@ -36,16 +36,16 @@ func init() {
 			"PROD Mode. Setting DataDir to: %v", DataDir)
 	default:
 		logging.VSCANLog("fatal",
-			"VULSCANO_MODE environment variable is not set!")
+			"VSCAN_MODE environment variable is not set!")
 	}
 
 }
 
 func GetDataDir() string {
-	if os.Getenv("VULSCANO_MODE") == "DEV" {
+	if os.Getenv("VSCAN_MODE") == "DEV" {
 		DataDir := "."
 		return DataDir
-	} else if os.Getenv("VULSCANO_MODE") == "PROD" {
+	} else if os.Getenv("VSCAN_MODE") == "PROD" {
 		DataDir := "/opt/vscan/data"
 		return DataDir
 	}

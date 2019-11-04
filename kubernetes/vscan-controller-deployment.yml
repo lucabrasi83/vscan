@@ -98,11 +98,11 @@ spec:
                 configMapKeyRef:
                   name: vscan-confmap
                   key: VULSCANO_HTTPS_PORT
-            - name: VULSCANO_MODE
+            - name: VSCAN_MODE
               valueFrom:
                 configMapKeyRef:
                   name: vscan-confmap
-                  key: VULSCANO_MODE
+                  key: VSCAN_MODE
           resources:
             limits:
               cpu: 400m

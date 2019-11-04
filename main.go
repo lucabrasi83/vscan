@@ -62,13 +62,13 @@ func main() {
 	}
 
 	// Start scheduled batch jobs in PROD mode
-	if os.Getenv("VULSCANO_MODE") == "PROD" {
+	if os.Getenv("VSCAN_MODE") == "PROD" {
 		schedTicker := time.NewTicker(24 * time.Hour)
 		defer schedTicker.Stop()
 		go handlers.SchedulerBatchJobs(schedTicker)
 	} else {
 		logging.VSCANLog("info", "VSCAN started in %s mode. Skipping scheduled batch jobs execution",
-			os.Getenv("VULSCANO_MODE"))
+			os.Getenv("VSCAN_MODE"))
 	}
 
 	// Load HTTP Routes from api/routes package

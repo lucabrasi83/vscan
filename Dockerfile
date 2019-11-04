@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
 FROM scratch
 LABEL maintainer="sebastien.pouplin@tatacommunications.com"
 USER 1000
-ENV VULSCANO_MODE PROD
+ENV VSCAN_MODE PROD
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY ./certs /opt/vscan/data/certs
 COPY --from=builder /go/src/github.com/lucabrasi83/vscan/banner.txt /
