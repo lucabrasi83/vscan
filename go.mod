@@ -50,7 +50,7 @@ require (
 	golang.org/x/net v0.0.0-20190921015927-1a5e07d1ff72
 	golang.org/x/sys v0.0.0-20190922100055-0a153f010e69 // indirect
 	golang.org/x/tools v0.0.0-20190920225731-5eefd052ad72 // indirect
-	google.golang.org/grpc v1.21.1
+	google.golang.org/grpc v1.25.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	mvdan.cc/unparam v0.0.0-20190917161559-b83a221c10a2 // indirect
 	sourcegraph.com/sqs/pbtypes v1.0.0 // indirect
