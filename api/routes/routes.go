@@ -129,6 +129,7 @@ func LoadRoutes(routes *gin.Engine) {
 		jobs := apiV1.Group("/jobs").Use(authWare())
 		{
 			jobs.GET("/history", handlers.GetScanJobHistory)
+			jobs.DELETE("/history", handlers.DeleteJobsHistory)
 			jobs.GET("/ws", handlers.ServeWs)
 
 		}

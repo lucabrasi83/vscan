@@ -78,6 +78,55 @@ func (p *vulscanoDB) GetScanJobsHistoryCounts(filters map[string]string, uid str
 
 }
 
+func (p *vulscanoDB) DeleteScanJobs(uid string, jobID []string) error {
+
+	pUser := normalizeString(uid)
+
+	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
+
+	const sqlQuery = `DELETE FROM scan_jobs_history
+					  WHERE (user_id_scan_request = $1 OR $1 IS NULL)
+				      AND job_id = $2`
+
+	defer cancelQuery()
+
+	b := &pgx.Batch{}
+
+	for _, job := range jobID {
+		b.Queue(sqlQuery, pUser, job)
+	}
+
+	// Send Batch SQL Query
+	r := p.db.SendBatch(ctxTimeout, b)
+
+	// Close Batch at the end of function
+	defer func() {
+		errCloseBatch := r.Close()
+		if errCloseBatch != nil {
+			logging.VSCANLog("error", "Failed to close SQL Batch Job query %v with error %v", sqlQuery, errCloseBatch)
+		}
+	}()
+
+	c, errSendBatch := r.Exec()
+
+	if errSendBatch != nil {
+		logging.VSCANLog(
+			"error",
+			"Failed to send Batch query %v with error %v", sqlQuery, errSendBatch)
+
+		return errSendBatch
+
+	}
+
+	if c.RowsAffected() < 1 {
+		logging.VSCANLog("warning", "no deletion of row while executing query %v", sqlQuery)
+		return fmt.Errorf("no deletion of row while executing query %v", sqlQuery)
+	}
+
+	return nil
+
+}
+
 func (p *vulscanoDB) GetScanJobsHistoryResults(filters, order map[string]string, limit string,
 	offset string, uid string) ([]ScanJobsHistory,
 	error) {

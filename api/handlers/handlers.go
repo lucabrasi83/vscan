@@ -366,7 +366,6 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 
 	scanRes, err := LaunchAbstractVendorBulkScan(devScanner, &ads, &jwtClaim)
 	if err != nil {
-		logging.VSCANLog("error", "%v", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
 		})
@@ -474,6 +473,39 @@ func GetScanJobHistory(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"jobs": jobs, "totalRecords": countRec})
+}
+
+func DeleteJobsHistory(c *gin.Context) {
+
+	jwtMapClaim := jwt.ExtractClaims(c)
+
+	jobObj := struct {
+		Jobs []string `json:"jobs" binding:"required"`
+	}{}
+
+	if errBind := c.ShouldBindJSON(&jobObj); errBind != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "jobs not specified in body"})
+		return
+	}
+
+	var userID string
+
+	if isUserVulscanoRoot(jwtMapClaim) {
+		userID = ""
+	} else {
+		userID = jwtMapClaim["userID"].(string)
+	}
+
+	userInput := jobObj.Jobs
+
+	err := postgresdb.DBInstance.DeleteScanJobs(userID, userInput)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete requested jobs history"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": "deleted jobs history"})
 }
 
 func LaunchAnutaInventoryBulkScan(c *gin.Context) {
