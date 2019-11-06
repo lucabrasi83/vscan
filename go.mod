@@ -14,7 +14,6 @@ require (
 	github.com/go-openapi/spec v0.19.3 // indirect
 	github.com/go-redis/redis v6.15.5+incompatible
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/gorilla/websocket v1.4.0
 	github.com/jackc/pgx/v4 v4.1.2
 	github.com/json-iterator/go v1.1.7 // indirect
@@ -35,11 +34,12 @@ require (
 	github.com/x-cray/logrus-prefixed-formatter v0.5.2
 	github.com/zsais/go-gin-prometheus v0.0.0-20181030200533-58963fb32f54
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
-	golang.org/x/net v0.0.0-20191003171128-d98b1b443823
-	golang.org/x/sys v0.0.0-20191007092633-5f54ce542709 // indirect
+	golang.org/x/net v0.0.0-20191105084925-a882066a44e0
+	golang.org/x/sys v0.0.0-20191105231009-c1f44814a5cd // indirect
 	golang.org/x/tools v0.0.0-20191005014404-c9f9432ec4b2 // indirect
 	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
-	google.golang.org/grpc v1.21.1
+	google.golang.org/genproto v0.0.0-20191028173616-919d9bdd9fe6 // indirect
+	google.golang.org/grpc v1.25.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.4 // indirect
 )
