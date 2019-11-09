@@ -12,6 +12,9 @@ import (
 type VulscanoDBUser struct {
 	UserID       string `json:"userID" example:"1bf3f4e6-5da2-4f82-87e4-606d5bf05d38"`
 	Email        string `json:"email" example:"john@vscan.com"`
+	FirstName    string `json:"firstName"`
+	LastName     string `json:"lastName"`
+	MiddleName   string `json:"middleName"`
 	Role         string `json:"role" example:"vulscanouser"`
 	EnterpriseID string `json:"enterpriseID" example:"TCL"`
 }
@@ -23,7 +26,7 @@ func (p *vulscanoDB) FetchUser(u string) (*VulscanoDBUser, error) {
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
-	const sqlQuery = `SELECT user_id, email, enterprise_id, role
+	const sqlQuery = `SELECT user_id, email, enterprise_id, role, first_name, last_name, COALESCE(middle_name, '')
 				      FROM vulscano_users WHERE 
                       email = $1
 					 `
@@ -32,7 +35,14 @@ func (p *vulscanoDB) FetchUser(u string) (*VulscanoDBUser, error) {
 
 	row := p.db.QueryRow(ctxTimeout, sqlQuery, u)
 
-	err := row.Scan(&user.UserID, &user.Email, &user.EnterpriseID, &user.Role)
+	err := row.Scan(
+		&user.UserID,
+		&user.Email,
+		&user.EnterpriseID,
+		&user.Role,
+		&user.FirstName,
+		&user.LastName,
+		&user.MiddleName)
 
 	switch err {
 	case pgx.ErrNoRows:
@@ -43,28 +53,28 @@ func (p *vulscanoDB) FetchUser(u string) (*VulscanoDBUser, error) {
 		return &user, nil
 
 	default:
-		logging.VSCANLog("error", "error while trying to retrieve user from DB: %v", err.Error())
+		logging.VSCANLog("error", "error while trying to retrieve user from DB: %v", err)
 		return nil, err
 	}
 }
 
-func (p *vulscanoDB) InsertNewUser(email string, pass string, ent string, role string) error {
+func (p *vulscanoDB) InsertNewUser(email, pass, ent, role, first, last, middle string) error {
 
 	// Set Query timeout
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
 
 	const sqlQuery = `INSERT INTO vulscano_users
-					  (email, password, enterprise_id, role)
-					  VALUES ($1, crypt($2, gen_salt('bf',8)), $3, $4)
+					  (email, password, enterprise_id, role, first_name, last_name, middle_name)
+					  VALUES ($1, crypt($2, gen_salt('bf',8)), $3, $4, $5, $6, $7)
 					 `
 
 	defer cancelQuery()
 
-	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, email, pass, ent, role)
+	cTag, err := p.db.Exec(ctxTimeout, sqlQuery, email, pass, ent, role, first, last, middle)
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"failed to insert user %v with error %v", email, err.Error())
+			"failed to insert user %v with error %v", email, err)
 
 		if strings.Contains(err.Error(), "23505") {
 			return fmt.Errorf("user with email %v already exists", email)
@@ -128,12 +138,15 @@ func (p *vulscanoDB) DeleteUser(email []string) error {
 
 	return nil
 }
-func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent string) error {
+func (p *vulscanoDB) PatchUser(email, role, pass, ent, first, last, middle string) error {
 
 	// Set parameters values to NULL if empty
 	pRole := normalizeString(role)
 	pEnterprise := normalizeString(ent)
 	pPassword := normalizeString(pass)
+	pFirstName := normalizeString(first)
+	pLastName := normalizeString(last)
+	pMiddleName := normalizeString(middle)
 
 	// Set Query timeout
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), shortQueryTimeout)
@@ -141,7 +154,10 @@ func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent strin
 	const sqlQuery = `UPDATE vulscano_users SET
 			          password = COALESCE(crypt($1, gen_salt('bf', 8)), password),
 				      enterprise_id = COALESCE($2, enterprise_id),
-					  role = COALESCE($3, role)
+					  role = COALESCE($3, role),
+					  first_name = COALESCE($5, first_name),
+  				      last_name = COALESCE($6, last_name),
+                      middle_name = COALESCE($7, middle_name)
 					  WHERE email = $4
 					 `
 
@@ -151,11 +167,15 @@ func (p *vulscanoDB) PatchUser(email string, role string, pass string, ent strin
 		pPassword,
 		pEnterprise,
 		pRole,
-		email)
+		email,
+		pFirstName,
+		pLastName,
+		pMiddleName,
+	)
 
 	if err != nil {
 		logging.VSCANLog("error",
-			"failed to update user %v with error %v", email, err.Error())
+			"failed to update user %v with error %v", email, err)
 
 		return err
 	}
@@ -176,7 +196,8 @@ func (p *vulscanoDB) FetchAllUsers() ([]VulscanoDBUser, error) {
 	// Set Query timeout to 1 minute
 	ctxTimeout, cancelQuery := context.WithTimeout(context.Background(), mediumQueryTimeout)
 
-	const sqlQuery = `SELECT user_id, email, enterprise_id, role FROM vulscano_users`
+	const sqlQuery = `SELECT user_id, email, enterprise_id, role, first_name, last_name, COALESCE(middle_name, '')
+				      FROM vulscano_users`
 
 	defer cancelQuery()
 
@@ -192,11 +213,18 @@ func (p *vulscanoDB) FetchAllUsers() ([]VulscanoDBUser, error) {
 	defer rows.Close()
 	for rows.Next() {
 		user := VulscanoDBUser{}
-		err = rows.Scan(&user.UserID, &user.Email, &user.EnterpriseID, &user.Role)
+		err = rows.Scan(
+			&user.UserID,
+			&user.Email,
+			&user.EnterpriseID,
+			&user.Role,
+			&user.FirstName,
+			&user.LastName,
+			&user.MiddleName)
 
 		if err != nil {
 			logging.VSCANLog("error",
-				"error while scanning vulscano_users table rows %v", err.Error())
+				"error while scanning vulscano_users table rows %v", err)
 			return nil, err
 		}
 		vulscanoUsers = append(vulscanoUsers, user)
@@ -204,7 +232,7 @@ func (p *vulscanoDB) FetchAllUsers() ([]VulscanoDBUser, error) {
 	err = rows.Err()
 	if err != nil {
 		logging.VSCANLog("error",
-			"error returned while iterating through vulscano_users table %v", err.Error())
+			"error returned while iterating through vulscano_users table %v", err)
 		return nil, err
 	}
 
@@ -250,7 +278,7 @@ func (p *vulscanoDB) AuthenticateUser(user string, pass string) (*VulscanoDBUser
 
 	default:
 		logging.VSCANLog(
-			"error", "error while authenticating user: %v error: %v", user, err.Error())
+			"error", "error while authenticating user: %v error: %v", user, err)
 
 		return nil, fmt.Errorf("authentication failed for user %v", user)
 	}

@@ -25,7 +25,7 @@ func (p *vulscanoDB) FetchAllEnterprises() ([]EnterpriseDB, error) {
 	const sqlQuery = `SELECT ent.enterprise_id, ent.enterprise_name, 
                       COUNT(dev.device_id) AS dev_count
 				      FROM enterprise AS ent
-                      INNER JOIN device_va_results AS dev
+                      LEFT JOIN device_va_results AS dev
                       ON ent.enterprise_id = dev.enterprise_id
                       GROUP BY ent.enterprise_id
                       ORDER BY ent.enterprise_id`

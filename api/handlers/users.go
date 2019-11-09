@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -68,7 +69,11 @@ func CreateUser(c *gin.Context) {
 		strings.ToLower(newUser.Email),
 		newUser.Password,
 		strings.ToUpper(newUser.Enterprise),
-		strings.ToLower(newUser.Role))
+		strings.ToLower(newUser.Role),
+		newUser.FirstName,
+		newUser.LastName,
+		newUser.MiddleName,
+	)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -121,7 +126,15 @@ func UpdateUser(c *gin.Context) {
 		})
 		return
 	}
-	err := postgresdb.DBInstance.PatchUser(user, updateUser.Role, updateUser.Password, updateUser.Enterprise)
+	err := postgresdb.DBInstance.PatchUser(
+		user,
+		updateUser.Role,
+		updateUser.Password,
+		updateUser.Enterprise,
+		updateUser.FirstName,
+		updateUser.LastName,
+		updateUser.MiddleName,
+	)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -166,4 +179,24 @@ func DeleteUser(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"success": "users successfully deleted"})
 
+}
+
+// validatePassword is a helper function to validate password meets minimum requirements
+func validatePassword(p string) bool {
+	validateCapital := regexp.MustCompile("[A-Z].*")
+	validateCapitalBool := validateCapital.MatchString(p)
+
+	validateLowerCase := regexp.MustCompile("[a-z].*")
+	validateLowerCaseBool := validateLowerCase.MatchString(p)
+
+	validateNumber := regexp.MustCompile("[0-9].*")
+	validateNumberBool := validateNumber.MatchString(p)
+
+	validateSpecialChar := regexp.MustCompile("[!@#$%^&*(){},<>?:;].*")
+	validateSpecialCharBool := validateSpecialChar.MatchString(p)
+
+	validatePasswordLengthBool := len(p) >= 10 && len(p) <= 20
+
+	return validateCapitalBool && validateLowerCaseBool &&
+		validateNumberBool && validateSpecialCharBool && validatePasswordLengthBool
 }

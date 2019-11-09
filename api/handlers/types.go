@@ -180,6 +180,9 @@ type JwtClaim struct {
 // in order to create a new user
 type VulscanoUserCreate struct {
 	Email      string `json:"email" binding:"required" example:"john@vscan.com"`
+	FirstName  string `json:"firstName" binding:"required"`
+	LastName   string `json:"lastName" binding:"required"`
+	MiddleName string `json:"middleName"`
 	Password   string `json:"password" binding:"required" example:"!Mp0$$ible_2_ReMemBeR"`
 	Role       string `json:"role" binding:"required" example:"vulscanouser"`
 	Enterprise string `json:"enterpriseID" binding:"required" example:"TCL"`
@@ -191,6 +194,9 @@ type VulscanoUserPatch struct {
 	Password   string `json:"password" example:"!Mp0$$ible_2_ReMemBeR"`
 	Role       string `json:"role" example:"vulscanouser"`
 	Enterprise string `json:"enterpriseID" example:"TCL"`
+	FirstName  string `json:"firstName"`
+	LastName   string `json:"lastName"`
+	MiddleName string `json:"middleName"`
 }
 
 // UserSSHGateway struct represents the attributes of a user defined SSH Gateway

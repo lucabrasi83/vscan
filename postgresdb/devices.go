@@ -67,7 +67,7 @@ func (p *vulscanoDB) GetAllDevicesDB(ent string) ([]DeviceVADB, error) {
 				      t1.service_contract_site_country, t1.service_contract_associated,
 					  t2.enterprise_name 
 					  FROM device_va_results t1, enterprise t2
-				      WHERE t1.enterprise_id = $1 or $1 IS NULL
+				      WHERE (t1.enterprise_id = $1 OR $1 IS NULL)
 					  AND t1.enterprise_id = t2.enterprise_id
 `
 
@@ -318,7 +318,7 @@ func (p *vulscanoDB) DBVulnDeviceHistory(dev string, ent string, limit int) ([]V
 					  INNER JOIN device_va_results
 					  ON device_va_results.device_id = device_va_history.device_id
 				      WHERE device_va_results.device_id = $1
-					  AND device_va_results.enterprise_id = $2 OR $2 IS NULL
+					  AND (device_va_results.enterprise_id = $2 OR $2 IS NULL)
 					  ORDER BY timestamp ASC
 					  LIMIT $3;
 				     `

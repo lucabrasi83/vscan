@@ -579,26 +579,6 @@ func validateEmail(e string) bool {
 	return emailRegex.MatchString(e)
 }
 
-// validatePassword is a helper function to validate password meets minimum requirements
-func validatePassword(p string) bool {
-	validateCapital := regexp.MustCompile("[A-Z].*")
-	validateCapitalBool := validateCapital.MatchString(p)
-
-	validateLowerCase := regexp.MustCompile("[a-z].*")
-	validateLowerCaseBool := validateLowerCase.MatchString(p)
-
-	validateNumber := regexp.MustCompile("[0-9].*")
-	validateNumberBool := validateNumber.MatchString(p)
-
-	validateSpecialChar := regexp.MustCompile("[!@#$%^&*(){},<>?:;].*")
-	validateSpecialCharBool := validateSpecialChar.MatchString(p)
-
-	validatePasswordLengthBool := len(p) >= 10 && len(p) <= 20
-
-	return validateCapitalBool && validateLowerCaseBool &&
-		validateNumberBool && validateSpecialCharBool && validatePasswordLengthBool
-}
-
 // buildCiscoSNList is a helper function to fetch the Product ID's for each device passed in slice
 func buildCiscoSNList(snSlice []string) []openvulnapi.CiscoSnAPI {
 
