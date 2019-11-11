@@ -4,11 +4,11 @@ version: "3.7"
 services:
     # Vulscano API Core
     vulscano-core:
-       image: tatacomm/vscan:beta
+       image: tatacomm/vscan-controller:beta
        restart: always
        stdin_open: true
        tty: true
-       hostname: vscan-core
+       hostname: vscan-controller
        depends_on:
             - vulscano-db
        environment:
@@ -62,7 +62,7 @@ services:
             - PGADMIN_DEFAULT_PASSWORD=vscan
             - PGADMIN_ENABLE_TLS=True
        ports:
-            - "8443:443"
+            - "9443:443"
        networks:
             - vulscano-net
        volumes:
@@ -95,6 +95,15 @@ services:
             - JAVA_TOOL_OPTIONS=${VSCAN_AGENT_JVM_OPTIONS}
        networks:
             - vulscano-net
+     
+     # VSCAN Front End
+    vscan-ui:
+       image: tatacomm/vscan-ui:beta
+       restart: always
+       hostname: vscan-ui
+       stdin_open: true
+       tty: true
+       network_mode: host
 
 networks:
    vulscano-net:

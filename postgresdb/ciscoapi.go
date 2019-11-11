@@ -229,7 +229,7 @@ func (p *vulscanoDB) UpdateSmartNetCoverage(devAMC []map[string]string) error {
 	// SQL Statement to update Cisco Suggested SW column for each device ID.
 	const sqlQuery = `UPDATE device_va_results SET 
 					  product_id = COALESCE($2, 'NA'),
-				      service_contract_associated = COALESCE($3, false::bolean),
+				      service_contract_associated = COALESCE($3, false::boolean),
 					  service_contract_description = COALESCE($4, 'NA'),
                       service_contract_number = COALESCE($5, 'NA'),
                       service_contract_end_date = COALESCE($6, '0001-01-01'::date),
