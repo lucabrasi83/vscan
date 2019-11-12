@@ -28,21 +28,6 @@ func main() {
 	// Release Redis Connection Pool
 	defer rediscache.CacheStore.CloseCacheConn()
 
-	// Set Gin Logging to file and StdOut.
-	ginLogFile, err := os.OpenFile(
-		filepath.FromSlash(datadiros.GetDataDir()+"/gingonic.log"),
-		os.O_WRONLY|os.O_CREATE|os.O_APPEND,
-		0644)
-	if err != nil {
-		logging.VSCANLog("error",
-			"Failed to open gingonic.log file %v", err.Error())
-	}
-
-	defer ginLogFile.Close()
-
-	// Store Gin Default Logs in gingonic.log file
-	gin.DefaultWriter = ginLogFile
-
 	// Flag to set gin in production mode
 	gin.SetMode(gin.ReleaseMode)
 
@@ -79,7 +64,7 @@ func main() {
 	// and we were able to load Gin settings.
 	logging.VSCANLog(
 		"info",
-		"All pre-checks passed. VSCAN Controller is now READY to accept requests!")
+		"All pre-checks passed. VSCAN Controller is now READY to accept requests on port %v", listenHTTPSPort)
 	// Start Web API service in goroutine to handle graceful shutdown
 	go func() {
 
@@ -101,7 +86,7 @@ func main() {
 		"Shutting Down VSCAN Controller Gracefully...",
 	)
 	// Purge cacheStoreClient when shutting down server
-	err = rediscache.CacheStore.PurgeScannedDevices()
+	err := rediscache.CacheStore.PurgeScannedDevices()
 
 	if err != nil {
 		logging.VSCANLog("error",

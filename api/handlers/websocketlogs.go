@@ -4,11 +4,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"github.com/lucabrasi83/vscan/datadiros"
 	"github.com/lucabrasi83/vscan/logging"
 )
 
@@ -52,25 +54,35 @@ var (
 )
 
 func readFileIfModified(lastMod time.Time, filename string) ([]byte, time.Time, error) {
-	fi, err := abstractInMemoryFS.Stat(filename)
+
+	filenamePath := filepath.FromSlash(datadiros.GetDataDir() + "/" + filename)
+
+	fi, err := abstractInMemoryFS.Stat(filenamePath)
 
 	// Gracefully handle file to stream not existing yet
 	if errFileStat, ok := err.(*os.PathError); errFileStat != nil && ok {
 		return nil, lastMod, nil
 	}
 	if err != nil {
+		logging.VSCANLog("error", "unable to instantiate in-memory file system: %v", err)
 		return nil, lastMod, err
 	}
 	if !fi.ModTime().After(lastMod) {
 		return nil, lastMod, nil
 	}
 
-	file, err := abstractInMemoryFS.OpenFile(filename, os.O_RDONLY, 0644)
+	file, err := abstractInMemoryFS.OpenFile(filenamePath, os.O_RDONLY, 0644)
+
+	if err != nil {
+		logging.VSCANLog("error", "unable to open in-memory log file %v with error %v", filename, err)
+		return nil, lastMod, err
+	}
 
 	defer file.Close()
 
 	p, err := ioutil.ReadAll(file)
 	if err != nil {
+		logging.VSCANLog("error", "unable to read in-memory log file %v with error %v", filename, err)
 		return nil, fi.ModTime(), err
 	}
 	return p, fi.ModTime(), nil
@@ -140,7 +152,6 @@ func ServeWs(c *gin.Context) {
 		}
 		return
 	}
-
 	var lastMod time.Time
 	if n, err := strconv.ParseInt(c.Query("lastMod"), 16, 64); err == nil {
 		lastMod = time.Unix(0, n)
@@ -148,7 +159,6 @@ func ServeWs(c *gin.Context) {
 
 	var file string
 	file = c.Query("logFileRequestHash")
-
 	go writer(ws, lastMod, file)
 	reader(ws)
 }
