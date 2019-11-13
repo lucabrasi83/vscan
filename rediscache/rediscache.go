@@ -160,7 +160,7 @@ func (p *vscanCache) GetBatchJobsRunningKey() (bool, error) {
 	return valToBool(val), nil
 }
 
-func (p *vscanCache) SearchCacheDevice(pattern string) ([]string, error) {
+func (p *vscanCache) scanCacheDeviceKey(pattern string) ([]string, error) {
 
 	searchRes := make([]string, 0)
 
@@ -182,4 +182,33 @@ func (p *vscanCache) SearchCacheDevice(pattern string) ([]string, error) {
 		}
 	}
 
+}
+
+func (p *vscanCache) SearchCacheDevice(pattern string) ([]map[string]string, error) {
+	searchRes, err := p.scanCacheDeviceKey(pattern)
+
+	devCacheInventory := make([]map[string]string, 0, len(searchRes))
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, dev := range searchRes {
+		devCacheOSType, err := p.cacheStoreClient.HGet(dev, "osType").Result()
+		if err != nil {
+			devCacheOSType = "UNKNOWN"
+		}
+
+		devCacheModel, err := p.cacheStoreClient.HGet(dev, "model").Result()
+		if err != nil {
+			devCacheModel = "Unknown"
+		}
+
+		devCacheInventory = append(devCacheInventory, map[string]string{
+			"device": dev,
+			"osType": devCacheOSType,
+			"model":  devCacheModel})
+	}
+
+	return devCacheInventory, nil
 }

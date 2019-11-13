@@ -16,6 +16,9 @@ import (
 
 func LoadRoutes(routes *gin.Engine) {
 
+	// Use Default Gin Recovery Middleware
+	routes.Use(gin.Recovery())
+
 	// CORS Config
 	corsMiddleware := cors.New(cors.Config{
 		AllowAllOrigins: true,

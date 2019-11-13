@@ -32,7 +32,7 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 
 	// Set Default Gin-Gonic HTTP router mux
-	r := gin.Default()
+	r := gin.New()
 
 	// Get HTTPS Listening Port from Environment Variable
 	listenHTTPSPort := os.Getenv("VULSCANO_HTTPS_PORT")
