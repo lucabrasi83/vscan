@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vscan/api/handlers"
 	"github.com/lucabrasi83/vscan/api/middleware"
@@ -35,6 +36,7 @@ func LoadRoutes(routes *gin.Engine) {
 		middleware.RequestsLogger(),
 		middleware.APILoadControl(),
 		corsMiddleware,
+		gzip.Gzip(gzip.BestCompression),
 	)
 
 	// Set up default handler for no routes found

@@ -377,7 +377,6 @@ func LaunchBulkAdHocScan(c *gin.Context) {
 }
 
 func GetAllInventoryDevices(c *gin.Context) {
-
 	// Extract JWT Claim
 	jwtMapClaim := jwt.ExtractClaims(c)
 

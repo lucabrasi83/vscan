@@ -361,20 +361,6 @@ func AnutaInventoryBulkScan(d *AnutaDeviceBulkScanRequest, j *JwtClaim) (*AnutaB
 
 	VABulkRes := mergeAnutaBulkScanResults(scanRes, anutaScannedDevList, skippedScannedDevices)
 
-	// Return Error if no device were successfully scanned in the bulk scan job
-	//if len(VABulkRes.DevicesScannedSuccess) == 0 {
-	//	logging.VSCANLog("error", "scan Job ID %v - Agent %v is unable to scan any of the device requested. "+
-	//		"Ensure parameters provided are correct and network connectivity to VSCAN Agent is established",
-	//		VABulkRes.ScanJobID,
-	//		VABulkRes.ScanJobExecutingAgent,
-	//	)
-	//	return nil, fmt.Errorf("scan Job ID %v - Agent %v is unable to scan any of the device requested. "+
-	//		"Ensure parameters provided are correct and network connectivity to VSCAN Agent is established",
-	//		VABulkRes.ScanJobID,
-	//		VABulkRes.ScanJobExecutingAgent,
-	//	)
-	//}
-
 	// Persist Vulnerability Assessment in DB
 	err = deviceBulkVAReportDB(VABulkRes)
 
