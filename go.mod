@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc
 	github.com/appleboy/gin-jwt/v2 v2.6.2
 	github.com/fatih/color v1.7.0
-	github.com/gin-gonic/gin v1.4.0
+	github.com/gin-gonic/gin v1.5.0
 	github.com/go-ini/ini v1.42.0
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/go-openapi/spec v0.19.2 // indirect
