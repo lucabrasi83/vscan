@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/go-redis/redis"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var testCacheStore *vscanCache
@@ -45,7 +45,7 @@ func TestRedisConn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("redis ping failed with error %v", err)
 	}
-	assert.Equal(t, "PONG", ping)
+	require.Equal(t, "PONG", ping)
 }
 
 func TestOngoingScannedDevicesIP(t *testing.T) {
@@ -54,27 +54,30 @@ func TestOngoingScannedDevicesIP(t *testing.T) {
 
 	t.Run("Purge ongoing scanned devices list", func(t *testing.T) {
 		err := testCacheStore.PurgeScannedDevices()
-		assert.Nil(t, err, "expected err to be nil but got %v", err)
+		require.Nil(t, err, "expected err to be nil but got %v", err)
 	})
 
 	t.Run("Test LPush devices", func(t *testing.T) {
 		err := testCacheStore.LPushScannedDevicesIP(tableTestDevices...)
-		assert.Nilf(t, err, "expected err to be nil but got %v", err)
+		require.Nilf(t, err, "expected err to be nil but got %v", err)
 	})
 
 	t.Run("Test LRange devices", func(t *testing.T) {
 		dev, err := testCacheStore.LRangeScannedDevices()
-		assert.Nilf(t, err, "expected err to be nil but got %v", err)
+		requires := require.New(t)
 
-		assert.ElementsMatchf(t, dev, tableTestDevices, "expected %v to have same elements as %v", dev, tableTestDevices)
+		requires.Nilf(err, "expected err to be nil but got %v", err)
+
+		requires.ElementsMatchf(dev, tableTestDevices, "expected %v to have same elements as %v", dev, tableTestDevices)
 	})
 
 	t.Run("Test LRem devices", func(t *testing.T) {
 		testCacheStore.LRemScannedDevicesIP(tableTestDevices...)
 		dev, err := testCacheStore.LRangeScannedDevices()
-		assert.Nilf(t, err, "expected err to be nil but got %v", err)
+		requires := require.New(t)
+		requires.Nilf(err, "expected err to be nil but got %v", err)
 
-		assert.Equalf(t, 0, len(dev), "expected dev slice length to be %v but got %v", 0, len(dev))
+		requires.Equalf(0, len(dev), "expected dev slice length to be %v but got %v", 0, len(dev))
 	})
 
 }
@@ -96,31 +99,40 @@ func TestDeviceInventoryCache(t *testing.T) {
 
 	t.Run("Check device does not exist in cache", func(t *testing.T) {
 		exists, err := testCacheStore.CheckCacheEntryExists(testDeviceKey)
+		requires := require.New(t)
 
-		assert.Nilf(t, err, "expected err to be nil but got %v", err)
-		assert.False(t, exists, "expected CPE exists to be false but got true")
+		requires.Nilf(err, "expected err to be nil but got %v", err)
+		requires.False(exists, "expected CPE exists to be false but got true")
 	})
 
 	t.Run("Insert device into cache", func(t *testing.T) {
 		err := testCacheStore.HashMapSetDevicesInventory(testDeviceKey, testDeviceDetails)
-		assert.Nilf(t, err, "expected err to be nil but got %v", err)
+		require.Nilf(t, err, "expected err to be nil but got %v", err)
 	})
 
 	t.Run("Check device exists in cache", func(t *testing.T) {
 		exists, err := testCacheStore.CheckCacheEntryExists(testDeviceKey)
 
-		assert.Nilf(t, err, "expected err to be nil but got %v", err)
-		assert.True(t, exists, "expected CPE exists to be true but got false")
+		requires := require.New(t)
+		requires.Nilf(err, "expected err to be nil but got %v", err)
+		requires.True(exists, "expected CPE exists to be true but got false")
 	})
 
 	t.Run("Get device from cache", func(t *testing.T) {
 		dev := testCacheStore.HGetAllDeviceDetails(testDeviceKey)
-
-		assert.Contains(t, dev, "mgmtIPAddress", "expected dev map to contain mgmtIPAddress key but got nil")
-		assert.Equalf(t, "10.1.1.1", dev["mgmtIPAddress"], "expected mgmtIPAddress key value to be %q but got %q",
+		requires := require.New(t)
+		requires.Contains(dev, "mgmtIPAddress", "expected dev map to contain mgmtIPAddress key but got nil")
+		requires.Equalf("10.1.1.1", dev["mgmtIPAddress"], "expected mgmtIPAddress key value to be %q but got %q",
 			"10.1.1.1", dev["mgmtIPAddress"])
 	})
 
+}
+
+func TestDeviceCacheSearch(t *testing.T) {
+	res, err := testCacheStore.SearchCacheDevice("*TEST*")
+	requires := require.New(t)
+	requires.Nilf(err, "expected err to be nil but got %v", err)
+	requires.Lenf(res, 1, "expected cache result to be %d result but got %d result", 1, len(res))
 }
 
 func TestCloseCacheStoreConn(t *testing.T) {
@@ -130,11 +142,11 @@ func TestCloseCacheStoreConn(t *testing.T) {
 
 	t.Run("Check ping value is empty", func(t *testing.T) {
 
-		assert.Emptyf(t, ping, "expected ping to be empty but got %v", ping)
+		require.Emptyf(t, ping, "expected ping to be empty but got %v", ping)
 	})
 
 	t.Run("Check error is returned when trying to close connection", func(t *testing.T) {
 
-		assert.NotNilf(t, err, "expected err not to be nil but got %v", err)
+		require.NotNilf(t, err, "expected err not to be nil but got %v", err)
 	})
 }
