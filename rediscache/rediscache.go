@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-redis/redis"
+	"github.com/go-redis/redis/v7"
 	_ "github.com/lucabrasi83/vscan/initializer" // Import for correct init functions order
 	"github.com/lucabrasi83/vscan/logging"
 )
