@@ -31,7 +31,7 @@ require (
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/prometheus/client_golang v1.0.0 // indirect
-	github.com/shirou/gopsutil v2.18.12+incompatible
+	github.com/shirou/gopsutil v2.19.12+incompatible
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/speps/go-hashids v2.0.0+incompatible
