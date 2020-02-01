@@ -35,6 +35,8 @@ var (
 		"vulscano.vsnl.co.in",
 		"vscan.asdlab.net",
 		"vscan.tatacommunications.com",
+		"vscan.maleeja.com",
+		"vscan-back.maleeja.com",
 		"vulscano.vsnl.co.in:8443",
 	}
 

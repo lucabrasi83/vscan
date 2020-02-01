@@ -1,4 +1,4 @@
-FROM golang:1.13.4-alpine as builder
+FROM golang:1.13.7-alpine as builder
 COPY tcl-root-ca.crt /usr/local/share/ca-certificates
 COPY ./certs/rds-combined-ca-bundle.pem /usr/local/share/ca-certificates
 RUN apk add --no-cache build-base git ca-certificates && update-ca-certificates 2>/dev/null || true
