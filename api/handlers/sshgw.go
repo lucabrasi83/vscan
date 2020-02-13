@@ -53,23 +53,24 @@ func SSHGatewayConnectTest(c *gin.Context) {
 		GatewayPrivateKey: sshGWParams.GatewayPrivateKey,
 	}}
 
-	cc, err := agentConnection()
-
-	if err != nil {
-		logging.VSCANLog("error", "unable to connect to VSCAN Agent %v", err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-
-	}
+	cc := AgentgRPCService
+	//cc, err := AgentConnection()
+	//
+	//if err != nil {
+	//	logging.VSCANLog("error", "unable to connect to VSCAN Agent %v", err)
+	//	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	//	return
+	//
+	//}
 
 	// Closing GRPC client connection at the end of scan job
-	defer func() {
-		errConnClose := conn.Close()
-		if errConnClose != nil {
-			logging.VSCANLog("warning",
-				"failed to close gRPC client connection to VSCAN Agent. error: %v", errConnClose)
-		}
-	}()
+	//defer func() {
+	//	errConnClose := AgentConn.Close()
+	//	if errConnClose != nil {
+	//		logging.VSCANLog("warning",
+	//			"failed to close gRPC client connection to VSCAN Agent. error: %v", errConnClose)
+	//	}
+	//}()
 
 	// Setting timeout context for scan requests
 	ctxTimeout, cancel := context.WithTimeout(context.Background(), 1*time.Minute)

@@ -65,6 +65,24 @@ func main() {
 	logging.VSCANLog(
 		"info",
 		"All pre-checks passed. VSCAN Controller is now READY to accept requests on port %v", listenHTTPSPort)
+
+	// Initiate Agent Connection
+	var errAgent error
+	handlers.AgentgRPCService, errAgent = handlers.AgentConnection()
+
+	// Closing GRPC client connection at the end of scan job
+	defer func() {
+		errConnClose := handlers.AgentConn.Close()
+		if errConnClose != nil {
+			logging.VSCANLog("warning",
+				"failed to close gRPC client connection to VSCAN Agent. error: %v", errConnClose)
+		}
+	}()
+
+	if errAgent != nil {
+		logging.VSCANLog("fatal", "unable to start VSCAN Controller due to error %s", errAgent)
+	}
+
 	// Start Web API service in goroutine to handle graceful shutdown
 	go func() {
 

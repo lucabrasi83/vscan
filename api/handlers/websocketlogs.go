@@ -207,11 +207,11 @@ func ServeWs(c *gin.Context) {
 //       <script type="text/javascript">
 //           (function() {
 //               var data = document.getElementById("fileData");
-//               var conn = new WebSocket("wss://{{.Host}}/api/v1/jobs/ws?lastMod={{.LastMod}}&scanJobID={{.ScanJobID}}");
-//               conn.onclose = function(evt) {
+//               var AgentConn = new WebSocket("wss://{{.Host}}/api/v1/jobs/ws?lastMod={{.LastMod}}&scanJobID={{.ScanJobID}}");
+//               AgentConn.onclose = function(evt) {
 //                   data.textContent = 'Connection closed';
 //               }
-//               conn.onmessage = function(evt) {
+//               AgentConn.onmessage = function(evt) {
 //                   data.textContent = evt.data;
 //               }
 //           })();

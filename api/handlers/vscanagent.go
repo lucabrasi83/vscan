@@ -27,7 +27,8 @@ import (
 )
 
 var (
-	conn *grpc.ClientConn
+	AgentConn        *grpc.ClientConn
+	AgentgRPCService agentpb.VscanAgentServiceClient
 
 	vscanAgentPort = "50051"
 
@@ -44,7 +45,7 @@ const (
 	bulkDevScanTimeout = 900
 )
 
-func agentConnection() (agentpb.VscanAgentServiceClient, error) {
+func AgentConnection() (agentpb.VscanAgentServiceClient, error) {
 
 	if os.Getenv("VSCAN_AGENT_HOST") == "" {
 		return nil, fmt.Errorf("no agent specified in VSCAN_AGENT_HOST environment variable")
@@ -62,13 +63,14 @@ func agentConnection() (agentpb.VscanAgentServiceClient, error) {
 
 	var err error
 
-	conn, err = grpc.Dial(os.Getenv("VSCAN_AGENT_HOST")+":"+vscanAgentPort, grpc.WithTransportCredentials(tlsCredentials))
+	AgentConn, err = grpc.Dial(os.Getenv("VSCAN_AGENT_HOST")+":"+vscanAgentPort,
+		grpc.WithTransportCredentials(tlsCredentials))
 
 	if err != nil {
-		logging.VSCANLog("fatal", "unable to dial VSCAN Agent GRPC server: %v", err)
+		logging.VSCANLog("warning", "unable to dial VSCAN Agent GRPC server: %v", err)
 	}
 
-	c := agentpb.NewVscanAgentServiceClient(conn)
+	c := agentpb.NewVscanAgentServiceClient(AgentConn)
 
 	return c, nil
 
@@ -77,21 +79,13 @@ func agentConnection() (agentpb.VscanAgentServiceClient, error) {
 func sendAgentScanRequest(jobID string, dev []map[string]string, jovalSource string, sshGW *UserSSHGateway,
 	creds *UserDeviceCredentials, sr *ScanResults, bsr *BulkScanResults, logStreamReqHash string) error {
 
-	cc, err := agentConnection()
+	//cc, err := AgentConnection()
 
-	if err != nil {
-
-		return fmt.Errorf("error while establishing connection to VSCAN agent %v", err)
-	}
-
-	// Closing GRPC client connection at the end of scan job
-	defer func() {
-		errConnClose := conn.Close()
-		if errConnClose != nil {
-			logging.VSCANLog("warning",
-				"failed to close gRPC client connection to VSCAN Agent. error: %v", errConnClose)
-		}
-	}()
+	cc := AgentgRPCService
+	//if err != nil {
+	//
+	//	return fmt.Errorf("error while establishing connection to VSCAN agent %v", err)
+	//}
 
 	var devices []*agentpb.Device
 
