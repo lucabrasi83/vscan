@@ -38,6 +38,7 @@ var (
 		"vscan.maleeja.com",
 		"vscan-back.maleeja.com",
 		"vulscano.vsnl.co.in:8443",
+		"vscan.vsnl.co.in",
 	}
 
 	connWSUpgrade = websocket.Upgrader{
