@@ -23,6 +23,18 @@ spec:
         name: vscan-agent
         stdin: true 
         tty: true
+        livenessProbe:
+          tcpSocket:
+            port: 50051
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
+        readinessProbe:
+          tcpSocket:
+            port: 50051
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 1
         ports:
         - containerPort: 50051
         resources:

@@ -1,13 +1,13 @@
 apiVersion: v1
 data:
-  ANUTA_NCX_HOST: inp44vpapp034a.vsnl.co.in
+  ANUTA_NCX_HOST: 121.244.254.36
   VSCAN_AGENT_HOST: vscan-agent
   VSCAN_AGENT_PORT: "50051"
   VSCAN_REDIS_HOST: vscan-cache
-  VULSCANO_DB_HOST: vscan-db.cg3utcbqnrdv.eu-west-2.rds.amazonaws.com
-  VULSCANO_DB_DATABASE_NAME: vulscanodb
+  VULSCANO_DB_HOST: crest-postgres-db.cbdjgrbpplge.eu-west-2.rds.amazonaws.com
+  VULSCANO_DB_DATABASE_NAME: vscan_db
   VSCAN_MODE: PROD
-  VULSCANO_HTTPS_PORT: "443"
+  VULSCANO_HTTPS_PORT: "8443"
 kind: ConfigMap
 metadata:
   creationTimestamp: null

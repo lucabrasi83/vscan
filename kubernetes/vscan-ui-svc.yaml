@@ -3,17 +3,17 @@ kind: Service
 metadata:
   creationTimestamp: null
   labels:
-    app: vscan-controller
-  name: vscan-controller
+    app: vscan-ui
+  name: vscan-ui
   namespace: vscan
 spec:
   ports:
-    - port: 8443
-      nodePort: 30443
+    - port: 9443
+      nodePort: 31443
       protocol: TCP
-      targetPort: 8443
+      targetPort: 443
   selector:
-    app: vscan-controller
+    app: vscan-ui
   type: NodePort
 status:
   loadBalancer: {}

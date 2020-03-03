@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  namespace: vscan
+  labels:
+    app: vscan-ui
+  name: vscan-ui
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vscan-ui
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: vscan-ui
+    spec:
+      containers:
+        - image: tatacomm/vscan-ui:beta
+          name: vscan-ui
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+          ports:
+            - containerPort: 443
+          resources: {}
+      imagePullSecrets:
+        - name: docker-secret
+status: {}

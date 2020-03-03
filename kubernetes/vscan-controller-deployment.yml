@@ -19,13 +19,29 @@ spec:
         app: vscan-controller
     spec:
       containers:
-        - image: tatacomm/vscan:beta
+        - image: tatacomm/vscan-controller:beta
           imagePullPolicy: Always
           name: vscan-controller
           stdin: true 
           tty: true
+          livenessProbe:
+            httpGet:
+              path: /api/v1/ping
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
+          readinessProbe:
+            httpGet:
+              path: /api/v1/ping
+              port: 8443
+              scheme: HTTPS
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 1
           ports:
-            - containerPort: 443
+            - containerPort: 8443
           env:
             - name: ANUTA_NCX_BASE64_AUTH
               valueFrom:
