@@ -91,8 +91,9 @@ func init() {
 
 	poolConfig.ConnConfig.TLSConfig =
 		&tls.Config{
-			ServerName: os.Getenv("VULSCANO_DB_HOST"),
-			RootCAs:    certPool,
+			ServerName:         os.Getenv("VULSCANO_DB_HOST"),
+			RootCAs:            certPool,
+			InsecureSkipVerify: true,
 		}
 
 	poolConfig.ConnConfig.DialFunc =
