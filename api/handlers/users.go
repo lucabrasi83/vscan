@@ -192,7 +192,7 @@ func validatePassword(p string) bool {
 	validateNumber := regexp.MustCompile("[0-9].*")
 	validateNumberBool := validateNumber.MatchString(p)
 
-	validateSpecialChar := regexp.MustCompile("[!@#~`$%^&*(){},<>?:;].*")
+	validateSpecialChar := regexp.MustCompile("[!@#~`\"$%^&*(){},<>?:;].*")
 	validateSpecialCharBool := validateSpecialChar.MatchString(p)
 
 	validatePasswordLengthBool := len(p) >= 10 && len(p) <= 20
