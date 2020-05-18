@@ -79,7 +79,7 @@ func (p *vulscanoDB) InsertAllCiscoAdvisories() error {
 		formattedTime := formatTimeReplacer.Replace(adv.FirstPublished)
 
 		// Convert openVuln API Time string to type Time
-		timeStamps, _ := time.Parse(time.RFC3339, formattedTime)
+		timeStamps, _ := time.Parse("2006-01-02T15:04:05", formattedTime)
 
 		b.Queue(sqlQuery,
 			strings.TrimSpace(adv.AdvisoryID),
