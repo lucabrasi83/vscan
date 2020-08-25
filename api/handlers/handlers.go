@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appleboy/gin-jwt/v2"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vscan/initializer"
