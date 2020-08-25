@@ -41,6 +41,11 @@ func NewCiscoScanDevice(os string) *CiscoScanDevice {
 			jovalURL:    "http://download.jovalcm.com/content/jca/cisco.iosxe.cve.oval.xml",
 			openVulnURL: "https://api.cisco.com/security/advisories/iosxe.json?version=",
 		}
+	case windowsServer2016:
+		return &CiscoScanDevice{
+			jovalURL:    "https://oval.cisecurity.org/repository/download/5.11.2/vulnerability/microsoft_windows_server_2016.xml",
+			openVulnURL: "https://api.cisco.com/security/advisories/iosxe.json?version=",
+		}
 	}
 	return nil
 }

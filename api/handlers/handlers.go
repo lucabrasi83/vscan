@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/appleboy/gin-jwt/v2"
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/lucabrasi83/vscan/initializer"
 	"github.com/lucabrasi83/vscan/inventorymgr"
@@ -21,12 +22,13 @@ import (
 )
 
 const (
-	rootRole        = "vulscanoroot"
-	rootUser        = "root@vscan.com"
-	userRole        = "vulscanouser"
-	ciscoIOSXE      = "IOS-XE"
-	ciscoIOS        = "IOS"
-	bulkDevMaxLimit = 50
+	rootRole          = "vulscanoroot"
+	rootUser          = "root@vscan.com"
+	userRole          = "vulscanouser"
+	ciscoIOSXE        = "IOS-XE"
+	ciscoIOS          = "IOS"
+	windowsServer2016 = "Windows Server 2016"
+	bulkDevMaxLimit   = 50
 )
 
 // LaunchAdHocScan handler is the API endpoint to trigger a single device ad-hoc VA scan.
